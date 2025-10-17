@@ -24,19 +24,4 @@ enum SystemMemory {
   static var memoryMb: UInt64 {
     return memoryBytes / (1024 * 1024)
   }
-
-  /// Formats system memory for display
-  static func formatMemory() -> String {
-    let memsize = memoryBytes
-    let isSimulated = ProcessInfo.processInfo.environment["BARN_SIMULATE_MEM_GB"] != nil
-
-    if memsize > 0 {
-      let ramMb = memsize / (1024 * 1024)
-      let ramGb = Double(ramMb) / 1024.0
-      let suffix = isSimulated ? " (simulated)" : ""
-      return String(format: "Memory: %.0f GB%@", ramGb, suffix)
-    } else {
-      return "Memory: Unknown"
-    }
-  }
 }

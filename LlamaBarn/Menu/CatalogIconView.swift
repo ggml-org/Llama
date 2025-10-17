@@ -7,7 +7,6 @@ final class CatalogIconView: NSView {
   /// The image view containing the model icon. Set the `image` property directly.
   let imageView = NSImageView()
 
-  var isHighlighted: Bool = false { didSet { refresh() } }
   var backgroundColor: NSColor = .lbSubtleBackground { didSet { refresh() } }
 
   override init(frame frameRect: NSRect = .zero) {
