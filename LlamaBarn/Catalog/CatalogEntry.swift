@@ -22,7 +22,6 @@ struct CatalogEntry: Identifiable, Codable {
   let additionalParts: [URL]?
   let serverArgs: [String]  // Additional command line arguments for llama-server
   let icon: String  // Asset name for the model's brand logo
-  let color: String  // Hex color for the model family (e.g., "#3e2c61")
   let quantization: String  // Quantization method (e.g., "Q4_K_M", "Q8_0")
   let isFullPrecision: Bool
 
@@ -39,7 +38,6 @@ struct CatalogEntry: Identifiable, Codable {
     additionalParts: [URL]? = nil,
     serverArgs: [String],
     icon: String,
-    color: String,
     quantization: String,
     isFullPrecision: Bool
   ) {
@@ -55,7 +53,6 @@ struct CatalogEntry: Identifiable, Codable {
     self.additionalParts = additionalParts
     self.serverArgs = serverArgs
     self.icon = icon
-    self.color = color
     self.quantization = quantization
     self.isFullPrecision = isFullPrecision
   }
