@@ -818,5 +818,469 @@ enum CatalogFamilies {
         ),
       ]
     ),
+    // MARK: Qwen3-VL
+    ModelFamily(
+      name: "Qwen3-VL",
+      series: "qwen",
+      blurb:
+        "Vision-language models for image and text understanding with native 256K context support.",
+      color: "#8b5cf6",
+      serverArgs: nil,
+      overheadMultiplier: 1.1,
+      models: [
+        Model(
+          label: "32B",
+          releaseDate: Calendar.current.date(from: DateComponents(year: 2025, month: 10, day: 31))!,
+          ctxWindow: 262_144,
+          serverArgs: nil,
+          build: ModelBuild(
+            id: "qwen3-vl-instruct-32b-q8",
+            quantization: "Q8_0",
+            isFullPrecision: true,
+            fileSize: 34_817_720_352,
+            ctxBytesPer1kTokens: 268_435_456,
+            downloadUrl: URL(
+              string:
+                "https://huggingface.co/Qwen/Qwen3-VL-32B-Instruct-GGUF/resolve/main/Qwen3VL-32B-Instruct-Q8_0.gguf"
+            )!,
+            additionalParts: [
+              URL(
+                string:
+                  "https://huggingface.co/Qwen/Qwen3-VL-32B-Instruct-GGUF/resolve/main/mmproj-Qwen3VL-32B-Instruct-Q8_0.gguf"
+              )!
+            ],
+            serverArgs: []
+          ),
+          quantizedBuilds: [
+            ModelBuild(
+              id: "qwen3-vl-instruct-32b",
+              quantization: "Q4_K_M",
+              isFullPrecision: false,
+              fileSize: 19_762_150_432,
+              ctxBytesPer1kTokens: 268_435_456,
+              downloadUrl: URL(
+                string:
+                  "https://huggingface.co/Qwen/Qwen3-VL-32B-Instruct-GGUF/resolve/main/Qwen3VL-32B-Instruct-Q4_K_M.gguf"
+              )!,
+              additionalParts: [
+                URL(
+                  string:
+                    "https://huggingface.co/Qwen/Qwen3-VL-32B-Instruct-GGUF/resolve/main/mmproj-Qwen3VL-32B-Instruct-Q8_0.gguf"
+                )!
+              ],
+              serverArgs: []
+            )
+          ]
+        ),
+        Model(
+          label: "30B",
+          releaseDate: Calendar.current.date(from: DateComponents(year: 2025, month: 10, day: 31))!,
+          ctxWindow: 262_144,
+          serverArgs: nil,
+          build: ModelBuild(
+            id: "qwen3-vl-instruct-30b-q8",
+            quantization: "Q8_0",
+            isFullPrecision: true,
+            fileSize: 32_483_932_992,
+            ctxBytesPer1kTokens: 100_663_296,
+            downloadUrl: URL(
+              string:
+                "https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Instruct-GGUF/resolve/main/Qwen3VL-30B-A3B-Instruct-Q8_0.gguf"
+            )!,
+            additionalParts: [
+              URL(
+                string:
+                  "https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Instruct-GGUF/resolve/main/mmproj-Qwen3VL-30B-A3B-Instruct-Q8_0.gguf"
+              )!
+            ],
+            serverArgs: []
+          ),
+          quantizedBuilds: [
+            ModelBuild(
+              id: "qwen3-vl-instruct-30b",
+              quantization: "Q4_K_M",
+              isFullPrecision: false,
+              fileSize: 18_556_687_168,
+              ctxBytesPer1kTokens: 100_663_296,
+              downloadUrl: URL(
+                string:
+                  "https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Instruct-GGUF/resolve/main/Qwen3VL-30B-A3B-Instruct-Q4_K_M.gguf"
+              )!,
+              additionalParts: [
+                URL(
+                  string:
+                    "https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Instruct-GGUF/resolve/main/mmproj-Qwen3VL-30B-A3B-Instruct-Q8_0.gguf"
+                )!
+              ],
+              serverArgs: []
+            )
+          ]
+        ),
+        Model(
+          label: "8B",
+          releaseDate: Calendar.current.date(from: DateComponents(year: 2025, month: 10, day: 31))!,
+          ctxWindow: 262_144,
+          serverArgs: nil,
+          build: ModelBuild(
+            id: "qwen3-vl-instruct-8b-q8",
+            quantization: "Q8_0",
+            isFullPrecision: true,
+            fileSize: 8_709_519_456,
+            ctxBytesPer1kTokens: 150_994_944,
+            downloadUrl: URL(
+              string:
+                "https://huggingface.co/Qwen/Qwen3-VL-8B-Instruct-GGUF/resolve/main/Qwen3VL-8B-Instruct-Q8_0.gguf"
+            )!,
+            additionalParts: [
+              URL(
+                string:
+                  "https://huggingface.co/Qwen/Qwen3-VL-8B-Instruct-GGUF/resolve/main/mmproj-Qwen3VL-8B-Instruct-Q8_0.gguf"
+              )!
+            ],
+            serverArgs: []
+          ),
+          quantizedBuilds: [
+            ModelBuild(
+              id: "qwen3-vl-instruct-8b",
+              quantization: "Q4_K_M",
+              isFullPrecision: false,
+              fileSize: 5_027_784_800,
+              ctxBytesPer1kTokens: 150_994_944,
+              downloadUrl: URL(
+                string:
+                  "https://huggingface.co/Qwen/Qwen3-VL-8B-Instruct-GGUF/resolve/main/Qwen3VL-8B-Instruct-Q4_K_M.gguf"
+              )!,
+              additionalParts: [
+                URL(
+                  string:
+                    "https://huggingface.co/Qwen/Qwen3-VL-8B-Instruct-GGUF/resolve/main/mmproj-Qwen3VL-8B-Instruct-Q8_0.gguf"
+                )!
+              ],
+              serverArgs: []
+            )
+          ]
+        ),
+        Model(
+          label: "4B",
+          releaseDate: Calendar.current.date(from: DateComponents(year: 2025, month: 10, day: 31))!,
+          ctxWindow: 262_144,
+          serverArgs: nil,
+          build: ModelBuild(
+            id: "qwen3-vl-instruct-4b-q8",
+            quantization: "Q8_0",
+            isFullPrecision: true,
+            fileSize: 4_280_406_144,
+            ctxBytesPer1kTokens: 150_994_944,
+            downloadUrl: URL(
+              string:
+                "https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct-GGUF/resolve/main/Qwen3VL-4B-Instruct-Q8_0.gguf"
+            )!,
+            additionalParts: [
+              URL(
+                string:
+                  "https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct-GGUF/resolve/main/mmproj-Qwen3VL-4B-Instruct-Q8_0.gguf"
+              )!
+            ],
+            serverArgs: []
+          ),
+          quantizedBuilds: [
+            ModelBuild(
+              id: "qwen3-vl-instruct-4b",
+              quantization: "Q4_K_M",
+              isFullPrecision: false,
+              fileSize: 2_497_281_664,
+              ctxBytesPer1kTokens: 150_994_944,
+              downloadUrl: URL(
+                string:
+                  "https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct-GGUF/resolve/main/Qwen3VL-4B-Instruct-Q4_K_M.gguf"
+              )!,
+              additionalParts: [
+                URL(
+                  string:
+                    "https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct-GGUF/resolve/main/mmproj-Qwen3VL-4B-Instruct-Q8_0.gguf"
+                )!
+              ],
+              serverArgs: []
+            )
+          ]
+        ),
+        Model(
+          label: "2B",
+          releaseDate: Calendar.current.date(from: DateComponents(year: 2025, month: 10, day: 31))!,
+          ctxWindow: 262_144,
+          serverArgs: nil,
+          build: ModelBuild(
+            id: "qwen3-vl-instruct-2b-q8",
+            quantization: "Q8_0",
+            isFullPrecision: true,
+            fileSize: 1_834_427_424,
+            ctxBytesPer1kTokens: 117_440_512,
+            downloadUrl: URL(
+              string:
+                "https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct-GGUF/resolve/main/Qwen3VL-2B-Instruct-Q8_0.gguf"
+            )!,
+            additionalParts: [
+              URL(
+                string:
+                  "https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct-GGUF/resolve/main/mmproj-Qwen3VL-2B-Instruct-Q8_0.gguf"
+              )!
+            ],
+            serverArgs: []
+          ),
+          quantizedBuilds: [
+            ModelBuild(
+              id: "qwen3-vl-instruct-2b",
+              quantization: "Q4_K_M",
+              isFullPrecision: false,
+              fileSize: 1_107_409_952,
+              ctxBytesPer1kTokens: 117_440_512,
+              downloadUrl: URL(
+                string:
+                  "https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct-GGUF/resolve/main/Qwen3VL-2B-Instruct-Q4_K_M.gguf"
+              )!,
+              additionalParts: [
+                URL(
+                  string:
+                    "https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct-GGUF/resolve/main/mmproj-Qwen3VL-2B-Instruct-Q8_0.gguf"
+                )!
+              ],
+              serverArgs: []
+            )
+          ]
+        ),
+      ]
+    ),
+    // MARK: Qwen3-VL Thinking
+    ModelFamily(
+      name: "Qwen3-VL Thinking",
+      series: "qwen",
+      blurb:
+        "Vision-language models with deliberate reasoning capabilities for complex visual analysis and planning tasks.",
+      color: "#8b5cf6",
+      serverArgs: nil,
+      overheadMultiplier: 1.1,
+      models: [
+        Model(
+          label: "32B",
+          releaseDate: Calendar.current.date(from: DateComponents(year: 2025, month: 10, day: 31))!,
+          ctxWindow: 262_144,
+          serverArgs: nil,
+          build: ModelBuild(
+            id: "qwen3-vl-thinking-32b-q8",
+            quantization: "Q8_0",
+            isFullPrecision: true,
+            fileSize: 34_817_720_256,
+            ctxBytesPer1kTokens: 268_435_456,
+            downloadUrl: URL(
+              string:
+                "https://huggingface.co/Qwen/Qwen3-VL-32B-Thinking-GGUF/resolve/main/Qwen3VL-32B-Thinking-Q8_0.gguf"
+            )!,
+            additionalParts: [
+              URL(
+                string:
+                  "https://huggingface.co/Qwen/Qwen3-VL-32B-Thinking-GGUF/resolve/main/mmproj-Qwen3VL-32B-Thinking-Q8_0.gguf"
+              )!
+            ],
+            serverArgs: []
+          ),
+          quantizedBuilds: [
+            ModelBuild(
+              id: "qwen3-vl-thinking-32b",
+              quantization: "Q4_K_M",
+              isFullPrecision: false,
+              fileSize: 19_762_150_336,
+              ctxBytesPer1kTokens: 268_435_456,
+              downloadUrl: URL(
+                string:
+                  "https://huggingface.co/Qwen/Qwen3-VL-32B-Thinking-GGUF/resolve/main/Qwen3VL-32B-Thinking-Q4_K_M.gguf"
+              )!,
+              additionalParts: [
+                URL(
+                  string:
+                    "https://huggingface.co/Qwen/Qwen3-VL-32B-Thinking-GGUF/resolve/main/mmproj-Qwen3VL-32B-Thinking-Q8_0.gguf"
+                )!
+              ],
+              serverArgs: []
+            )
+          ]
+        ),
+        Model(
+          label: "30B",
+          releaseDate: Calendar.current.date(from: DateComponents(year: 2025, month: 10, day: 31))!,
+          ctxWindow: 262_144,
+          serverArgs: nil,
+          build: ModelBuild(
+            id: "qwen3-vl-thinking-30b-q8",
+            quantization: "Q8_0",
+            isFullPrecision: true,
+            fileSize: 32_483_933_024,
+            ctxBytesPer1kTokens: 100_663_296,
+            downloadUrl: URL(
+              string:
+                "https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Thinking-GGUF/resolve/main/Qwen3VL-30B-A3B-Thinking-Q8_0.gguf"
+            )!,
+            additionalParts: [
+              URL(
+                string:
+                  "https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Thinking-GGUF/resolve/main/mmproj-Qwen3VL-30B-A3B-Thinking-Q8_0.gguf"
+              )!
+            ],
+            serverArgs: []
+          ),
+          quantizedBuilds: [
+            ModelBuild(
+              id: "qwen3-vl-thinking-30b",
+              quantization: "Q4_K_M",
+              isFullPrecision: false,
+              fileSize: 18_556_687_200,
+              ctxBytesPer1kTokens: 100_663_296,
+              downloadUrl: URL(
+                string:
+                  "https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Thinking-GGUF/resolve/main/Qwen3VL-30B-A3B-Thinking-Q4_K_M.gguf"
+              )!,
+              additionalParts: [
+                URL(
+                  string:
+                    "https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Thinking-GGUF/resolve/main/mmproj-Qwen3VL-30B-A3B-Thinking-Q8_0.gguf"
+                )!
+              ],
+              serverArgs: []
+            )
+          ]
+        ),
+        Model(
+          label: "8B",
+          releaseDate: Calendar.current.date(from: DateComponents(year: 2025, month: 10, day: 31))!,
+          ctxWindow: 262_144,
+          serverArgs: nil,
+          build: ModelBuild(
+            id: "qwen3-vl-thinking-8b-q8",
+            quantization: "Q8_0",
+            isFullPrecision: true,
+            fileSize: 8_709_519_360,
+            ctxBytesPer1kTokens: 150_994_944,
+            downloadUrl: URL(
+              string:
+                "https://huggingface.co/Qwen/Qwen3-VL-8B-Thinking-GGUF/resolve/main/Qwen3VL-8B-Thinking-Q8_0.gguf"
+            )!,
+            additionalParts: [
+              URL(
+                string:
+                  "https://huggingface.co/Qwen/Qwen3-VL-8B-Thinking-GGUF/resolve/main/mmproj-Qwen3VL-8B-Thinking-Q8_0.gguf"
+              )!
+            ],
+            serverArgs: []
+          ),
+          quantizedBuilds: [
+            ModelBuild(
+              id: "qwen3-vl-thinking-8b",
+              quantization: "Q4_K_M",
+              isFullPrecision: false,
+              fileSize: 5_027_784_704,
+              ctxBytesPer1kTokens: 150_994_944,
+              downloadUrl: URL(
+                string:
+                  "https://huggingface.co/Qwen/Qwen3-VL-8B-Thinking-GGUF/resolve/main/Qwen3VL-8B-Thinking-Q4_K_M.gguf"
+              )!,
+              additionalParts: [
+                URL(
+                  string:
+                    "https://huggingface.co/Qwen/Qwen3-VL-8B-Thinking-GGUF/resolve/main/mmproj-Qwen3VL-8B-Thinking-Q8_0.gguf"
+                )!
+              ],
+              serverArgs: []
+            )
+          ]
+        ),
+        Model(
+          label: "4B",
+          releaseDate: Calendar.current.date(from: DateComponents(year: 2025, month: 10, day: 31))!,
+          ctxWindow: 262_144,
+          serverArgs: nil,
+          build: ModelBuild(
+            id: "qwen3-vl-thinking-4b-q8",
+            quantization: "Q8_0",
+            isFullPrecision: true,
+            fileSize: 4_280_405_952,
+            ctxBytesPer1kTokens: 150_994_944,
+            downloadUrl: URL(
+              string:
+                "https://huggingface.co/Qwen/Qwen3-VL-4B-Thinking-GGUF/resolve/main/Qwen3VL-4B-Thinking-Q8_0.gguf"
+            )!,
+            additionalParts: [
+              URL(
+                string:
+                  "https://huggingface.co/Qwen/Qwen3-VL-4B-Thinking-GGUF/resolve/main/mmproj-Qwen3VL-4B-Thinking-Q8_0.gguf"
+              )!
+            ],
+            serverArgs: []
+          ),
+          quantizedBuilds: [
+            ModelBuild(
+              id: "qwen3-vl-thinking-4b",
+              quantization: "Q4_K_M",
+              isFullPrecision: false,
+              fileSize: 2_497_281_472,
+              ctxBytesPer1kTokens: 150_994_944,
+              downloadUrl: URL(
+                string:
+                  "https://huggingface.co/Qwen/Qwen3-VL-4B-Thinking-GGUF/resolve/main/Qwen3VL-4B-Thinking-Q4_K_M.gguf"
+              )!,
+              additionalParts: [
+                URL(
+                  string:
+                    "https://huggingface.co/Qwen/Qwen3-VL-4B-Thinking-GGUF/resolve/main/mmproj-Qwen3VL-4B-Thinking-Q8_0.gguf"
+                )!
+              ],
+              serverArgs: []
+            )
+          ]
+        ),
+        Model(
+          label: "2B",
+          releaseDate: Calendar.current.date(from: DateComponents(year: 2025, month: 10, day: 31))!,
+          ctxWindow: 262_144,
+          serverArgs: nil,
+          build: ModelBuild(
+            id: "qwen3-vl-thinking-2b-q8",
+            quantization: "Q8_0",
+            isFullPrecision: true,
+            fileSize: 1_834_427_360,
+            ctxBytesPer1kTokens: 117_440_512,
+            downloadUrl: URL(
+              string:
+                "https://huggingface.co/Qwen/Qwen3-VL-2B-Thinking-GGUF/resolve/main/Qwen3VL-2B-Thinking-Q8_0.gguf"
+            )!,
+            additionalParts: [
+              URL(
+                string:
+                  "https://huggingface.co/Qwen/Qwen3-VL-2B-Thinking-GGUF/resolve/main/mmproj-Qwen3VL-2B-Thinking-Q8_0.gguf"
+              )!
+            ],
+            serverArgs: []
+          ),
+          quantizedBuilds: [
+            ModelBuild(
+              id: "qwen3-vl-thinking-2b",
+              quantization: "Q4_K_M",
+              isFullPrecision: false,
+              fileSize: 1_107_409_888,
+              ctxBytesPer1kTokens: 117_440_512,
+              downloadUrl: URL(
+                string:
+                  "https://huggingface.co/Qwen/Qwen3-VL-2B-Thinking-GGUF/resolve/main/Qwen3VL-2B-Thinking-Q4_K_M.gguf"
+              )!,
+              additionalParts: [
+                URL(
+                  string:
+                    "https://huggingface.co/Qwen/Qwen3-VL-2B-Thinking-GGUF/resolve/main/mmproj-Qwen3VL-2B-Thinking-Q8_0.gguf"
+                )!
+              ],
+              serverArgs: []
+            )
+          ]
+        ),
+      ]
+    ),
   ]
 }

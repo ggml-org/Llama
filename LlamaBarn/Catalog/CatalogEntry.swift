@@ -111,7 +111,7 @@ struct CatalogEntry: Identifiable, Codable {
     Self.modelStorageDirectory.appendingPathComponent(downloadUrl.lastPathComponent).path
   }
 
-  /// All local file paths this model requires (main file + shards if any)
+  /// All local file paths this model requires (main file + additional parts like shards or mmproj files)
   var allLocalModelPaths: [String] {
     let baseDir = URL(fileURLWithPath: modelFilePath).deletingLastPathComponent()
     var paths = [modelFilePath]
@@ -122,8 +122,6 @@ struct CatalogEntry: Identifiable, Codable {
     }
     return paths
   }
-
-  // Removed: visionFile and related local path; multimodal files are not tracked.
 
   /// The directory where AI models are stored, creating it if necessary
   static var modelStorageDirectory: URL {
