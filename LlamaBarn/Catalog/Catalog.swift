@@ -108,7 +108,6 @@ enum Catalog {
   struct ModelFamily {
     let name: String  // e.g. "Qwen3 2507"
     let series: String  // e.g. "qwen"
-    let blurb: String  // short one- or two-sentence description
     let color: String  // hex color for the model family (e.g. "#8b5cf6")
     let serverArgs: [String]?  // optional defaults for all models/builds
     let overheadMultiplier: Double  // overhead multiplier for file size
@@ -117,7 +116,6 @@ enum Catalog {
     init(
       name: String,
       series: String,
-      blurb: String,
       color: String,
       serverArgs: [String]? = nil,
       overheadMultiplier: Double = 1.05,
@@ -125,7 +123,6 @@ enum Catalog {
     ) {
       self.name = name
       self.series = series
-      self.blurb = blurb
       self.color = color
       self.serverArgs = serverArgs
       self.overheadMultiplier = overheadMultiplier
@@ -377,8 +374,6 @@ enum CatalogFamilies {
     ModelFamily(
       name: "GPT-OSS",
       series: "gpt",
-      blurb:
-        "An open, GPT-style instruction-tuned family aimed at general-purpose assistance on local hardware.",
       color: "#14b8a6",
       // Sliding-window family: use max context by default
       serverArgs: ["-c", "0"],
@@ -440,8 +435,6 @@ enum CatalogFamilies {
     ModelFamily(
       name: "Gemma 3",
       series: "gemma",
-      blurb:
-        "Gemma 3 models trained with quantization‑aware training (QAT) for better quality at low‑bit quantizations and smaller footprints.",
       color: "#3b82f6",
       serverArgs: nil,
       overheadMultiplier: 1.3,
@@ -557,8 +550,6 @@ enum CatalogFamilies {
     ModelFamily(
       name: "Gemma 3n",
       series: "gemma",
-      blurb:
-        "Google's efficient Gemma 3n line tuned for on‑device performance with solid instruction following at small scales.",
       color: "#3b82f6",
       // Sliding-window family: force max context and keep Gemma-specific overrides
       serverArgs: ["-c", "0", "-ot", "per_layer_token_embd.weight=CPU", "--no-mmap"],
@@ -639,8 +630,6 @@ enum CatalogFamilies {
     ModelFamily(
       name: "Qwen3 Coder",
       series: "qwen",
-      blurb:
-        "Qwen3 optimized for software tasks: strong code completion, instruction following, and long-context coding.",
       color: "#8b5cf6",
       serverArgs: nil,
       overheadMultiplier: 1.1,
@@ -686,8 +675,6 @@ enum CatalogFamilies {
     ModelFamily(
       name: "Qwen3 2507",
       series: "qwen",
-      blurb:
-        "Alibaba's latest Qwen3 refresh focused on instruction following, multilingual coverage, and long contexts across sizes.",
       color: "#8b5cf6",
       serverArgs: nil,
       overheadMultiplier: 1.1,
@@ -768,8 +755,6 @@ enum CatalogFamilies {
     ModelFamily(
       name: "Qwen3 2507 Thinking",
       series: "qwen",
-      blurb:
-        "Qwen3 models biased toward deliberate reasoning and step‑by‑step answers; useful for analysis and planning tasks.",
       color: "#8b5cf6",
       serverArgs: nil,
       overheadMultiplier: 1.1,
@@ -850,8 +835,6 @@ enum CatalogFamilies {
     ModelFamily(
       name: "Qwen3-VL",
       series: "qwen",
-      blurb:
-        "Vision-language models for image and text understanding with native 256K context support.",
       color: "#8b5cf6",
       serverArgs: nil,
       overheadMultiplier: 1.1,
@@ -1052,8 +1035,6 @@ enum CatalogFamilies {
     ModelFamily(
       name: "Qwen3-VL Thinking",
       series: "qwen",
-      blurb:
-        "Vision-language models with deliberate reasoning capabilities for complex visual analysis and planning tasks.",
       color: "#8b5cf6",
       serverArgs: nil,
       overheadMultiplier: 1.1,
