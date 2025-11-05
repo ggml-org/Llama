@@ -43,7 +43,7 @@ enum Catalog {
     }
   }
 
-  struct Model {
+  struct ModelSize {
     let label: String  // e.g. "4B", "30B"
     let parameterCount: Int64  // Total model parameters (from HF API)
     let releaseDate: Date
@@ -73,7 +73,7 @@ enum Catalog {
       self.quantizedBuilds = quantizedBuilds
     }
 
-    /// All builds for this model (full precision + quantized variants)
+    /// All builds for this model size (full precision + quantized variants)
     var allBuilds: [ModelBuild] {
       [build] + quantizedBuilds
     }
@@ -84,20 +84,20 @@ enum Catalog {
     let series: String  // e.g. "qwen"
     let serverArgs: [String]?  // optional defaults for all models/builds
     let overheadMultiplier: Double  // overhead multiplier for file size
-    let models: [Model]
+    let sizes: [ModelSize]
 
     init(
       name: String,
       series: String,
       serverArgs: [String]? = nil,
       overheadMultiplier: Double = 1.05,
-      models: [Model]
+      sizes: [ModelSize]
     ) {
       self.name = name
       self.series = series
       self.serverArgs = serverArgs
       self.overheadMultiplier = overheadMultiplier
-      self.models = models
+      self.sizes = sizes
     }
 
     var iconName: String {
@@ -113,7 +113,7 @@ enum Catalog {
   /// Returns all catalog entries by traversing the hierarchy
   static func allModels() -> [CatalogEntry] {
     families.flatMap { family in
-      family.models.flatMap { model in
+      family.sizes.flatMap { model in
         model.allBuilds.map { build in entry(family: family, model: model, build: build) }
       }
     }
@@ -122,7 +122,7 @@ enum Catalog {
   /// Finds a catalog entry by ID by traversing the hierarchy
   static func findModel(id: String) -> CatalogEntry? {
     for family in families {
-      for model in family.models {
+      for model in family.sizes {
         for build in model.allBuilds {
           if build.id == id {
             return entry(family: family, model: model, build: build)
@@ -134,7 +134,9 @@ enum Catalog {
   }
 
   /// Builds a CatalogEntry from hierarchy components
-  private static func entry(family: ModelFamily, model: Model, build: ModelBuild) -> CatalogEntry {
+  private static func entry(family: ModelFamily, model: ModelSize, build: ModelBuild)
+    -> CatalogEntry
+  {
     let effectiveArgs =
       (family.serverArgs ?? []) + (model.serverArgs ?? []) + (build.serverArgs ?? [])
 
@@ -223,8 +225,8 @@ enum Catalog {
       series: "gpt",
       // Sliding-window family: use max context by default
       serverArgs: ["-c", "0"],
-      models: [
-        Model(
+      sizes: [
+        ModelSize(
           label: "20B",
           parameterCount: 20_000_000_000,
           releaseDate: date(2025, 8, 2),
@@ -240,7 +242,7 @@ enum Catalog {
             )!
           )
         ),
-        Model(
+        ModelSize(
           label: "120B",
           parameterCount: 120_000_000_000,
           releaseDate: date(2025, 8, 2),
@@ -274,8 +276,8 @@ enum Catalog {
       series: "gemma",
       serverArgs: nil,
       overheadMultiplier: 1.3,
-      models: [
-        Model(
+      sizes: [
+        ModelSize(
           label: "27B",
           parameterCount: 27_432_406_640,
           releaseDate: date(2025, 4, 24),
@@ -291,7 +293,7 @@ enum Catalog {
             )!
           )
         ),
-        Model(
+        ModelSize(
           label: "12B",
           parameterCount: 12_187_325_040,
           releaseDate: date(2025, 4, 21),
@@ -307,7 +309,7 @@ enum Catalog {
             )!
           )
         ),
-        Model(
+        ModelSize(
           label: "4B",
           parameterCount: 4_300_079_472,
           releaseDate: date(2025, 4, 22),
@@ -323,7 +325,7 @@ enum Catalog {
             )!
           )
         ),
-        Model(
+        ModelSize(
           label: "1B",
           parameterCount: 999_885_952,
           releaseDate: date(2025, 8, 27),
@@ -339,7 +341,7 @@ enum Catalog {
             )!
           )
         ),
-        Model(
+        ModelSize(
           label: "270M",
           parameterCount: 268_098_176,
           releaseDate: date(2025, 8, 14),
@@ -363,8 +365,8 @@ enum Catalog {
       series: "gemma",
       // Sliding-window family: force max context and keep Gemma-specific overrides
       serverArgs: ["-c", "0", "-ot", "per_layer_token_embd.weight=CPU", "--no-mmap"],
-      models: [
-        Model(
+      sizes: [
+        ModelSize(
           label: "E4B",
           parameterCount: 7_849_978_192,
           releaseDate: date(2024, 1, 15),
@@ -392,7 +394,7 @@ enum Catalog {
             )
           ]
         ),
-        Model(
+        ModelSize(
           label: "E2B",
           parameterCount: 5_439_438_272,
           releaseDate: date(2024, 1, 1),
@@ -428,8 +430,8 @@ enum Catalog {
       series: "qwen",
       serverArgs: nil,
       overheadMultiplier: 1.1,
-      models: [
-        Model(
+      sizes: [
+        ModelSize(
           label: "30B",
           parameterCount: 30_532_122_624,
           releaseDate: date(2025, 7, 31),
@@ -465,8 +467,8 @@ enum Catalog {
       series: "qwen",
       serverArgs: nil,
       overheadMultiplier: 1.1,
-      models: [
-        Model(
+      sizes: [
+        ModelSize(
           label: "30B",
           parameterCount: 30_532_122_624,
           releaseDate: date(2025, 7, 1),
@@ -494,7 +496,7 @@ enum Catalog {
             )
           ]
         ),
-        Model(
+        ModelSize(
           label: "4B",
           parameterCount: 4_022_468_096,
           releaseDate: date(2025, 7, 1),
@@ -530,8 +532,8 @@ enum Catalog {
       series: "qwen",
       serverArgs: nil,
       overheadMultiplier: 1.1,
-      models: [
-        Model(
+      sizes: [
+        ModelSize(
           label: "30B",
           parameterCount: 30_532_122_624,
           releaseDate: date(2025, 7, 1),
@@ -559,7 +561,7 @@ enum Catalog {
             )
           ]
         ),
-        Model(
+        ModelSize(
           label: "4B",
           parameterCount: 4_022_468_096,
           releaseDate: date(2025, 7, 1),
@@ -595,8 +597,8 @@ enum Catalog {
       series: "qwen",
       serverArgs: nil,
       overheadMultiplier: 1.1,
-      models: [
-        Model(
+      sizes: [
+        ModelSize(
           label: "32B",
           parameterCount: 33_357_390_064,
           releaseDate: date(2025, 10, 31),
@@ -628,7 +630,7 @@ enum Catalog {
             )
           ]
         ),
-        Model(
+        ModelSize(
           label: "30B",
           parameterCount: 31_070_754_032,
           releaseDate: date(2025, 10, 31),
@@ -660,7 +662,7 @@ enum Catalog {
             )
           ]
         ),
-        Model(
+        ModelSize(
           label: "8B",
           parameterCount: 8_767_123_696,
           releaseDate: date(2025, 10, 31),
@@ -692,7 +694,7 @@ enum Catalog {
             )
           ]
         ),
-        Model(
+        ModelSize(
           label: "4B",
           parameterCount: 4_437_815_808,
           releaseDate: date(2025, 10, 31),
@@ -724,7 +726,7 @@ enum Catalog {
             )
           ]
         ),
-        Model(
+        ModelSize(
           label: "2B",
           parameterCount: 2_127_532_032,
           releaseDate: date(2025, 10, 31),
@@ -764,8 +766,8 @@ enum Catalog {
       series: "qwen",
       serverArgs: nil,
       overheadMultiplier: 1.1,
-      models: [
-        Model(
+      sizes: [
+        ModelSize(
           label: "32B",
           parameterCount: 33_357_390_064,
           releaseDate: date(2025, 10, 31),
@@ -797,7 +799,7 @@ enum Catalog {
             )
           ]
         ),
-        Model(
+        ModelSize(
           label: "30B",
           parameterCount: 31_070_754_032,
           releaseDate: date(2025, 10, 31),
@@ -829,7 +831,7 @@ enum Catalog {
             )
           ]
         ),
-        Model(
+        ModelSize(
           label: "8B",
           parameterCount: 8_767_123_696,
           releaseDate: date(2025, 10, 31),
@@ -861,7 +863,7 @@ enum Catalog {
             )
           ]
         ),
-        Model(
+        ModelSize(
           label: "4B",
           parameterCount: 4_437_815_808,
           releaseDate: date(2025, 10, 31),
@@ -893,7 +895,7 @@ enum Catalog {
             )
           ]
         ),
-        Model(
+        ModelSize(
           label: "2B",
           parameterCount: 2_127_532_032,
           releaseDate: date(2025, 10, 31),
