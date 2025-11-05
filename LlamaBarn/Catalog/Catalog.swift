@@ -601,38 +601,6 @@ enum Catalog {
       overheadMultiplier: 1.1,
       sizes: [
         ModelSize(
-          name: "32B",
-          parameterCount: 33_357_390_064,
-          releaseDate: date(2025, 10, 31),
-          ctxWindow: 262_144,
-          mmproj: URL(
-            string:
-              "https://huggingface.co/Qwen/Qwen3-VL-32B-Instruct-GGUF/resolve/main/mmproj-Qwen3VL-32B-Instruct-Q8_0.gguf"
-          )!,
-          build: ModelBuild(
-            id: "qwen3-vl-instruct-32b-q8",
-            quantization: "Q8_0",
-            fileSize: 34_817_720_352,
-            ctxBytesPer1kTokens: 268_435_456,
-            downloadUrl: URL(
-              string:
-                "https://huggingface.co/Qwen/Qwen3-VL-32B-Instruct-GGUF/resolve/main/Qwen3VL-32B-Instruct-Q8_0.gguf"
-            )!
-          ),
-          quantizedBuilds: [
-            ModelBuild(
-              id: "qwen3-vl-instruct-32b",
-              quantization: "Q4_K_M",
-              fileSize: 19_762_150_432,
-              ctxBytesPer1kTokens: 268_435_456,
-              downloadUrl: URL(
-                string:
-                  "https://huggingface.co/Qwen/Qwen3-VL-32B-Instruct-GGUF/resolve/main/Qwen3VL-32B-Instruct-Q4_K_M.gguf"
-              )!
-            )
-          ]
-        ),
-        ModelSize(
           name: "30B-A3B",
           parameterCount: 31_070_754_032,
           releaseDate: date(2025, 10, 31),
@@ -769,38 +737,6 @@ enum Catalog {
       serverArgs: nil,
       overheadMultiplier: 1.1,
       sizes: [
-        ModelSize(
-          name: "32B",
-          parameterCount: 33_357_390_064,
-          releaseDate: date(2025, 10, 31),
-          ctxWindow: 262_144,
-          mmproj: URL(
-            string:
-              "https://huggingface.co/Qwen/Qwen3-VL-32B-Thinking-GGUF/resolve/main/mmproj-Qwen3VL-32B-Thinking-Q8_0.gguf"
-          )!,
-          build: ModelBuild(
-            id: "qwen3-vl-thinking-32b-q8",
-            quantization: "Q8_0",
-            fileSize: 34_817_720_256,
-            ctxBytesPer1kTokens: 268_435_456,
-            downloadUrl: URL(
-              string:
-                "https://huggingface.co/Qwen/Qwen3-VL-32B-Thinking-GGUF/resolve/main/Qwen3VL-32B-Thinking-Q8_0.gguf"
-            )!
-          ),
-          quantizedBuilds: [
-            ModelBuild(
-              id: "qwen3-vl-thinking-32b",
-              quantization: "Q4_K_M",
-              fileSize: 19_762_150_336,
-              ctxBytesPer1kTokens: 268_435_456,
-              downloadUrl: URL(
-                string:
-                  "https://huggingface.co/Qwen/Qwen3-VL-32B-Thinking-GGUF/resolve/main/Qwen3VL-32B-Thinking-Q4_K_M.gguf"
-              )!
-            )
-          ]
-        ),
         ModelSize(
           name: "30B-A3B",
           parameterCount: 31_070_754_032,
