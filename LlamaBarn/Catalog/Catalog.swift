@@ -374,7 +374,7 @@ enum Catalog {
 
   /// Families expressed with shared metadata to reduce duplication.
   private static let familiesUnsorted: [ModelFamily] = [
-    // MARK: GPT-OSS (migrated)
+    // MARK: GPT-OSS
     ModelFamily(
       name: "GPT-OSS",
       series: "gpt",
@@ -425,7 +425,7 @@ enum Catalog {
         ),
       ]
     ),
-    // MARK: Gemma 3 (QAT-trained) (migrated)
+    // MARK: Gemma 3 (QAT-trained)
     ModelFamily(
       name: "Gemma 3",
       series: "gemma",
@@ -514,7 +514,7 @@ enum Catalog {
         ),
       ]
     ),
-    // MARK: Gemma 3n (migrated)
+    // MARK: Gemma 3n
     ModelFamily(
       name: "Gemma 3n",
       series: "gemma",
@@ -581,7 +581,7 @@ enum Catalog {
         ),
       ]
     ),
-    // MARK: Qwen3 Coder (migrated)
+    // MARK: Qwen3 Coder
     ModelFamily(
       name: "Qwen3 Coder",
       series: "qwen",
@@ -619,7 +619,7 @@ enum Catalog {
         )
       ]
     ),
-    // MARK: Qwen3 2507 (migrated to hierarchical form)
+    // MARK: Qwen3 2507
     ModelFamily(
       name: "Qwen3 2507",
       series: "qwen",
@@ -686,7 +686,7 @@ enum Catalog {
         ),
       ]
     ),
-    // MARK: Qwen3 2507 Thinking (migrated)
+    // MARK: Qwen3 2507 Thinking
     ModelFamily(
       name: "Qwen3 2507 Thinking",
       series: "qwen",
