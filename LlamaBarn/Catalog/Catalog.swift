@@ -113,8 +113,8 @@ enum Catalog {
   /// Returns all catalog entries by traversing the hierarchy
   static func allModels() -> [CatalogEntry] {
     families.flatMap { family in
-      family.sizes.flatMap { model in
-        model.allBuilds.map { build in entry(family: family, model: model, build: build) }
+      family.sizes.flatMap { size in
+        size.allBuilds.map { build in entry(family: family, size: size, build: build) }
       }
     }
   }
@@ -122,10 +122,10 @@ enum Catalog {
   /// Finds a catalog entry by ID by traversing the hierarchy
   static func findModel(id: String) -> CatalogEntry? {
     for family in families {
-      for model in family.sizes {
-        for build in model.allBuilds {
+      for size in family.sizes {
+        for build in size.allBuilds {
           if build.id == id {
-            return entry(family: family, model: model, build: build)
+            return entry(family: family, size: size, build: build)
           }
         }
       }
@@ -134,16 +134,16 @@ enum Catalog {
   }
 
   /// Builds a CatalogEntry from hierarchy components
-  private static func entry(family: ModelFamily, model: ModelSize, build: ModelBuild)
+  private static func entry(family: ModelFamily, size: ModelSize, build: ModelBuild)
     -> CatalogEntry
   {
     let effectiveArgs =
-      (family.serverArgs ?? []) + (model.serverArgs ?? []) + (build.serverArgs ?? [])
+      (family.serverArgs ?? []) + (size.serverArgs ?? []) + (build.serverArgs ?? [])
 
-    // Merge model's mmproj (if present) with build's additionalParts (for multi-part splits)
+    // Merge size's mmproj (if present) with build's additionalParts (for multi-part splits)
     let effectiveParts: [URL]? = {
       var parts: [URL] = []
-      if let mmproj = model.mmproj {
+      if let mmproj = size.mmproj {
         parts.append(mmproj)
       }
       if let buildParts = build.additionalParts {
@@ -152,15 +152,15 @@ enum Catalog {
       return parts.isEmpty ? nil : parts
     }()
 
-    let isFullPrecision = build.id == model.build.id
+    let isFullPrecision = build.id == size.build.id
 
     return CatalogEntry(
       id: build.id,
       family: family.name,
-      parameterCount: model.parameterCount,
-      size: model.name,
-      releaseDate: model.releaseDate,
-      ctxWindow: model.ctxWindow,
+      parameterCount: size.parameterCount,
+      size: size.name,
+      releaseDate: size.releaseDate,
+      ctxWindow: size.ctxWindow,
       fileSize: build.fileSize,
       ctxBytesPer1kTokens: build.ctxBytesPer1kTokens,
       overheadMultiplier: family.overheadMultiplier,
