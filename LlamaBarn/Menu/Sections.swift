@@ -188,10 +188,15 @@ final class CatalogSection {
 
     // Initialize families as collapsed when menu first opens.
     // On subsequent rebuilds during the same session (e.g., toggling settings),
-    // preserve the collapse state.
+    // preserve the collapse state and collapse any newly appearing families.
     let families = Set(availableModels.map { $0.family })
     if collapsedFamilies.isEmpty && knownFamilies.isEmpty {
       collapsedFamilies = families
+    } else {
+      // Add newly appearing families to collapsed state
+      let newFamilies = families.subtracting(knownFamilies)
+      collapsedFamilies.formUnion(newFamilies)
+      collapsedFamilies.formIntersection(families)  // Remove families no longer in catalog
     }
     knownFamilies = families
 
@@ -268,13 +273,6 @@ final class CatalogSection {
     catalogViews.removeAll()
 
     let sortedModels = models.sorted(by: CatalogEntry.displayOrder(_:_:))
-
-    // Add only newly appearing families to collapsed state
-    let currentFamilies = Set(sortedModels.map { $0.family })
-    let newFamilies = currentFamilies.subtracting(knownFamilies)
-    collapsedFamilies.formUnion(newFamilies)
-    collapsedFamilies.formIntersection(currentFamilies)  // Remove families no longer in catalog
-    knownFamilies = currentFamilies
 
     // Group models by family to collect unique sizes
     var familySizes: [String: [String]] = [:]
