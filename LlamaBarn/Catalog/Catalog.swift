@@ -44,7 +44,7 @@ enum Catalog {
   }
 
   struct ModelSize {
-    let label: String  // e.g. "4B", "30B"
+    let name: String  // e.g. "4B", "30B"
     let parameterCount: Int64  // Total model parameters (from HF API)
     let releaseDate: Date
     let ctxWindow: Int
@@ -54,7 +54,7 @@ enum Catalog {
     let quantizedBuilds: [ModelBuild]
 
     init(
-      label: String,
+      name: String,
       parameterCount: Int64,
       releaseDate: Date,
       ctxWindow: Int,
@@ -63,7 +63,7 @@ enum Catalog {
       build: ModelBuild,
       quantizedBuilds: [ModelBuild] = []
     ) {
-      self.label = label
+      self.name = name
       self.parameterCount = parameterCount
       self.releaseDate = releaseDate
       self.ctxWindow = ctxWindow
@@ -158,7 +158,7 @@ enum Catalog {
       id: build.id,
       family: family.name,
       parameterCount: model.parameterCount,
-      size: model.label,
+      size: model.name,
       releaseDate: model.releaseDate,
       ctxWindow: model.ctxWindow,
       fileSize: build.fileSize,
@@ -227,7 +227,7 @@ enum Catalog {
       serverArgs: ["-c", "0"],
       sizes: [
         ModelSize(
-          label: "20B",
+          name: "20B",
           parameterCount: 20_000_000_000,
           releaseDate: date(2025, 8, 2),
           ctxWindow: 131_072,
@@ -243,7 +243,7 @@ enum Catalog {
           )
         ),
         ModelSize(
-          label: "120B",
+          name: "120B",
           parameterCount: 120_000_000_000,
           releaseDate: date(2025, 8, 2),
           ctxWindow: 131_072,
@@ -278,7 +278,7 @@ enum Catalog {
       overheadMultiplier: 1.3,
       sizes: [
         ModelSize(
-          label: "27B",
+          name: "27B",
           parameterCount: 27_432_406_640,
           releaseDate: date(2025, 4, 24),
           ctxWindow: 131_072,
@@ -294,7 +294,7 @@ enum Catalog {
           )
         ),
         ModelSize(
-          label: "12B",
+          name: "12B",
           parameterCount: 12_187_325_040,
           releaseDate: date(2025, 4, 21),
           ctxWindow: 131_072,
@@ -310,7 +310,7 @@ enum Catalog {
           )
         ),
         ModelSize(
-          label: "4B",
+          name: "4B",
           parameterCount: 4_300_079_472,
           releaseDate: date(2025, 4, 22),
           ctxWindow: 131_072,
@@ -326,7 +326,7 @@ enum Catalog {
           )
         ),
         ModelSize(
-          label: "1B",
+          name: "1B",
           parameterCount: 999_885_952,
           releaseDate: date(2025, 8, 27),
           ctxWindow: 131_072,
@@ -342,7 +342,7 @@ enum Catalog {
           )
         ),
         ModelSize(
-          label: "270M",
+          name: "270M",
           parameterCount: 268_098_176,
           releaseDate: date(2025, 8, 14),
           ctxWindow: 32_768,
@@ -367,7 +367,7 @@ enum Catalog {
       serverArgs: ["-c", "0", "-ot", "per_layer_token_embd.weight=CPU", "--no-mmap"],
       sizes: [
         ModelSize(
-          label: "E4B",
+          name: "E4B",
           parameterCount: 7_849_978_192,
           releaseDate: date(2024, 1, 15),
           ctxWindow: 32_768,
@@ -395,7 +395,7 @@ enum Catalog {
           ]
         ),
         ModelSize(
-          label: "E2B",
+          name: "E2B",
           parameterCount: 5_439_438_272,
           releaseDate: date(2024, 1, 1),
           ctxWindow: 32_768,
@@ -432,7 +432,7 @@ enum Catalog {
       overheadMultiplier: 1.1,
       sizes: [
         ModelSize(
-          label: "30B",
+          name: "30B",
           parameterCount: 30_532_122_624,
           releaseDate: date(2025, 7, 31),
           ctxWindow: 262_144,
@@ -469,7 +469,7 @@ enum Catalog {
       overheadMultiplier: 1.1,
       sizes: [
         ModelSize(
-          label: "30B",
+          name: "30B",
           parameterCount: 30_532_122_624,
           releaseDate: date(2025, 7, 1),
           ctxWindow: 262_144,
@@ -497,7 +497,7 @@ enum Catalog {
           ]
         ),
         ModelSize(
-          label: "4B",
+          name: "4B",
           parameterCount: 4_022_468_096,
           releaseDate: date(2025, 7, 1),
           ctxWindow: 262_144,
@@ -534,7 +534,7 @@ enum Catalog {
       overheadMultiplier: 1.1,
       sizes: [
         ModelSize(
-          label: "30B",
+          name: "30B",
           parameterCount: 30_532_122_624,
           releaseDate: date(2025, 7, 1),
           ctxWindow: 262_144,
@@ -562,7 +562,7 @@ enum Catalog {
           ]
         ),
         ModelSize(
-          label: "4B",
+          name: "4B",
           parameterCount: 4_022_468_096,
           releaseDate: date(2025, 7, 1),
           ctxWindow: 262_144,
@@ -599,7 +599,7 @@ enum Catalog {
       overheadMultiplier: 1.1,
       sizes: [
         ModelSize(
-          label: "32B",
+          name: "32B",
           parameterCount: 33_357_390_064,
           releaseDate: date(2025, 10, 31),
           ctxWindow: 262_144,
@@ -631,7 +631,7 @@ enum Catalog {
           ]
         ),
         ModelSize(
-          label: "30B",
+          name: "30B",
           parameterCount: 31_070_754_032,
           releaseDate: date(2025, 10, 31),
           ctxWindow: 262_144,
@@ -663,7 +663,7 @@ enum Catalog {
           ]
         ),
         ModelSize(
-          label: "8B",
+          name: "8B",
           parameterCount: 8_767_123_696,
           releaseDate: date(2025, 10, 31),
           ctxWindow: 262_144,
@@ -695,7 +695,7 @@ enum Catalog {
           ]
         ),
         ModelSize(
-          label: "4B",
+          name: "4B",
           parameterCount: 4_437_815_808,
           releaseDate: date(2025, 10, 31),
           ctxWindow: 262_144,
@@ -727,7 +727,7 @@ enum Catalog {
           ]
         ),
         ModelSize(
-          label: "2B",
+          name: "2B",
           parameterCount: 2_127_532_032,
           releaseDate: date(2025, 10, 31),
           ctxWindow: 262_144,
@@ -768,7 +768,7 @@ enum Catalog {
       overheadMultiplier: 1.1,
       sizes: [
         ModelSize(
-          label: "32B",
+          name: "32B",
           parameterCount: 33_357_390_064,
           releaseDate: date(2025, 10, 31),
           ctxWindow: 262_144,
@@ -800,7 +800,7 @@ enum Catalog {
           ]
         ),
         ModelSize(
-          label: "30B",
+          name: "30B",
           parameterCount: 31_070_754_032,
           releaseDate: date(2025, 10, 31),
           ctxWindow: 262_144,
@@ -832,7 +832,7 @@ enum Catalog {
           ]
         ),
         ModelSize(
-          label: "8B",
+          name: "8B",
           parameterCount: 8_767_123_696,
           releaseDate: date(2025, 10, 31),
           ctxWindow: 262_144,
@@ -864,7 +864,7 @@ enum Catalog {
           ]
         ),
         ModelSize(
-          label: "4B",
+          name: "4B",
           parameterCount: 4_437_815_808,
           releaseDate: date(2025, 10, 31),
           ctxWindow: 262_144,
@@ -896,7 +896,7 @@ enum Catalog {
           ]
         ),
         ModelSize(
-          label: "2B",
+          name: "2B",
           parameterCount: 2_127_532_032,
           releaseDate: date(2025, 10, 31),
           ctxWindow: 262_144,
