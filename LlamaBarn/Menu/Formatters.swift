@@ -13,31 +13,6 @@ enum Format {
     return gbOneDecimalString(gb)
   }
 
-  // MARK: - Date Formatting
-
-  /// Cached medium style date formatter for UI labels.
-  private static let mediumDateFormatter: DateFormatter = {
-    let df = DateFormatter()
-    df.dateStyle = .medium
-    df.timeStyle = .none
-    return df
-  }()
-
-  /// Cached month and year style date formatter for UI labels.
-  private static let monthYearFormatter: DateFormatter = {
-    let df = DateFormatter()
-    df.dateFormat = "MMM yyyy"
-    return df
-  }()
-
-  static func date(_ date: Date) -> String {
-    mediumDateFormatter.string(from: date)
-  }
-
-  static func monthYear(_ date: Date) -> String {
-    monthYearFormatter.string(from: date)
-  }
-
   // MARK: - Token Formatting (binary: 1k = 1024)
 
   /// Formats token counts using binary units (1k = 1024).
@@ -65,18 +40,6 @@ enum Format {
     return gbOneDecimalString(gb)
   }
 
-  /// Formats runtime memory usage from binary megabytes.
-  /// Shows MB when < 1 GB, otherwise GB with appropriate precision.
-  /// Uses binary units (1 GB = 1024 MB) to match Activity Monitor.
-  static func memoryRuntime(mb: Double) -> String? {
-    guard mb > 0 else { return nil }
-    if mb >= 1024 {
-      let gb = mb / 1024
-      return gb < 10 ? String(format: "%.1f GB", gb) : String(format: "%.0f GB", gb)
-    }
-    return String(format: "%.0f MB", mb)
-  }
-
   // MARK: - Quantization Formatting
 
   /// Extracts the first segment of a quantization label for compact display.
@@ -95,7 +58,7 @@ enum Format {
 
   /// Calculates download progress percentage from a Progress object.
   /// Returns 0 if totalUnitCount is 0 or invalid, otherwise percentage 0-100.
-  static func progress(_ progress: Progress) -> Int {
+  private static func progress(_ progress: Progress) -> Int {
     guard progress.totalUnitCount > 0 else { return 0 }
     let fraction = Double(progress.completedUnitCount) / Double(progress.totalUnitCount)
     return max(0, min(100, Int(fraction * 100)))
