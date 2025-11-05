@@ -8,11 +8,7 @@ enum ByteFormatters {
   /// Uses period separator (US format) for consistency with memory formatting.
   static func gbOneDecimal(_ bytes: Int64) -> String {
     let gb = Double(bytes) / 1_000_000_000.0
-    let rounded = (gb * 10).rounded() / 10
-    if rounded.truncatingRemainder(dividingBy: 1) == 0 {
-      return String(format: "%.0f GB", rounded)
-    }
-    return String(format: "%.1f GB", rounded)
+    return formatGbOneDecimal(gb)
   }
 }
 
@@ -60,11 +56,7 @@ enum MemoryFormatters {
   /// Uses binary units (1 GB = 1024 MB) to match Activity Monitor and system memory reporting.
   static func gbOneDecimal(_ mb: UInt64) -> String {
     let gb = Double(mb) / 1024.0
-    let rounded = (gb * 10).rounded() / 10
-    if rounded.truncatingRemainder(dividingBy: 1) == 0 {
-      return String(format: "%.0f GB", rounded)
-    }
-    return String(format: "%.1f GB", rounded)
+    return formatGbOneDecimal(gb)
   }
 
   /// Formats runtime memory usage from binary megabytes.
@@ -165,4 +157,14 @@ enum ModelMetadataFormatters {
         string: " \(size)", attributes: Typography.makePrimaryAttributes(color: sizeColor)))
     return result
   }
+}
+
+// MARK: - Private Helpers
+
+/// Formats a gigabyte value with one decimal place, omitting ".0" for whole numbers.
+/// Used by ByteFormatters and MemoryFormatters to avoid duplication.
+private func formatGbOneDecimal(_ gb: Double) -> String {
+  let rounded = (gb * 10).rounded() / 10
+  let format = rounded.truncatingRemainder(dividingBy: 1) == 0 ? "%.0f GB" : "%.1f GB"
+  return String(format: format, rounded)
 }
