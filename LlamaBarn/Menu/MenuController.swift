@@ -30,6 +30,7 @@ final class MenuController: NSObject, NSMenuDelegate {
   private let observer = NotificationObserver()
   private weak var currentlyHighlightedView: ItemView?
   private var preservingHighlightForFamily: String?
+  private var welcomePopover: WelcomePopover?
 
   init(modelManager: ModelManager? = nil, server: LlamaServer? = nil) {
     self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -37,6 +38,20 @@ final class MenuController: NSObject, NSMenuDelegate {
     self.server = server ?? .shared
     super.init()
     configureStatusItem()
+    showWelcomeIfNeeded()
+  }
+
+  private func showWelcomeIfNeeded() {
+    guard !UserSettings.hasSeenWelcome else { return }
+
+    // Show after a short delay to ensure the status item is visible
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+      guard let self else { return }
+      let popover = WelcomePopover()
+      popover.show(from: self.statusItem)
+      self.welcomePopover = popover
+      UserSettings.hasSeenWelcome = true
+    }
   }
 
   private func configureStatusItem() {
