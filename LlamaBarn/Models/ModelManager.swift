@@ -68,50 +68,73 @@ class ModelManager: NSObject {
     }
     downloader.cancelModelDownload(model)
 
-    do {
-      // Delete files first, before modifying state
-      for path in model.allLocalModelPaths {
-        if FileManager.default.fileExists(atPath: path) {
-          try FileManager.default.removeItem(atPath: path)
+    let paths = model.allLocalModelPaths
+
+    // Move file deletion to background queue to avoid blocking main thread
+    Task.detached { [weak self] in
+      do {
+        // Delete files first, before modifying state
+        for path in paths {
+          if FileManager.default.fileExists(atPath: path) {
+            try FileManager.default.removeItem(atPath: path)
+          }
+        }
+
+        // Only update state after successful deletion
+        await MainActor.run {
+          guard let self = self else { return }
+          self.downloadedModelIds.remove(model.id)
+          self.downloadedModels.removeAll { $0.id == model.id }
+          NotificationCenter.default.post(name: .LBModelDownloadedListDidChange, object: self)
+        }
+      } catch {
+        await MainActor.run {
+          self?.logger.error("Failed to delete model: \(error.localizedDescription)")
         }
       }
-
-      // Only update state after successful deletion
-      downloadedModelIds.remove(model.id)
-      downloadedModels.removeAll { $0.id == model.id }
-      NotificationCenter.default.post(name: .LBModelDownloadedListDidChange, object: self)
-    } catch {
-      logger.error("Failed to delete model: \(error.localizedDescription)")
     }
   }
 
   /// Scans the local models directory and updates the list of downloaded models.
   func refreshDownloadedModels() {
     let modelsDir = CatalogEntry.modelStorageDirectory
-    guard let files = try? FileManager.default.contentsOfDirectory(atPath: modelsDir.path) else {
-      self.downloadedModels = []
-      self.downloadedModelIds = []
-      NotificationCenter.default.post(name: .LBModelDownloadedListDidChange, object: self)
-      return
-    }
-    let fileSet = Set(files)
 
-    self.downloadedModels = Catalog.allModels().filter { model in
-      guard fileSet.contains(model.downloadUrl.lastPathComponent) else {
-        return false
+    // Move directory reading to background queue to avoid blocking main thread
+    Task.detached { [weak self] in
+      guard let files = try? FileManager.default.contentsOfDirectory(atPath: modelsDir.path) else {
+        await MainActor.run {
+          guard let self = self else { return }
+          self.downloadedModels = []
+          self.downloadedModelIds = []
+          NotificationCenter.default.post(name: .LBModelDownloadedListDidChange, object: self)
+        }
+        return
       }
+      let fileSet = Set(files)
 
-      if let additionalParts = model.additionalParts {
-        for part in additionalParts {
-          if !fileSet.contains(part.lastPathComponent) {
-            return false
+      let allModels = Catalog.allModels()
+      let downloaded = allModels.filter { model in
+        guard fileSet.contains(model.downloadUrl.lastPathComponent) else {
+          return false
+        }
+
+        if let additionalParts = model.additionalParts {
+          for part in additionalParts {
+            if !fileSet.contains(part.lastPathComponent) {
+              return false
+            }
           }
         }
+        return true
       }
-      return true
+
+      await MainActor.run {
+        guard let self = self else { return }
+        self.downloadedModels = downloaded
+        self.downloadedModelIds = Set(downloaded.map { $0.id })
+        NotificationCenter.default.post(name: .LBModelDownloadedListDidChange, object: self)
+      }
     }
-    self.downloadedModelIds = Set(self.downloadedModels.map { $0.id })
-    NotificationCenter.default.post(name: .LBModelDownloadedListDidChange, object: self)
   }
 
   /// Cancels an ongoing download.

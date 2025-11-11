@@ -72,8 +72,11 @@ class ModelDownloader: NSObject, URLSessionDownloadDelegate {
 
   private override init() {
     super.init()
-    // All URLSession delegate callbacks run on main queue, so no locking needed for state access
-    urlSession = URLSession(configuration: .default, delegate: self, delegateQueue: .main)
+    // URLSession delegate callbacks run on background queue to avoid blocking main thread during file operations.
+    // State access is synchronized by dispatching to main queue when needed.
+    let queue = OperationQueue()
+    queue.qualityOfService = .userInitiated
+    urlSession = URLSession(configuration: .default, delegate: self, delegateQueue: queue)
   }
 
   func status(for model: CatalogEntry) -> ModelStatus {
@@ -184,6 +187,8 @@ class ModelDownloader: NSObject, URLSessionDownloadDelegate {
       ?? URL(fileURLWithPath: model.modelFilePath).lastPathComponent
     let destinationURL = baseDir.appendingPathComponent(filename)
 
+    // This callback runs on a background queue, so we can do blocking file operations safely.
+    // URLSession's temp file is deleted when this callback returns, so we must move it before returning.
     do {
       if fileManager.fileExists(atPath: destinationURL.path) {
         try fileManager.removeItem(at: destinationURL)
@@ -213,25 +218,32 @@ class ModelDownloader: NSObject, URLSessionDownloadDelegate {
         return
       }
 
-      let wasCompleted = updateActiveDownload(modelId: modelId) { aggregate in
-        aggregate.markTaskFinished(downloadTask, fileSize: fileSize)
-      }
+      // Update state on main queue (activeDownloads dict must be accessed from main queue)
+      DispatchQueue.main.async { [weak self] in
+        guard let self = self else { return }
+        let wasCompleted = self.updateActiveDownload(modelId: modelId) { aggregate in
+          aggregate.markTaskFinished(downloadTask, fileSize: fileSize)
+        }
 
-      if wasCompleted {
-        self.logger.info("All downloads completed for model: \(model.displayName)")
-        NotificationCenter.default.post(
-          name: .LBModelDownloadFinished,
-          object: self,
-          userInfo: ["model": model]
-        )
+        if wasCompleted {
+          self.logger.info("All downloads completed for model: \(model.displayName)")
+          NotificationCenter.default.post(
+            name: .LBModelDownloadFinished,
+            object: self,
+            userInfo: ["model": model]
+          )
+        }
+        self.postDownloadsDidChange()
       }
-      self.postDownloadsDidChange()
     } catch {
       logger.error("Error moving downloaded file: \(error.localizedDescription)")
-      _ = updateActiveDownload(modelId: modelId) { aggregate in
-        aggregate.removeTask(with: downloadTask.taskIdentifier)
+      DispatchQueue.main.async { [weak self] in
+        guard let self = self else { return }
+        _ = self.updateActiveDownload(modelId: modelId) { aggregate in
+          aggregate.removeTask(with: downloadTask.taskIdentifier)
+        }
+        self.postDownloadsDidChange()
       }
-      postDownloadsDidChange()
     }
   }
 
@@ -253,8 +265,12 @@ class ModelDownloader: NSObject, URLSessionDownloadDelegate {
 
     logger.error("Model download failed (\(reason)) for model: \(model.displayName)")
 
-    cancelActiveDownload(modelId: modelId)
-    postDownloadsDidChange()
+    // State access must happen on main queue
+    DispatchQueue.main.async { [weak self] in
+      guard let self = self else { return }
+      self.cancelActiveDownload(modelId: modelId)
+      self.postDownloadsDidChange()
+    }
   }
 
   func urlSession(
@@ -263,18 +279,22 @@ class ModelDownloader: NSObject, URLSessionDownloadDelegate {
   ) {
     guard let modelId = downloadTask.taskDescription else { return }
 
-    guard var download = self.activeDownloads[modelId] else {
-      return
-    }
-    download.refreshProgress()
-    self.activeDownloads[modelId] = download
+    // Access state on main queue
+    DispatchQueue.main.async { [weak self] in
+      guard let self = self else { return }
+      guard var download = self.activeDownloads[modelId] else {
+        return
+      }
+      download.refreshProgress()
+      self.activeDownloads[modelId] = download
 
-    // Throttle notifications to avoid excessive UI updates
-    let now = Date()
-    let lastTime = lastNotificationTime[modelId] ?? .distantPast
-    if now.timeIntervalSince(lastTime) >= notificationThrottleInterval {
-      lastNotificationTime[modelId] = now
-      postDownloadsDidChange()
+      // Throttle notifications to avoid excessive UI updates
+      let now = Date()
+      let lastTime = self.lastNotificationTime[modelId] ?? .distantPast
+      if now.timeIntervalSince(lastTime) >= self.notificationThrottleInterval {
+        self.lastNotificationTime[modelId] = now
+        self.postDownloadsDidChange()
+      }
     }
   }
 
@@ -285,11 +305,14 @@ class ModelDownloader: NSObject, URLSessionDownloadDelegate {
 
     if let error = error {
       logger.error("Model download failed: \(error.localizedDescription)")
-      if activeDownloads[modelId] != nil {
-        _ = updateActiveDownload(modelId: modelId) { aggregate in
-          aggregate.removeTask(with: task.taskIdentifier)
+      DispatchQueue.main.async { [weak self] in
+        guard let self = self else { return }
+        if self.activeDownloads[modelId] != nil {
+          _ = self.updateActiveDownload(modelId: modelId) { aggregate in
+            aggregate.removeTask(with: task.taskIdentifier)
+          }
+          self.postDownloadsDidChange()
         }
-        postDownloadsDidChange()
       }
     }
   }
