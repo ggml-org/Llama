@@ -19,7 +19,7 @@ Install with `brew install --cask llamabarn` or download from [Releases ↗](htt
 
 - Tiny (`~12 MB`) macOS app built in Swift
 - Curated model catalog
-- Automatic model configuration based on your Mac's hardware
+- Automatic server configuration based on your Mac's hardware
 - Simple web UI that lets you chat with the running models
 - Familiar REST API that lets you use the running models from other apps
 - No side effects -- installed models live in `~/.llamabarn` and nothing is installed system-wide
