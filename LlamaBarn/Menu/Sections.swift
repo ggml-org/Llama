@@ -344,12 +344,18 @@ final class FooterSection {
     let container = NSView()
     container.translatesAutoresizingMaskIntoConstraints = false
 
-    // Production builds show marketing version without build number;
-    // dev/test builds (0.0.0) show only build number
-    let appVersionText =
-      AppInfo.shortVersion == "0.0.0"
-      ? "build \(AppInfo.buildNumber)"
-      : AppInfo.shortVersion
+    let appVersionText: String
+    #if DEBUG
+      // Debug builds show hammer emoji
+      appVersionText = "🔨"
+    #else
+      appVersionText =
+        AppInfo.shortVersion == "0.0.0"
+        // Internal builds (0.0.0) show build number
+        ? "build \(AppInfo.buildNumber)"
+        // Public builds show marketing version
+        : AppInfo.shortVersion
+    #endif
 
     let versionButton = NSButton(title: "", target: self, action: #selector(checkForUpdates))
     versionButton.isBordered = false
