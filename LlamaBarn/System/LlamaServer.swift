@@ -187,6 +187,7 @@ class LlamaServer {
     let llamaServerPath = libFolderPath + "/llama-server"
 
     let env = ["GGML_METAL_NO_RESIDENCY": "1"]
+
     var arguments = [
       "--model", modelPath,
       "--port", String(port),
@@ -195,6 +196,11 @@ class LlamaServer {
       "--no-mmap",
       "--jinja",
     ]
+
+    // Bind to 0.0.0.0 if exposeToNetwork is enabled
+    if UserSettings.exposeToNetwork {
+      arguments.append(contentsOf: ["--host", "0.0.0.0"])
+    }
 
     // Check for mmproj file in the same directory as the model.
     // Vision models (e.g., Qwen3-VL) require a multimodal projector file named mmproj-*.gguf

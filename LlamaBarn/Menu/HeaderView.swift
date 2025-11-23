@@ -53,7 +53,8 @@ final class HeaderView: NSView {
   func refresh() {
     // Update server status based on server state.
     if server.isRunning {
-      let linkText = "localhost:\(LlamaServer.defaultPort)"
+      let host = UserSettings.exposeToNetwork ? (getLocalIpAddress() ?? "0.0.0.0") : "localhost"
+      let linkText = "\(host):\(LlamaServer.defaultPort)"
       let modelName = server.activeModelName ?? "model"
       let full = "\(modelName) is running on \(linkText)"
       let url = URL(string: "http://\(linkText)/")!
@@ -92,6 +93,46 @@ final class HeaderView: NSView {
     }
 
     needsDisplay = true
+  }
+
+  /// Returns the IPv4 address of en0 (primary network interface).
+  private func getLocalIpAddress() -> String? {
+    var ifaddr: UnsafeMutablePointer<ifaddrs>?
+
+    // Get linked list of all network interfaces (returns 0 on success)
+    guard getifaddrs(&ifaddr) == 0, let firstAddr = ifaddr else { return nil }
+    // Ensure memory is freed when function exits
+    defer { freeifaddrs(ifaddr) }
+
+    // Walk through linked list of network interfaces
+    for ifptr in sequence(first: firstAddr, next: { $0.pointee.ifa_next }) {
+      let interface = ifptr.pointee
+
+      // Skip non-IPv4 addresses (AF_INET = IPv4, AF_INET6 = IPv6)
+      guard interface.ifa_addr.pointee.sa_family == UInt8(AF_INET) else { continue }
+
+      // Get interface name (e.g., "en0", "en1", "lo0")
+      let name = String(cString: interface.ifa_name)
+
+      // Only look for en0 (primary interface on most Macs)
+      guard name == "en0" else { continue }
+
+      // Convert socket address to human-readable IP string
+      var addr = [CChar](repeating: 0, count: Int(NI_MAXHOST))
+      getnameinfo(
+        interface.ifa_addr,
+        socklen_t(interface.ifa_addr.pointee.sa_len),
+        &addr,
+        socklen_t(addr.count),
+        nil,
+        socklen_t(0),
+        NI_NUMERICHOST  // Return numeric address (e.g., "192.168.1.5")
+      )
+
+      return String(cString: addr)
+    }
+
+    return nil
   }
 
 }
