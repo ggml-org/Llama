@@ -1,5 +1,19 @@
 import SwiftUI
 
+struct FooterButtonStyle: ButtonStyle {
+  func makeBody(configuration: Configuration) -> some View {
+    configuration.label
+      .font(Font(Typography.secondary))
+      // fixes: inverse color on mouse down
+      .foregroundColor(Color(nsColor: .controlTextColor))
+      .padding(.horizontal, 5)
+      .padding(.vertical, 2)
+      .background(Color(nsColor: .lbSubtleBackground))
+      .cornerRadius(5)
+      .controlSize(.small)
+  }
+}
+
 struct FooterView: View {
   var onCheckForUpdates: () -> Void
   var onOpenSettings: () -> Void
@@ -21,16 +35,12 @@ struct FooterView: View {
       Spacer()
 
       Button("Settings", action: onOpenSettings)
-        .font(Font(Typography.secondary))
-        .buttonStyle(.bordered)
-        .controlSize(.small)
+        .buttonStyle(FooterButtonStyle())
         .keyboardShortcut(",")
 
       Button("Quit", action: onQuit)
-        .font(Font(Typography.secondary))
-        .buttonStyle(.bordered)
-        .controlSize(.small)
-        .padding(.leading, 8)
+        .buttonStyle(FooterButtonStyle())
+        .padding(.leading, 5)
     }
     .padding(.horizontal, Layout.outerHorizontalPadding + Layout.innerHorizontalPadding)
     .padding(.vertical, 6)
