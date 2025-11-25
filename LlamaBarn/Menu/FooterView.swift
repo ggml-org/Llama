@@ -5,11 +5,13 @@ struct FooterButtonStyle: ButtonStyle {
     configuration.label
       .font(Font(Typography.secondary))
       // fixes: inverse color on mouse down
-      .foregroundColor(Color(nsColor: .controlTextColor))
+      .foregroundColor(Color(nsColor: .secondaryLabelColor))
       .padding(.horizontal, 5)
       .padding(.vertical, 2)
-      .background(Color(nsColor: .lbSubtleBackground))
-      .cornerRadius(5)
+      .overlay(
+        RoundedRectangle(cornerRadius: 5)
+          .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+      )
       .controlSize(.small)
   }
 }
