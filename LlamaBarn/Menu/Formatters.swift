@@ -40,6 +40,13 @@ enum Format {
     return gbOneDecimalString(gb)
   }
 
+  // MARK: - Metadata Formatting
+
+  /// Creates a bullet separator for metadata lines (e.g., "2.5 GB · 128k · 4 GB").
+  static func metadataSeparator() -> NSAttributedString {
+    NSAttributedString(string: " · ", attributes: Typography.tertiaryAttributes)
+  }
+
   // MARK: - Quantization Formatting
 
   /// Extracts the first segment of a quantization label for compact display.
@@ -80,7 +87,7 @@ enum Format {
     // Size
     result.append(
       NSAttributedString(string: model.totalSize, attributes: Typography.secondaryAttributes))
-    result.append(MetadataLabel.makeSeparator())
+    result.append(Format.metadataSeparator())
 
     // Memory (estimated)
     let memoryMb = Catalog.runtimeMemoryUsageMb(
@@ -91,7 +98,7 @@ enum Format {
       NSAttributedString(
         string: Format.memory(mb: memoryMb) + " mem",
         attributes: Typography.secondaryAttributes))
-    result.append(MetadataLabel.makeSeparator())
+    result.append(Format.metadataSeparator())
 
     // Context window: show usable value if limited by memory, otherwise show full value
     if let usable = usableCtx, usable < model.ctxWindow {

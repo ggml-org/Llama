@@ -431,8 +431,8 @@ class ModelDownloader: NSObject, URLSessionDownloadDelegate {
     let available = DiskSpace.availableBytes(at: modelsDir)
 
     if available > 0 && remainingBytes > available {
-      let needStr = DiskSpace.formatGB(remainingBytes)
-      let haveStr = DiskSpace.formatGB(available)
+      let needStr = Format.gigabytes(remainingBytes)
+      let haveStr = Format.gigabytes(available)
       throw DownloadError.notEnoughDiskSpace(required: needStr, available: haveStr)
     }
   }

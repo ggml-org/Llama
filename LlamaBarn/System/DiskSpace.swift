@@ -19,9 +19,4 @@ enum DiskSpace {
     }
     return 0
   }
-
-  /// Formats a byte count in decimal GB for concise UI.
-  static func formatGB(_ bytes: Int64) -> String {
-    Format.gigabytes(bytes)
-  }
 }

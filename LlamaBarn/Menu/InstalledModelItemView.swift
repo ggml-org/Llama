@@ -57,7 +57,7 @@ final class InstalledModelItemView: ItemView, NSGestureRecognizerDelegate {
     cancelImageView.isHidden = true
 
     // Configure delete button
-    deleteImageView.image = Symbols.trash
+    deleteImageView.image = NSImage(systemSymbolName: "trash", accessibilityDescription: nil)
     deleteImageView.contentTintColor = .tertiaryLabelColor
     deleteImageView.symbolConfiguration = .init(
       pointSize: Layout.metadataIconSize, weight: .regular)
