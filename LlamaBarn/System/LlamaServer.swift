@@ -88,39 +88,6 @@ class LlamaServer {
     }
   }
 
-  /// Finds the mmproj file for vision models (e.g., Qwen3-VL) in the same directory.
-  /// Returns the path if found, nil otherwise.
-  private func findMmprojFile(for modelPath: String) -> String? {
-    let modelUrl = URL(fileURLWithPath: modelPath)
-    let directory = modelUrl.deletingLastPathComponent()
-    let modelFilename = modelUrl.deletingPathExtension().lastPathComponent
-
-    // Vision models use naming pattern: mmproj-{model-name}.gguf
-    // e.g., "Qwen3VL-2B-Instruct-Q4_K_M.gguf" -> "mmproj-Qwen3VL-2B-Instruct-Q8_0.gguf"
-    let mmprojPath = directory.appendingPathComponent("mmproj-\(modelFilename).gguf").path
-
-    // Check if exact match exists first
-    if FileManager.default.fileExists(atPath: mmprojPath) {
-      return mmprojPath
-    }
-
-    // Fall back to scanning for any mmproj file with matching base name (ignoring quantization)
-    // This handles cases where Q4_K_M models use Q8_0 mmproj files
-    guard
-      let files = try? FileManager.default.contentsOfDirectory(
-        at: directory, includingPropertiesForKeys: nil)
-    else {
-      return nil
-    }
-
-    let baseName = modelFilename.components(separatedBy: "-Q").first ?? ""
-    for file in files where file.lastPathComponent.hasPrefix("mmproj-\(baseName)") {
-      return file.path
-    }
-
-    return nil
-  }
-
   private func attachOutputHandlers(for process: Process) {
     guard let outputPipe = process.standardOutput as? Pipe,
       let errorPipe = process.standardError as? Pipe
@@ -156,6 +123,7 @@ class LlamaServer {
     modelName: String,
     modelPath: String,
     appliedCtxWindow: Int,
+    mmprojPath: String? = nil,
     extraArgs: [String] = []
   ) {
     let port = Self.defaultPort
@@ -202,10 +170,9 @@ class LlamaServer {
       arguments.append(contentsOf: ["--host", "0.0.0.0"])
     }
 
-    // Check for mmproj file in the same directory as the model.
     // Vision models (e.g., Qwen3-VL) require a multimodal projector file named mmproj-*.gguf
     // to enable image understanding capabilities.
-    if let mmprojPath = findMmprojFile(for: modelPath) {
+    if let mmprojPath = mmprojPath {
       arguments.append(contentsOf: ["--mmproj", mmprojPath])
     }
 
@@ -354,6 +321,7 @@ class LlamaServer {
       modelName: model.displayName,
       modelPath: model.modelFilePath,
       appliedCtxWindow: launch.applied,
+      mmprojPath: model.mmprojFilePath,
       extraArgs: launch.args
     )
   }
@@ -376,6 +344,7 @@ class LlamaServer {
       modelName: model.displayName,
       modelPath: model.modelFilePath,
       appliedCtxWindow: launch.applied,
+      mmprojPath: model.mmprojFilePath,
       extraArgs: launch.args
     )
   }

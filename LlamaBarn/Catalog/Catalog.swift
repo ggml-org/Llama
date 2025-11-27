@@ -93,9 +93,6 @@ enum Catalog {
 
   // MARK: - Public Data
 
-  /// Pre-sorted by name to avoid runtime sorting.
-  static let families: [ModelFamily] = familiesUnsorted.sorted(by: { $0.name < $1.name })
-
   // MARK: - Public Accessors
 
   /// Returns all catalog entries by traversing the hierarchy
@@ -108,16 +105,6 @@ enum Catalog {
       }
     }
   }
-
-  /// Map of filename -> CatalogEntry for O(1) lookup.
-  /// Used to efficiently identify installed models from files on disk.
-  static let modelsByFilename: [String: CatalogEntry] = {
-    var map = [String: CatalogEntry]()
-    for model in allModels() {
-      map[model.downloadUrl.lastPathComponent] = model
-    }
-    return map
-  }()
 
   /// Finds a catalog entry by ID by traversing the hierarchy
   static func findModel(id: String) -> CatalogEntry? {
@@ -295,18 +282,6 @@ enum Catalog {
     let effectiveArgs =
       (family.serverArgs ?? []) + (size.serverArgs ?? []) + (build.serverArgs ?? [])
 
-    // Merge size's mmproj (if present) with build's additionalParts (for multi-part splits)
-    let effectiveParts: [URL]? = {
-      var parts: [URL] = []
-      if let mmproj = size.mmproj {
-        parts.append(mmproj)
-      }
-      if let buildParts = build.additionalParts {
-        parts.append(contentsOf: buildParts)
-      }
-      return parts.isEmpty ? nil : parts
-    }()
-
     let isFullPrecision = build.id == size.build.id
 
     return CatalogEntry(
@@ -320,7 +295,8 @@ enum Catalog {
       ctxBytesPer1kTokens: build.ctxBytesPer1kTokens,
       overheadMultiplier: family.overheadMultiplier,
       downloadUrl: build.downloadUrl,
-      additionalParts: effectiveParts,
+      additionalParts: build.additionalParts,
+      mmprojUrl: size.mmproj,
       serverArgs: effectiveArgs,
       icon: family.iconName,
       quantization: build.quantization,
@@ -336,7 +312,7 @@ enum Catalog {
   // MARK: - Model Catalog Data
 
   /// Families expressed with shared metadata to reduce duplication.
-  private static let familiesUnsorted: [ModelFamily] = [
+  private static let families: [ModelFamily] = [
     // MARK: GPT-OSS
     ModelFamily(
       name: "GPT-OSS",

@@ -21,6 +21,7 @@ struct CatalogEntry: Identifiable, Codable {
   /// - Multi-part models: additional shards (e.g., 00002-of-00003.gguf)
   /// The main model file in `downloadUrl` is passed to `--model`; llama-server discovers these in the same directory.
   let additionalParts: [URL]?
+  let mmprojUrl: URL?
   let serverArgs: [String]  // Additional command line arguments for llama-server
   let icon: String  // Asset name for the model's brand logo
   let quantization: String  // Quantization method (e.g., "Q4_K_M", "Q8_0")
@@ -38,6 +39,7 @@ struct CatalogEntry: Identifiable, Codable {
     overheadMultiplier: Double = 1.05,
     downloadUrl: URL,
     additionalParts: [URL]? = nil,
+    mmprojUrl: URL? = nil,
     serverArgs: [String],
     icon: String,
     quantization: String,
@@ -54,6 +56,7 @@ struct CatalogEntry: Identifiable, Codable {
     self.overheadMultiplier = overheadMultiplier
     self.downloadUrl = downloadUrl
     self.additionalParts = additionalParts
+    self.mmprojUrl = mmprojUrl
     self.serverArgs = serverArgs
     self.icon = icon
     self.quantization = quantization
@@ -84,8 +87,6 @@ struct CatalogEntry: Identifiable, Codable {
     return "\(size)-\(quantLabel)"
   }
 
-  // Removed: isSlidingWindowFamily; models that should run with max context include "-c 0" in serverArgs.
-
   /// Total size including all model files
   var totalSize: String {
     Format.gigabytes(fileSize)
@@ -111,6 +112,12 @@ struct CatalogEntry: Identifiable, Codable {
     Self.modelStorageDirectory.appendingPathComponent(downloadUrl.lastPathComponent).path
   }
 
+  /// The local file system path where the mmproj file will be stored, if applicable
+  var mmprojFilePath: String? {
+    guard let mmprojUrl = mmprojUrl else { return nil }
+    return Self.modelStorageDirectory.appendingPathComponent(mmprojUrl.lastPathComponent).path
+  }
+
   /// All local file paths this model requires (main file + additional parts like shards or mmproj files)
   var allLocalModelPaths: [String] {
     let baseDir = URL(fileURLWithPath: modelFilePath).deletingLastPathComponent()
@@ -119,6 +126,9 @@ struct CatalogEntry: Identifiable, Codable {
       for url in additional {
         paths.append(baseDir.appendingPathComponent(url.lastPathComponent).path)
       }
+    }
+    if let mmprojPath = mmprojFilePath {
+      paths.append(mmprojPath)
     }
     return paths
   }
