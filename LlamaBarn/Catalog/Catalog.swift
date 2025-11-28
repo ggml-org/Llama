@@ -29,6 +29,14 @@ enum Catalog {
     var iconName: String {
       "ModelLogos/\(series.lowercased())"
     }
+
+    var allModels: [CatalogEntry] {
+      sizes.flatMap { size in
+        ([size.build] + size.quantizedBuilds).map { build in
+          Catalog.entry(family: self, size: size, build: build)
+        }
+      }
+    }
   }
 
   struct ModelSize {
@@ -284,7 +292,7 @@ enum Catalog {
   }
 
   /// Builds a CatalogEntry from hierarchy components
-  private static func entry(family: ModelFamily, size: ModelSize, build: ModelBuild)
+  static func entry(family: ModelFamily, size: ModelSize, build: ModelBuild)
     -> CatalogEntry
   {
     let effectiveArgs =
@@ -320,7 +328,7 @@ enum Catalog {
   // MARK: - Model Catalog Data
 
   /// Families expressed with shared metadata to reduce duplication.
-  private static let families: [ModelFamily] = [
+  static let families: [ModelFamily] = [
     // MARK: GPT-OSS
     ModelFamily(
       name: "GPT-OSS",

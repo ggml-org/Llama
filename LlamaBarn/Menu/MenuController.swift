@@ -266,81 +266,71 @@ final class MenuController: NSObject, NSMenuDelegate {
   // MARK: - Catalog Section
 
   private func addCatalogSection(to menu: NSMenu) {
-    let availableModels = filterAvailableModels()
-    guard !availableModels.isEmpty else { return }
+    var items: [NSMenuItem] = []
+    var visibleFamilies: Set<String> = []
+
+    for family in Catalog.families {
+      let models = family.allModels.filter { model in
+        let isAvailable = !modelManager.isInstalled(model) && !modelManager.isDownloading(model)
+        let isCompatible = Catalog.isModelCompatible(model)
+        let showQuantized = UserSettings.showQuantizedModels
+        return isAvailable && isCompatible && (showQuantized || model.isFullPrecision)
+      }
+
+      guard !models.isEmpty else { continue }
+      visibleFamilies.insert(family.name)
+
+      // Collect unique sizes for header
+      var sizes: [String] = []
+      var seenSizes: Set<String> = []
+      for model in models {
+        if !seenSizes.contains(model.sizeLabel) {
+          seenSizes.insert(model.sizeLabel)
+          sizes.append(model.sizeLabel)
+        }
+      }
+
+      let headerView = FamilyHeaderView(
+        family: family.name,
+        sizes: sizes,
+        isCollapsed: collapsedFamilies.contains(family.name)
+      ) { [weak self] familyName in
+        self?.toggleFamilyCollapsed(familyName)
+      }
+      let headerItem = NSMenuItem.viewItem(with: headerView)
+      headerItem.isEnabled = true
+      items.append(headerItem)
+
+      if !collapsedFamilies.contains(family.name) {
+        for model in models {
+          let view = CatalogModelItemView(model: model, modelManager: modelManager) {
+            [weak self] in
+            self?.didChangeDownloadStatus(for: model)
+          }
+          items.append(NSMenuItem.viewItem(with: view))
+        }
+      }
+    }
+
+    guard !items.isEmpty else { return }
 
     // Initialize families as collapsed when menu first opens.
     // On subsequent rebuilds during the same session (e.g., toggling settings),
     // preserve the collapse state and collapse any newly appearing families.
-    let families = Set(availableModels.map { $0.family })
     if collapsedFamilies.isEmpty && knownFamilies.isEmpty {
-      collapsedFamilies = families
+      collapsedFamilies = visibleFamilies
     } else {
       // Add newly appearing families to collapsed state
-      let newFamilies = families.subtracting(knownFamilies)
+      let newFamilies = visibleFamilies.subtracting(knownFamilies)
       collapsedFamilies.formUnion(newFamilies)
-      collapsedFamilies.formIntersection(families)  // Remove families no longer in catalog
+      collapsedFamilies.formIntersection(visibleFamilies)  // Remove families no longer in catalog
     }
-    knownFamilies = families
+    knownFamilies = visibleFamilies
 
     let separator = NSMenuItem.separator()
     menu.addItem(separator)
 
-    buildCatalogItems(availableModels).forEach { menu.addItem($0) }
-  }
-
-  private func filterAvailableModels() -> [CatalogEntry] {
-    let showQuantized = UserSettings.showQuantizedModels
-    return Catalog.allModels().filter { model in
-      let isAvailable = !modelManager.isInstalled(model) && !modelManager.isDownloading(model)
-      let isCompatible = Catalog.isModelCompatible(model)
-      return isAvailable && isCompatible && (showQuantized || model.isFullPrecision)
-    }
-  }
-
-  private func buildCatalogItems(_ models: [CatalogEntry]) -> [NSMenuItem] {
-    let sortedModels = models.sorted(by: CatalogEntry.displayOrder(_:_:))
-
-    // Group models by family to collect unique sizes
-    var familySizes: [String: [String]] = [:]
-    for model in sortedModels {
-      if !familySizes[model.family, default: []].contains(model.sizeLabel) {
-        familySizes[model.family, default: []].append(model.sizeLabel)
-      }
-    }
-
-    var items: [NSMenuItem] = []
-    var previousFamily: String?
-
-    for model in sortedModels {
-      // Insert family header when family changes
-      if previousFamily != model.family {
-        let sizes = familySizes[model.family] ?? []
-        let headerView = FamilyHeaderView(
-          family: model.family,
-          sizes: sizes,
-          isCollapsed: collapsedFamilies.contains(model.family)
-        ) { [weak self] family in
-          self?.toggleFamilyCollapsed(family)
-        }
-        let headerItem = NSMenuItem.viewItem(with: headerView)
-        headerItem.isEnabled = true
-        items.append(headerItem)
-      }
-
-      // Only add model if family is not collapsed
-      if !collapsedFamilies.contains(model.family) {
-        let view = CatalogModelItemView(model: model, modelManager: modelManager) {
-          [weak self] in
-          self?.didChangeDownloadStatus(for: model)
-        }
-        items.append(NSMenuItem.viewItem(with: view))
-      }
-
-      previousFamily = model.family
-    }
-
-    return items
+    items.forEach { menu.addItem($0) }
   }
 
   private func toggleFamilyCollapsed(_ family: String) {
