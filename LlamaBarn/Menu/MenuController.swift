@@ -270,12 +270,7 @@ final class MenuController: NSObject, NSMenuDelegate {
     var visibleFamilies: Set<String> = []
 
     for family in Catalog.families {
-      let models = family.allModels.filter { model in
-        let isAvailable = !modelManager.isInstalled(model) && !modelManager.isDownloading(model)
-        let isCompatible = Catalog.isModelCompatible(model)
-        let showQuantized = UserSettings.showQuantizedModels
-        return isAvailable && isCompatible && (showQuantized || model.isFullPrecision)
-      }
+      let models = getVisibleModels(for: family)
 
       guard !models.isEmpty else { continue }
       visibleFamilies.insert(family.name)
