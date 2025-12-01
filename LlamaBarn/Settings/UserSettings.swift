@@ -4,6 +4,7 @@ import Foundation
 enum UserSettings {
   private enum Keys {
     static let showQuantizedModels = "showQuantizedModels"
+    static let showIncompatibleFamilies = "showIncompatibleFamilies"
     static let hasSeenWelcome = "hasSeenWelcome"
     static let exposeToNetwork = "exposeToNetwork"
   }
@@ -19,6 +20,20 @@ enum UserSettings {
     set {
       guard defaults.bool(forKey: Keys.showQuantizedModels) != newValue else { return }
       defaults.set(newValue, forKey: Keys.showQuantizedModels)
+      NotificationCenter.default.post(name: .LBUserSettingsDidChange, object: nil)
+    }
+  }
+
+  /// Whether to show families that have no compatible models for the current device.
+  /// Defaults to `true` to show all families.
+  static var showIncompatibleFamilies: Bool {
+    get {
+      defaults.object(forKey: Keys.showIncompatibleFamilies) as? Bool ?? true
+    }
+    set {
+      guard (defaults.object(forKey: Keys.showIncompatibleFamilies) as? Bool ?? true) != newValue
+      else { return }
+      defaults.set(newValue, forKey: Keys.showIncompatibleFamilies)
       NotificationCenter.default.post(name: .LBUserSettingsDidChange, object: nil)
     }
   }

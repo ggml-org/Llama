@@ -321,6 +321,10 @@ final class MenuController: NSObject, NSMenuDelegate {
         Catalog.isModelCompatible($0) && (showQuantized || $0.isFullPrecision)
       }
 
+      if validModels.isEmpty && !UserSettings.showIncompatibleFamilies {
+        continue
+      }
+
       // Collect unique sizes for header from valid models (excluding installed)
       var sizes: [String] = []
       var seenSizes: Set<String> = []
