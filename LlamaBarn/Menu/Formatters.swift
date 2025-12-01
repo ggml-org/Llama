@@ -16,15 +16,20 @@ enum Format {
   // MARK: - Token Formatting (binary: 1k = 1024)
 
   /// Formats token counts using binary units (1k = 1024).
-  /// Examples: 131_072 → "128k", 262_144 → "256k", 32_768 → "32k"
+  /// Examples: 131_072 → "128k", 262_144 → "256k", 32_768 → "32k", 4_096 → "4k"
+  /// Omits decimal point when fractional part is zero (e.g., "4k" not "4.0k").
   /// Uses binary units since context windows represent memory allocation.
   static func tokens(_ tokens: Int) -> String {
     if tokens >= 1_048_576 {
-      return String(format: "%.0fm", Double(tokens) / 1_048_576.0)
+      let m = Double(tokens) / 1_048_576.0
+      let format = tokens % 1_048_576 == 0 ? "%.0fm" : "%.1fm"
+      return String(format: format, m)
     } else if tokens >= 10_240 {
       return String(format: "%.0fk", Double(tokens) / 1_024.0)
     } else if tokens >= 1_024 {
-      return String(format: "%.1fk", Double(tokens) / 1_024.0)
+      let k = Double(tokens) / 1_024.0
+      let format = tokens % 1_024 == 0 ? "%.0fk" : "%.1fk"
+      return String(format: format, k)
     } else {
       return "\(tokens)"
     }
