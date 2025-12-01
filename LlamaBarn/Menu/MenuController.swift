@@ -17,6 +17,8 @@ final class MenuController: NSObject, NSMenuDelegate {
   private var isSettingsVisible = false
   private weak var currentlyHighlightedView: ItemView?
   private var welcomePopover: WelcomePopover?
+  private var modifierTimer: Timer?
+  private var lastModifierFlags: NSEvent.ModifierFlags?
 
   init(modelManager: ModelManager? = nil, server: LlamaServer? = nil) {
     self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -65,6 +67,7 @@ final class MenuController: NSObject, NSMenuDelegate {
   func menuWillOpen(_ menu: NSMenu) {
     guard menu === statusItem.menu else { return }
     modelManager.refreshDownloadedModels()
+    startModifierTimer()
   }
 
   func menuDidClose(_ menu: NSMenu) {
@@ -72,6 +75,36 @@ final class MenuController: NSObject, NSMenuDelegate {
     currentlyHighlightedView?.setHighlight(false)
     currentlyHighlightedView = nil
     isSettingsVisible = false
+    stopModifierTimer()
+  }
+
+  private func startModifierTimer() {
+    stopModifierTimer()
+    lastModifierFlags = NSEvent.modifierFlags
+    let timer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
+      self?.checkModifiers()
+    }
+    RunLoop.current.add(timer, forMode: .eventTracking)
+    RunLoop.current.add(timer, forMode: .default)
+    self.modifierTimer = timer
+  }
+
+  private func stopModifierTimer() {
+    modifierTimer?.invalidate()
+    modifierTimer = nil
+    lastModifierFlags = nil
+  }
+
+  private func checkModifiers() {
+    let currentFlags = NSEvent.modifierFlags
+    // We only care about the Option key for now
+    let wasOption = lastModifierFlags?.contains(.option) ?? false
+    let isOption = currentFlags.contains(.option)
+
+    if wasOption != isOption {
+      lastModifierFlags = currentFlags
+      refresh()
+    }
   }
 
   func menu(_ menu: NSMenu, willHighlight item: NSMenuItem?) {

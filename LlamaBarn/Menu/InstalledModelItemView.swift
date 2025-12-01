@@ -157,7 +157,12 @@ final class InstalledModelItemView: ItemView, NSGestureRecognizerDelegate {
 
   private func toggle() {
     if modelManager.isInstalled(model) {
-      if server.isActive(model: model) { server.stop() } else { server.start(model: model) }
+      if server.isActive(model: model) {
+        server.stop()
+      } else {
+        let maximizeContext = NSEvent.modifierFlags.contains(.option)
+        server.start(model: model, maximizeContext: maximizeContext)
+      }
     } else if modelManager.isDownloading(model) {
       modelManager.cancelModelDownload(model)
       membershipChanged(model)
@@ -180,7 +185,14 @@ final class InstalledModelItemView: ItemView, NSGestureRecognizerDelegate {
       familyColor: familyColor
     )
 
-    metadataLabel.attributedStringValue = Format.modelMetadata(for: model)
+    let showMaxContext = NSEvent.modifierFlags.contains(.option)
+    let activeContext = server.isActive(model: model) ? server.activeCtxWindow : nil
+
+    metadataLabel.attributedStringValue = Format.modelMetadata(
+      for: model,
+      showMaxContext: showMaxContext,
+      activeContext: activeContext
+    )
 
     if let progress = modelManager.downloadProgress(for: model) {
       progressLabel.stringValue = Format.progressText(progress)

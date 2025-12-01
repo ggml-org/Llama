@@ -113,7 +113,9 @@ final class CatalogModelItemView: ItemView {
       sizeColor: Typography.secondaryColor
     )
 
-    metadataLabel.attributedStringValue = Format.modelMetadata(for: model)
+    let showMaxContext = NSEvent.modifierFlags.contains(.option)
+    metadataLabel.attributedStringValue = Format.modelMetadata(
+      for: model, showMaxContext: showMaxContext)
 
     // Clear highlight if no longer actionable
     if !highlightEnabled { setHighlight(false) }

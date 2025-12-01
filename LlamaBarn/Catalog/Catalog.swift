@@ -42,7 +42,8 @@ enum Catalog {
 
   static func usableCtxWindow(
     for model: CatalogEntry,
-    desiredTokens: Int? = nil
+    desiredTokens: Int? = nil,
+    maximizeContext: Bool = false
   ) -> Int? {
     let minimumTokens = Int(minimumCtxWindowTokens)
     guard model.ctxWindow >= minimumTokens else { return nil }
@@ -54,7 +55,8 @@ enum Catalog {
     let fileSizeWithOverheadMb = fileSizeWithOverhead(for: model)
     if fileSizeWithOverheadMb > budgetMb { return nil }
 
-    var effectiveDesired = desiredTokens.flatMap { $0 > 0 ? $0 : nil } ?? model.ctxWindow
+    let defaultContext = maximizeContext ? model.ctxWindow : Int(compatibilityCtxWindowTokens)
+    var effectiveDesired = desiredTokens.flatMap { $0 > 0 ? $0 : nil } ?? defaultContext
 
     // Cap desired context if env var is set
     if let maxCtxStr = ProcessInfo.processInfo.environment["BARN_MAX_CTX_K"],

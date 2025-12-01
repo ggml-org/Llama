@@ -81,9 +81,20 @@ enum Format {
   /// Formats model metadata text without icons (text only).
   /// Format: "2.53 GB · 3.1 GB mem · 128k ctx" (or "32k ctx capped" if limited).
   /// Vision models include " · vision" at the end.
-  static func modelMetadata(for model: CatalogEntry) -> NSAttributedString {
+  static func modelMetadata(
+    for model: CatalogEntry,
+    showMaxContext: Bool = false,
+    activeContext: Int? = nil
+  ) -> NSAttributedString {
     let result = NSMutableAttributedString()
-    let usableCtx = Catalog.usableCtxWindow(for: model)
+
+    let resolvedCtx: Int
+    if let active = activeContext {
+      resolvedCtx = active
+    } else {
+      resolvedCtx =
+        Catalog.usableCtxWindow(for: model, maximizeContext: showMaxContext) ?? model.ctxWindow
+    }
 
     // Size
     result.append(
@@ -93,7 +104,7 @@ enum Format {
     // Memory (estimated)
     let memoryMb = Catalog.runtimeMemoryUsageMb(
       for: model,
-      ctxWindowTokens: Double(usableCtx ?? model.ctxWindow)
+      ctxWindowTokens: Double(resolvedCtx)
     )
     result.append(
       NSAttributedString(
@@ -101,17 +112,12 @@ enum Format {
         attributes: Typography.secondaryAttributes))
     result.append(Format.metadataSeparator())
 
-    // Context window: show usable value if limited by memory, otherwise show full value
-    if let usable = usableCtx, usable < model.ctxWindow {
-      let text = Format.tokens(usable) + " ctx"
+    // Context window
+    if resolvedCtx > 0 {
+      let text = Format.tokens(resolvedCtx) + " ctx"
       result.append(NSAttributedString(string: text, attributes: Typography.secondaryAttributes))
     } else {
-      if model.ctxWindow > 0 {
-        let text = Format.tokens(model.ctxWindow) + " ctx"
-        result.append(NSAttributedString(string: text, attributes: Typography.secondaryAttributes))
-      } else {
-        result.append(NSAttributedString(string: "—", attributes: Typography.secondaryAttributes))
-      }
+      result.append(NSAttributedString(string: "—", attributes: Typography.secondaryAttributes))
     }
 
     // Vision indicator

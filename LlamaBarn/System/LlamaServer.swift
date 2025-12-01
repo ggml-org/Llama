@@ -284,8 +284,11 @@ class LlamaServer {
   }
 
   /// Convenience method to start server using a CatalogEntry
-  func start(model: CatalogEntry) {
-    guard let launch = makeLaunchConfiguration(for: model, requestedCtx: nil) else {
+  func start(model: CatalogEntry, maximizeContext: Bool = false) {
+    guard
+      let launch = makeLaunchConfiguration(
+        for: model, requestedCtx: nil, maximizeContext: maximizeContext)
+    else {
       let reason =
         Catalog.incompatibilitySummary(model)
         ?? "insufficient memory for required context"
@@ -325,12 +328,13 @@ class LlamaServer {
 
   private func makeLaunchConfiguration(
     for model: CatalogEntry,
-    requestedCtx: Int?
+    requestedCtx: Int?,
+    maximizeContext: Bool = false
   ) -> (applied: Int, args: [String])? {
     let sanitizedArgs = Self.removeContextArguments(from: model.serverArgs)
     guard
       let usableCtx = Catalog.usableCtxWindow(
-        for: model, desiredTokens: requestedCtx)
+        for: model, desiredTokens: requestedCtx, maximizeContext: maximizeContext)
     else {
       logger.error("No usable context window for model \(model.displayName, privacy: .public)")
       return nil
