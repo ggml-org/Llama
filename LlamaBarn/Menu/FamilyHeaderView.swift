@@ -4,7 +4,6 @@ import AppKit
 final class FamilyHeaderView: ItemView {
   private let label = Typography.makeTertiaryLabel()
   private let sizesLabel = Typography.makeTertiaryLabel()
-  private let chevronImageView = NSImageView()
   let family: String
   private let sizes: [String]
   private let isCollapsed: Bool
@@ -33,14 +32,8 @@ final class FamilyHeaderView: ItemView {
     sizesLabel.lineBreakMode = .byTruncatingTail
     sizesLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-    chevronImageView.translatesAutoresizingMaskIntoConstraints = false
-    chevronImageView.contentTintColor = .tertiaryLabelColor
-    chevronImageView.symbolConfiguration = .init(pointSize: 10, weight: .regular)
-    updateChevron()
-
     contentView.addSubview(label)
     contentView.addSubview(sizesLabel)
-    contentView.addSubview(chevronImageView)
 
     NSLayoutConstraint.activate([
       label.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
@@ -48,13 +41,7 @@ final class FamilyHeaderView: ItemView {
 
       sizesLabel.leadingAnchor.constraint(equalTo: label.trailingAnchor),
       sizesLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-      sizesLabel.trailingAnchor.constraint(
-        lessThanOrEqualTo: chevronImageView.leadingAnchor, constant: -8),
-
-      chevronImageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-      chevronImageView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-      chevronImageView.widthAnchor.constraint(lessThanOrEqualToConstant: 10),
-      chevronImageView.heightAnchor.constraint(lessThanOrEqualToConstant: 10),
+      sizesLabel.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor),
     ])
 
     // Accessibility
@@ -73,16 +60,6 @@ final class FamilyHeaderView: ItemView {
     // Only toggle if mouse is still within bounds (allows canceling by dragging away)
     if bounds.contains(convert(event.locationInWindow, from: nil)) {
       onToggle(family)
-    }
-  }
-
-  private func updateChevron() {
-    if isCollapsed {
-      chevronImageView.isHidden = false
-      chevronImageView.image = NSImage(
-        systemSymbolName: "chevron.right", accessibilityDescription: nil)
-    } else {
-      chevronImageView.isHidden = true
     }
   }
 
