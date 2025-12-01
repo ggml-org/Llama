@@ -201,7 +201,8 @@ final class InstalledModelItemView: ItemView, NSGestureRecognizerDelegate {
     modelNameLabel.attributedStringValue = Format.modelName(
       family: model.family,
       size: model.sizeLabel,
-      familyColor: familyColor
+      familyColor: familyColor,
+      sizeColor: familyColor
     )
 
     let showMaxContext = NSEvent.modifierFlags.contains(.option)
