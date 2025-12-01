@@ -10,7 +10,17 @@ struct LlamaBarnApp: App {
 
   var body: some Scene {
     // Empty scene, as we are a menu bar app
-    Settings {}
+    Settings {
+      EmptyView()
+    }
+    .commands {
+      CommandGroup(replacing: .appSettings) {
+        Button("Settings...") {
+          NotificationCenter.default.post(name: .LBShowSettings, object: nil)
+        }
+        .keyboardShortcut(",")
+      }
+    }
   }
 }
 
@@ -111,10 +121,4 @@ extension AppDelegate: SPUUpdaterDelegate {
     logger.error(
       "Sparkle: failed to check updates: \(error.localizedDescription, privacy: .public)")
   }
-}
-
-// MARK: - Notifications
-
-extension Notification.Name {
-  static let LBCheckForUpdates = Notification.Name("LBCheckForUpdates")
 }

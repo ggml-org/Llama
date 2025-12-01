@@ -23,7 +23,6 @@ struct SettingsView: View {
         )
         .labelsHidden()
         .toggleStyle(SwitchToggleStyle())
-        .controlSize(.mini)
       }
       HStack {
         Text("Show quantized models")
@@ -31,13 +30,11 @@ struct SettingsView: View {
         Toggle("", isOn: $showQuantizedModels)
           .labelsHidden()
           .toggleStyle(SwitchToggleStyle())
-          .controlSize(.mini)
           .onChange(of: showQuantizedModels) { _, newValue in
             UserSettings.showQuantizedModels = newValue
           }
       }
     }
-    .padding(EdgeInsets(top: 8, leading: 13, bottom: 8, trailing: 13))
   }
 }
 

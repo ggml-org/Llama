@@ -14,7 +14,7 @@ final class MenuController: NSObject, NSMenuDelegate {
   private var collapsedFamilies: Set<String> = []
   private var knownFamilies: Set<String> = []
 
-  private var isSettingsVisible = false
+  private let settingsWindowController = SettingsWindowController()
   private weak var currentlyHighlightedView: ItemView?
   private var welcomePopover: WelcomePopover?
   private var modifierTimer: Timer?
@@ -74,7 +74,6 @@ final class MenuController: NSObject, NSMenuDelegate {
     guard menu === statusItem.menu else { return }
     currentlyHighlightedView?.setHighlight(false)
     currentlyHighlightedView = nil
-    isSettingsVisible = false
     stopModifierTimer()
 
     // Reset catalog collapse state
@@ -137,16 +136,6 @@ final class MenuController: NSObject, NSMenuDelegate {
     addInstalledSection(to: menu)
     addCatalogSection(to: menu)
     addFooter(to: menu)
-
-    if isSettingsVisible {
-      menu.addItem(.separator())
-      let rootView = SettingsView()
-      let view = NSHostingView(rootView: rootView)
-      let height = view.fittingSize.height
-      view.frame = NSRect(x: 0, y: 0, width: Layout.menuWidth, height: height)
-      let item = NSMenuItem.viewItem(with: view)
-      menu.addItem(item)
-    }
   }
 
   // MARK: - Live updates without closing submenus
@@ -211,6 +200,14 @@ final class MenuController: NSObject, NSMenuDelegate {
       }
     }
 
+    NotificationCenter.default.addObserver(
+      forName: .LBShowSettings, object: nil, queue: .main
+    ) { [weak self] _ in
+      MainActor.assumeIsolated {
+        self?.toggleSettings()
+      }
+    }
+
     refresh()
   }
 
@@ -259,10 +256,7 @@ final class MenuController: NSObject, NSMenuDelegate {
   }
 
   @objc private func toggleSettings() {
-    isSettingsVisible.toggle()
-    if let menu = statusItem.menu {
-      rebuildMenu(menu)
-    }
+    settingsWindowController.show()
   }
 
   @objc private func quitApp() {

@@ -38,7 +38,6 @@ struct FooterView: View {
 
       Button("Settings", action: onOpenSettings)
         .buttonStyle(FooterButtonStyle())
-        .keyboardShortcut(",")
 
       Button("Quit", action: onQuit)
         .buttonStyle(FooterButtonStyle())
