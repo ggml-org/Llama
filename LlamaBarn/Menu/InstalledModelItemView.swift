@@ -177,8 +177,8 @@ final class InstalledModelItemView: ItemView, NSGestureRecognizerDelegate {
     // Progress and cancel button only for downloading
     let isDownloading = modelManager.downloadProgress(for: model) != nil
 
-    // Use secondary color for downloading models, primary for installed
-    let familyColor: NSColor = isDownloading ? Typography.secondaryColor : Typography.primaryColor
+    // Use tertiary color for downloading models, secondary for installed
+    let familyColor: NSColor = isDownloading ? Typography.tertiaryColor : Typography.secondaryColor
     modelNameLabel.attributedStringValue = Format.modelName(
       family: model.family,
       size: model.sizeLabel,
@@ -186,16 +186,16 @@ final class InstalledModelItemView: ItemView, NSGestureRecognizerDelegate {
       sizeColor: familyColor
     )
 
-    metadataLabel.attributedStringValue = Format.modelMetadata(for: model)
+    metadataLabel.attributedStringValue = Format.modelMetadata(for: model, color: familyColor)
 
     if let progress = modelManager.downloadProgress(for: model) {
       progressLabel.stringValue = Format.progressText(progress)
       cancelImageView.isHidden = false
-      iconView.inactiveTintColor = Typography.secondaryColor
+      iconView.inactiveTintColor = Typography.tertiaryColor
     } else {
       progressLabel.stringValue = ""
       cancelImageView.isHidden = true
-      iconView.inactiveTintColor = Typography.primaryColor
+      iconView.inactiveTintColor = Typography.secondaryColor
     }
 
     // Delete button only for installed models on hover

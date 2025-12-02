@@ -85,12 +85,19 @@ enum Format {
 
   /// Formats model metadata text.
   /// Format: "2.53 GB" or "2.53 GB · 👓"
-  static func modelMetadata(for model: CatalogEntry) -> NSAttributedString {
+  static func modelMetadata(for model: CatalogEntry, color: NSColor = Typography.secondaryColor)
+    -> NSAttributedString
+  {
     let result = NSMutableAttributedString()
+
+    let attributes: [NSAttributedString.Key: Any] = [
+      .font: Typography.secondary,
+      .foregroundColor: color,
+    ]
 
     // Size
     result.append(
-      NSAttributedString(string: model.totalSize, attributes: Typography.secondaryAttributes))
+      NSAttributedString(string: model.totalSize, attributes: attributes))
 
     // Vision support
     if model.hasVisionSupport {
@@ -111,7 +118,7 @@ enum Format {
       // Set color for the symbol
       visionIcon.addAttribute(
         .foregroundColor,
-        value: Typography.secondaryColor,
+        value: color,
         range: NSRange(location: 0, length: visionIcon.length))
 
       result.append(visionIcon)
