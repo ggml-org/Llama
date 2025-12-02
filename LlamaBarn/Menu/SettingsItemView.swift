@@ -1,7 +1,12 @@
 import AppKit
 
 final class SettingsItemView: ItemView {
-  private let titleLabel = Typography.makePrimaryLabel()
+  private let titleLabel: NSTextField = {
+    let label = NSTextField(labelWithString: "")
+    label.font = Typography.primary
+    label.textColor = Typography.secondaryColor
+    return label
+  }()
   private let subtitleLabel = Typography.makeSecondaryLabel()
   private let toggle = NSSwitch()
   private let onToggle: (Bool) -> Void
