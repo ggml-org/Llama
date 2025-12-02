@@ -90,15 +90,19 @@ final class InstalledModelItemView: ItemView, NSGestureRecognizerDelegate {
     cancelImageView.setContentCompressionResistancePriority(.required, for: .horizontal)
 
     let rightStack = NSStackView(views: [progressLabel, cancelImageView])
+    rightStack.translatesAutoresizingMaskIntoConstraints = false
     rightStack.orientation = .horizontal
     rightStack.spacing = 6
     rightStack.alignment = .centerY
 
-    let rootStack = NSStackView(views: [leading, spacer, rightStack])
+    let rootStack = NSStackView(views: [leading, spacer])
     rootStack.orientation = .horizontal
     rootStack.spacing = 6
     rootStack.alignment = .centerY
     contentView.addSubview(rootStack)
+
+    // Add rightStack separately to align with line 1
+    contentView.addSubview(rightStack)
 
     // Add delete button separately so we can position it at the bottom
     deleteImageView.translatesAutoresizingMaskIntoConstraints = false
@@ -114,6 +118,10 @@ final class InstalledModelItemView: ItemView, NSGestureRecognizerDelegate {
       cancelImageView.heightAnchor.constraint(lessThanOrEqualToConstant: Layout.uiIconSize),
 
       progressLabel.widthAnchor.constraint(lessThanOrEqualToConstant: Layout.progressWidth),
+
+      // Position rightStack (progress) aligned with line 1
+      rightStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+      rightStack.firstBaselineAnchor.constraint(equalTo: modelNameLabel.firstBaselineAnchor),
 
       // Position delete button at the bottom right, aligned with line 2
       deleteImageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
