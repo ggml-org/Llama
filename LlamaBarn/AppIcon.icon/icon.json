@@ -1,0 +1,38 @@
+{
+  "fill" : {
+    "automatic-gradient" : "srgb:0.00000,0.51765,0.81961,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "glass" : false,
+          "image-name" : "llama.svg",
+          "name" : "llama",
+          "opacity" : 0.95,
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              -35,
+              90
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "none",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}
