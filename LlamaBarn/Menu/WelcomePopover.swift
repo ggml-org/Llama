@@ -1,5 +1,4 @@
 import AppKit
-import SwiftUI
 
 /// Displays a welcome message on first launch, pointing to the menu bar icon.
 final class WelcomePopover: NSViewController, NSPopoverDelegate {

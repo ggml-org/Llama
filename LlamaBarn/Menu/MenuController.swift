@@ -1,6 +1,5 @@
 import AppKit
 import Foundation
-import SwiftUI
 
 /// Controls the status bar item and its AppKit menu.
 /// Breaks menu construction into section helpers so each concern stays focused.
@@ -198,11 +197,7 @@ final class MenuController: NSObject, NSMenuDelegate {
       onQuit: { [weak self] in self?.quitApp() }
     )
 
-    let hostingView = NSHostingView(rootView: footerView)
-    let size = hostingView.fittingSize
-    hostingView.frame = NSRect(origin: .zero, size: size)
-
-    let item = NSMenuItem.viewItem(with: hostingView)
+    let item = NSMenuItem.viewItem(with: footerView)
     item.isEnabled = true
     menu.addItem(item)
   }
