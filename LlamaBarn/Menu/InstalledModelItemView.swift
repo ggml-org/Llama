@@ -212,12 +212,28 @@ final class InstalledModelItemView: ItemView, NSGestureRecognizerDelegate {
     } else {
       line1Color = Typography.secondaryColor
     }
-    modelNameLabel.attributedStringValue = Format.modelName(
+    let nameAttr = Format.modelName(
       family: model.family,
       size: model.sizeLabel,
       familyColor: line1Color,
       sizeColor: line1Color
     )
+
+    if isActive && !isLoading, let ctx = server.activeCtxWindow {
+      let mutableName = NSMutableAttributedString(attributedString: nameAttr)
+      let ctxString = Format.tokens(ctx)
+      let ctxAttr = NSAttributedString(
+        string: "  \(ctxString)",
+        attributes: [
+          .font: Typography.primary,
+          .foregroundColor: Typography.tertiaryColor,
+        ]
+      )
+      mutableName.append(ctxAttr)
+      modelNameLabel.attributedStringValue = mutableName
+    } else {
+      modelNameLabel.attributedStringValue = nameAttr
+    }
 
     // Line 2 uses tertiary for downloading, secondary otherwise
     let line2Color: NSColor =
