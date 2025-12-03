@@ -2,7 +2,7 @@ import AppKit
 
 final class DividerWithActionView: NSView {
   private let line = NSBox()
-  private let button = HoverButton()
+  private let label = NSTextField(labelWithString: "")
   private let onToggle: () -> Void
 
   init(onToggle: @escaping () -> Void) {
@@ -25,64 +25,38 @@ final class DividerWithActionView: NSView {
     line.translatesAutoresizingMaskIntoConstraints = false
     addSubview(line)
 
-    // Button
-    button.translatesAutoresizingMaskIntoConstraints = false
-    button.setButtonType(.toggle)
-    button.toolTip = "Show quantized models"
-    button.target = self
-    button.action = #selector(buttonClicked)
-
-    // Use a system symbol that represents "compressed" or "options"
-    // "arrow.up.left.and.arrow.down.right" is compress
-    // "square.stack.3d.up" is models
-    // Let's use a filter-like icon or just a generic one.
-    // Given the context, maybe it was a custom icon or a system one.
-    // I'll use 'line.3.horizontal.decrease' (filter) as it filters/unfilters models.
-    // Or 'square.stack.3d.down.right'
-    let image = NSImage(
-      systemSymbolName: "square.stack.3d.down.right",
-      accessibilityDescription: "Show quantized models")
-    button.image = image
-    button.image?.isTemplate = true
-
-    addSubview(button)
+    // Label
+    label.translatesAutoresizingMaskIntoConstraints = false
+    label.font = .systemFont(ofSize: 10, weight: .regular)
+    label.textColor = .tertiaryLabelColor
+    label.addGestureRecognizer(
+      NSClickGestureRecognizer(target: self, action: #selector(labelClicked)))
+    addSubview(label)
 
     NSLayoutConstraint.activate([
-      // Button on the right
-      button.trailingAnchor.constraint(
-        equalTo: trailingAnchor, constant: -Layout.outerHorizontalPadding),
-      button.centerYAnchor.constraint(equalTo: centerYAnchor),
-      button.widthAnchor.constraint(equalToConstant: 18),
-      button.heightAnchor.constraint(equalToConstant: 16),
+      // Label on the right
+      label.trailingAnchor.constraint(
+        equalTo: trailingAnchor,
+        constant: -12),
+      label.centerYAnchor.constraint(equalTo: centerYAnchor),
 
       // Line takes remaining space
       line.leadingAnchor.constraint(
         equalTo: leadingAnchor,
         constant: Layout.outerHorizontalPadding + Layout.innerHorizontalPadding),
-      line.trailingAnchor.constraint(equalTo: button.leadingAnchor, constant: -8),
+      line.trailingAnchor.constraint(equalTo: label.leadingAnchor, constant: -4),
       line.centerYAnchor.constraint(equalTo: centerYAnchor),
     ])
   }
 
-  @objc private func buttonClicked() {
+  @objc private func labelClicked() {
     onToggle()
     refresh()
   }
 
   func refresh() {
-    button.state = UserSettings.showQuantizedModels ? .on : .off
-    // Update tint color based on state if needed
-    button.contentTintColor = button.state == .on ? .controlAccentColor : .secondaryLabelColor
+    let isShown = UserSettings.showQuantizedModels
+    label.stringValue = isShown ? "hide quantized" : "show quantized"
+    label.toolTip = "Compressed versions that use less memory but are slightly less accurate"
   }
-}
-
-private class HoverButton: NSButton {
-  override init(frame frameRect: NSRect) {
-    super.init(frame: frameRect)
-    isBordered = false
-    title = ""
-    imagePosition = .imageOnly
-  }
-
-  required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 }
