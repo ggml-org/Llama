@@ -72,7 +72,12 @@ class ModelDownloader: NSObject, URLSessionDownloadDelegate {
     // State access is synchronized by dispatching to main queue when needed.
     let queue = OperationQueue()
     queue.qualityOfService = .userInitiated
-    urlSession = URLSession(configuration: .default, delegate: self, delegateQueue: queue)
+
+    let config = URLSessionConfiguration.default
+    config.timeoutIntervalForRequest = 120  // Increase timeout to handle temporary stalls
+    config.timeoutIntervalForResource = 60 * 60 * 24  // 24 hours
+
+    urlSession = URLSession(configuration: config, delegate: self, delegateQueue: queue)
   }
 
   func status(for model: CatalogEntry) -> ModelStatus {
@@ -152,6 +157,16 @@ class ModelDownloader: NSObject, URLSessionDownloadDelegate {
         }
       }
     }
+
+    // Multimodal projection file
+    if let mmprojUrl = model.mmprojUrl {
+      let baseDir = URL(fileURLWithPath: model.modelFilePath).deletingLastPathComponent()
+      let path = baseDir.appendingPathComponent(mmprojUrl.lastPathComponent).path
+      if !FileManager.default.fileExists(atPath: path) {
+        files.append(mmprojUrl)
+      }
+    }
+
     return files
   }
 
@@ -200,23 +215,39 @@ class ModelDownloader: NSObject, URLSessionDownloadDelegate {
         (try? FileManager.default.attributesOfItem(
           atPath: destinationURL.path)[.size] as? NSNumber)?.int64Value ?? 0
       // Sanity check downloaded file size to catch truncated/corrupted downloads.
-      // Threshold is 1 MB minimum, or half the expected size if expected size < 20 MB.
-      // This catches obviously broken downloads (network errors, server issues) while
-      // allowing small models and avoiding false positives on large multi-GB files.
-      let tenMB: Int64 = 10 * 1_000_000
-      let minAcceptableBytes = min(model.fileSize / 2, tenMB)
-      let minThreshold = max(Int64(1_000_000), minAcceptableBytes)
-      if fileSize <= minThreshold {
-        try? fileManager.removeItem(at: destinationURL)
-        handleDownloadFailure(
-          modelId: modelId,
-          model: model,
-          task: downloadTask,
-          tempLocation: nil,
-          destinationURL: destinationURL,
-          reason: "file too small (\(fileSize) B)"
-        )
-        return
+      let isSingleFile = (model.additionalParts ?? []).isEmpty && model.mmprojUrl == nil
+
+      if isSingleFile {
+        // For single-file models, we expect the file size to match exactly.
+        if fileSize != model.fileSize {
+          try? fileManager.removeItem(at: destinationURL)
+          handleDownloadFailure(
+            modelId: modelId,
+            model: model,
+            task: downloadTask,
+            tempLocation: nil,
+            destinationURL: destinationURL,
+            reason: "file size mismatch (expected \(model.fileSize), got \(fileSize))"
+          )
+          return
+        }
+      } else {
+        // For multi-part models, we use a heuristic.
+        // Threshold is 1 MB minimum.
+        // This catches obviously broken downloads (network errors, server issues).
+        let minThreshold = Int64(1_000_000)
+        if fileSize <= minThreshold {
+          try? fileManager.removeItem(at: destinationURL)
+          handleDownloadFailure(
+            modelId: modelId,
+            model: model,
+            task: downloadTask,
+            tempLocation: nil,
+            destinationURL: destinationURL,
+            reason: "file too small (\(fileSize) B)"
+          )
+          return
+        }
       }
 
       // Update state on main queue (activeDownloads dict must be accessed from main queue)
