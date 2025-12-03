@@ -358,11 +358,6 @@ final class MenuController: NSObject, NSMenuDelegate {
     }
   }
 
-  private func makeSectionHeaderItem(_ title: String) -> NSMenuItem {
-    let view = SectionHeaderView(title: title)
-    return NSMenuItem.viewItem(with: view)
-  }
-
   // MARK: - Settings Section
 
   private func addSettingsSection(to menu: NSMenu) {
@@ -381,16 +376,6 @@ final class MenuController: NSObject, NSMenuDelegate {
       ))
     menu.addItem(launchAtLoginItem)
 
-    // Show Quantized Models
-    // let showQuantizedItem = NSMenuItem.viewItem(
-    //   with: SettingsItemView(
-    //     title: "Show Quantized Models",
-    //     getValue: { UserSettings.showQuantizedModels },
-    //     onToggle: { newValue in
-    //       UserSettings.showQuantizedModels = newValue
-    //     }
-    //   ))
-    // menu.addItem(showQuantizedItem)
   }
 
   private func toggleSettings() {
