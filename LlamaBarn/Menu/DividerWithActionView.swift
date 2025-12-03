@@ -43,7 +43,7 @@ final class DividerWithActionView: NSView {
       // Line takes remaining space
       line.leadingAnchor.constraint(
         equalTo: leadingAnchor,
-        constant: Layout.outerHorizontalPadding + Layout.innerHorizontalPadding),
+        constant: Layout.outerHorizontalPadding + Layout.innerHorizontalPadding + 1),
       line.trailingAnchor.constraint(equalTo: label.leadingAnchor, constant: -4),
       line.centerYAnchor.constraint(equalTo: centerYAnchor),
     ])
