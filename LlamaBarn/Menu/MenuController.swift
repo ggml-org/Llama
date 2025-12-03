@@ -112,6 +112,19 @@ final class MenuController: NSObject, NSMenuDelegate {
     }
   }
 
+  /// Helper to observe a notification and rebuild the menu on the main actor
+  private func observeAndRebuild(_ name: Notification.Name) {
+    NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) {
+      [weak self] _ in
+      MainActor.assumeIsolated {
+        if let menu = self?.statusItem.menu {
+          self?.rebuildMenu(menu)
+        }
+        self?.refresh()
+      }
+    }
+  }
+
   // Observe server and download changes while the menu is open.
   private func setupObservers() {
     // Server started/stopped - update icon and views
@@ -124,27 +137,10 @@ final class MenuController: NSObject, NSMenuDelegate {
     observeAndRefresh(.LBModelDownloadsDidChange)
 
     // Model downloaded or deleted - rebuild both installed and catalog sections
-    NotificationCenter.default.addObserver(
-      forName: .LBModelDownloadedListDidChange, object: nil, queue: .main
-    ) { [weak self] _ in
-      MainActor.assumeIsolated {
-        if let menu = self?.statusItem.menu {
-          self?.rebuildMenu(menu)
-        }
-        self?.refresh()
-      }
-    }
+    observeAndRebuild(.LBModelDownloadedListDidChange)
 
     // User settings changed (e.g., show quantized models) - rebuild menu
-    NotificationCenter.default.addObserver(
-      forName: .LBUserSettingsDidChange, object: nil, queue: .main
-    ) { [weak self] _ in
-      MainActor.assumeIsolated {
-        if let menu = self?.statusItem.menu {
-          self?.rebuildMenu(menu)
-        }
-      }
-    }
+    observeAndRebuild(.LBUserSettingsDidChange)
 
     refresh()
   }
