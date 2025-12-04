@@ -203,12 +203,10 @@ final class InstalledModelItemView: ItemView, NSGestureRecognizerDelegate {
     // Progress and cancel button only for downloading
     let isDownloading = modelManager.downloadProgress(for: model) != nil
 
-    // Use tertiary for downloading, primary for running, secondary for installed
+    // Use tertiary for downloading, secondary for installed/running
     let line1Color: NSColor
     if isDownloading {
       line1Color = Typography.tertiaryColor
-    } else if isActive && !isLoading {
-      line1Color = Typography.primaryColor
     } else {
       line1Color = Typography.secondaryColor
     }
@@ -223,7 +221,7 @@ final class InstalledModelItemView: ItemView, NSGestureRecognizerDelegate {
       let mutableName = NSMutableAttributedString(attributedString: nameAttr)
       let ctxString = Format.tokens(ctx)
       let ctxAttr = NSAttributedString(
-        string: "  \(ctxString)",
+        string: " at \(ctxString) ctx",
         attributes: [
           .font: Typography.primary,
           .foregroundColor: Typography.tertiaryColor,
@@ -240,7 +238,27 @@ final class InstalledModelItemView: ItemView, NSGestureRecognizerDelegate {
       isDownloading
       ? Typography.tertiaryColor
       : Typography.secondaryColor
-    metadataLabel.attributedStringValue = Format.modelMetadata(for: model, color: line2Color)
+
+    let metadata = NSMutableAttributedString(
+      attributedString: Format.modelMetadata(for: model, color: line2Color))
+
+    // Add memory usage for running models
+    if isActive && !isLoading, let ctx = server.activeCtxWindow {
+      let memMb = Catalog.runtimeMemoryUsageMb(for: model, ctxWindowTokens: Double(ctx))
+      let memText = Format.memory(mb: memMb) + " mem"
+      metadata.append(Format.metadataSeparator())
+      metadata.append(
+        NSAttributedString(
+          string: memText,
+          attributes: [
+            .font: Typography.secondary,
+            .foregroundColor: Typography.tertiaryColor,
+          ]
+        )
+      )
+    }
+
+    metadataLabel.attributedStringValue = metadata
 
     if let progress = modelManager.downloadProgress(for: model) {
       progressLabel.stringValue = Format.progressText(progress)
