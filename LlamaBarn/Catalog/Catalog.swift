@@ -44,6 +44,8 @@ enum Catalog {
     let parameterCount: Int64  // Total model parameters
     let releaseDate: Date
     let ctxWindow: Int
+    /// Estimated KV-cache bytes needed for a 1k-token context.
+    let ctxBytesPer1kTokens: Int
     let serverArgs: [String]?  // optional defaults for all builds
     let mmproj: URL?  // optional vision projection file for multimodal models
     let build: ModelBuild
@@ -54,6 +56,7 @@ enum Catalog {
       parameterCount: Int64,
       releaseDate: Date,
       ctxWindow: Int,
+      ctxBytesPer1kTokens: Int,
       serverArgs: [String]? = nil,
       mmproj: URL? = nil,
       build: ModelBuild,
@@ -63,6 +66,7 @@ enum Catalog {
       self.parameterCount = parameterCount
       self.releaseDate = releaseDate
       self.ctxWindow = ctxWindow
+      self.ctxBytesPer1kTokens = ctxBytesPer1kTokens
       self.serverArgs = serverArgs
       self.mmproj = mmproj
       self.build = build
@@ -74,8 +78,6 @@ enum Catalog {
     let id: String  // unique identifier
     let quantization: String
     let fileSize: Int64
-    /// Estimated KV-cache bytes needed for a 1k-token context.
-    let ctxBytesPer1kTokens: Int
     let downloadUrl: URL
     let additionalParts: [URL]?
     let serverArgs: [String]?
@@ -84,7 +86,6 @@ enum Catalog {
       id: String,
       quantization: String,
       fileSize: Int64,
-      ctxBytesPer1kTokens: Int,
       downloadUrl: URL,
       additionalParts: [URL]? = nil,
       serverArgs: [String]? = nil
@@ -92,7 +93,6 @@ enum Catalog {
       self.id = id
       self.quantization = quantization
       self.fileSize = fileSize
-      self.ctxBytesPer1kTokens = ctxBytesPer1kTokens
       self.downloadUrl = downloadUrl
       self.additionalParts = additionalParts
       self.serverArgs = serverArgs
@@ -295,7 +295,7 @@ enum Catalog {
       releaseDate: size.releaseDate,
       ctxWindow: size.ctxWindow,
       fileSize: build.fileSize,
-      ctxBytesPer1kTokens: build.ctxBytesPer1kTokens,
+      ctxBytesPer1kTokens: size.ctxBytesPer1kTokens,
       overheadMultiplier: family.overheadMultiplier,
       downloadUrl: build.downloadUrl,
       additionalParts: build.additionalParts,

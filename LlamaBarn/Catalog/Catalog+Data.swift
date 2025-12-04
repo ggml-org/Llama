@@ -22,11 +22,11 @@ extension Catalog {
           parameterCount: 20_000_000_000,
           releaseDate: date(2025, 8, 2),
           ctxWindow: 131_072,
+          ctxBytesPer1kTokens: 25_165_824,
           build: ModelBuild(
             id: "gpt-oss-20b-mxfp4",
             quantization: "mxfp4",
             fileSize: 12_109_566_560,
-            ctxBytesPer1kTokens: 25_165_824,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/ggml-org/gpt-oss-20b-GGUF/resolve/main/gpt-oss-20b-mxfp4.gguf"
@@ -38,11 +38,11 @@ extension Catalog {
           parameterCount: 120_000_000_000,
           releaseDate: date(2025, 8, 2),
           ctxWindow: 131_072,
+          ctxBytesPer1kTokens: 37_748_736,
           build: ModelBuild(
             id: "gpt-oss-120b-mxfp4",
             quantization: "mxfp4",
             fileSize: 63_387_346_464,
-            ctxBytesPer1kTokens: 37_748_736,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/ggml-org/gpt-oss-120b-GGUF/resolve/main/gpt-oss-120b-mxfp4-00001-of-00003.gguf"
@@ -73,6 +73,7 @@ extension Catalog {
           parameterCount: 27_432_406_640,
           releaseDate: date(2025, 4, 24),
           ctxWindow: 131_072,
+          ctxBytesPer1kTokens: 83_886_080,
           mmproj: URL(
             string:
               "https://huggingface.co/ggml-org/gemma-3-27b-it-qat-GGUF/resolve/main/mmproj-model-f16-27B.gguf"
@@ -81,7 +82,6 @@ extension Catalog {
             id: "gemma-3-qat-27b",
             quantization: "Q4_0",
             fileSize: 15_908_791_488,
-            ctxBytesPer1kTokens: 83_886_080,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/ggml-org/gemma-3-27b-it-qat-GGUF/resolve/main/gemma-3-27b-it-qat-Q4_0.gguf"
@@ -93,6 +93,7 @@ extension Catalog {
           parameterCount: 12_187_325_040,
           releaseDate: date(2025, 4, 21),
           ctxWindow: 131_072,
+          ctxBytesPer1kTokens: 67_108_864,
           mmproj: URL(
             string:
               "https://huggingface.co/ggml-org/gemma-3-12b-it-qat-GGUF/resolve/main/mmproj-model-f16-12B.gguf"
@@ -101,7 +102,6 @@ extension Catalog {
             id: "gemma-3-qat-12b",
             quantization: "Q4_0",
             fileSize: 7_131_017_792,
-            ctxBytesPer1kTokens: 67_108_864,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/ggml-org/gemma-3-12b-it-qat-GGUF/resolve/main/gemma-3-12b-it-qat-Q4_0.gguf"
@@ -113,6 +113,7 @@ extension Catalog {
           parameterCount: 4_300_079_472,
           releaseDate: date(2025, 4, 22),
           ctxWindow: 131_072,
+          ctxBytesPer1kTokens: 20_971_520,
           mmproj: URL(
             string:
               "https://huggingface.co/ggml-org/gemma-3-4b-it-qat-GGUF/resolve/main/mmproj-model-f16-4B.gguf"
@@ -121,7 +122,6 @@ extension Catalog {
             id: "gemma-3-qat-4b",
             quantization: "Q4_0",
             fileSize: 2_526_080_992,
-            ctxBytesPer1kTokens: 20_971_520,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/ggml-org/gemma-3-4b-it-qat-GGUF/resolve/main/gemma-3-4b-it-qat-Q4_0.gguf"
@@ -133,11 +133,11 @@ extension Catalog {
           parameterCount: 999_885_952,
           releaseDate: date(2025, 8, 27),
           ctxWindow: 131_072,
+          ctxBytesPer1kTokens: 4_194_304,
           build: ModelBuild(
             id: "gemma-3-qat-1b",
             quantization: "Q4_0",
             fileSize: 720_425_600,
-            ctxBytesPer1kTokens: 4_194_304,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/ggml-org/gemma-3-1b-it-qat-GGUF/resolve/main/gemma-3-1b-it-qat-Q4_0.gguf"
@@ -149,11 +149,11 @@ extension Catalog {
           parameterCount: 268_098_176,
           releaseDate: date(2025, 8, 14),
           ctxWindow: 32_768,
+          ctxBytesPer1kTokens: 3_145_728,
           build: ModelBuild(
             id: "gemma-3-qat-270m",
             quantization: "Q4_0",
             fileSize: 241_410_624,
-            ctxBytesPer1kTokens: 3_145_728,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/ggml-org/gemma-3-270m-it-qat-GGUF/resolve/main/gemma-3-270m-it-qat-Q4_0.gguf"
@@ -174,11 +174,11 @@ extension Catalog {
           parameterCount: 7_849_978_192,
           releaseDate: date(2024, 1, 15),
           ctxWindow: 32_768,
+          ctxBytesPer1kTokens: 14_680_064,
           build: ModelBuild(
             id: "gemma-3n-e4b-q8",
             quantization: "Q8_0",
             fileSize: 7_353_292_256,
-            ctxBytesPer1kTokens: 14_680_064,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/ggml-org/gemma-3n-E4B-it-GGUF/resolve/main/gemma-3n-E4B-it-Q8_0.gguf"
@@ -189,7 +189,6 @@ extension Catalog {
               id: "gemma-3n-e4b",
               quantization: "Q4_K_M",
               fileSize: 4_539_054_208,
-              ctxBytesPer1kTokens: 14_680_064,
               downloadUrl: URL(
                 string:
                   "https://huggingface.co/unsloth/gemma-3n-E4B-it-GGUF/resolve/main/gemma-3n-E4B-it-Q4_K_M.gguf"
@@ -202,11 +201,11 @@ extension Catalog {
           parameterCount: 5_439_438_272,
           releaseDate: date(2024, 1, 1),
           ctxWindow: 32_768,
+          ctxBytesPer1kTokens: 12_582_912,
           build: ModelBuild(
             id: "gemma-3n-e2b-q8",
             quantization: "Q8_0",
             fileSize: 4_788_112_064,
-            ctxBytesPer1kTokens: 12_582_912,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/ggml-org/gemma-3n-E2B-it-GGUF/resolve/main/gemma-3n-E2B-it-Q8_0.gguf"
@@ -217,7 +216,6 @@ extension Catalog {
               id: "gemma-3n-e2b",
               quantization: "Q4_K_M",
               fileSize: 3_026_881_888,
-              ctxBytesPer1kTokens: 12_582_912,
               downloadUrl: URL(
                 string:
                   "https://huggingface.co/unsloth/gemma-3n-E2B-it-GGUF/resolve/main/gemma-3n-E2B-it-Q4_K_M.gguf"
@@ -239,11 +237,11 @@ extension Catalog {
           parameterCount: 30_532_122_624,
           releaseDate: date(2025, 7, 31),
           ctxWindow: 262_144,
+          ctxBytesPer1kTokens: 100_663_296,
           build: ModelBuild(
             id: "qwen3-coder-30b-q8",
             quantization: "Q8_0",
             fileSize: 32_483_935_392,
-            ctxBytesPer1kTokens: 100_663_296,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF/resolve/main/Qwen3-Coder-30B-A3B-Instruct-Q8_0.gguf"
@@ -254,7 +252,6 @@ extension Catalog {
               id: "qwen3-coder-30b",
               quantization: "Q4_K_M",
               fileSize: 18_556_689_568,
-              ctxBytesPer1kTokens: 100_663_296,
               downloadUrl: URL(
                 string:
                   "https://huggingface.co/unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF/resolve/main/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf"
@@ -276,11 +273,11 @@ extension Catalog {
           parameterCount: 30_532_122_624,
           releaseDate: date(2025, 7, 1),
           ctxWindow: 262_144,
+          ctxBytesPer1kTokens: 100_663_296,
           build: ModelBuild(
             id: "qwen3-2507-30b-q8",
             quantization: "Q8_0",
             fileSize: 32_483_932_576,
-            ctxBytesPer1kTokens: 100_663_296,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/ggml-org/Qwen3-30B-A3B-Instruct-2507-Q8_0-GGUF/resolve/main/qwen3-30b-a3b-instruct-2507-q8_0.gguf"
@@ -291,7 +288,6 @@ extension Catalog {
               id: "qwen3-2507-30b",
               quantization: "Q4_K_M",
               fileSize: 18_556_686_752,
-              ctxBytesPer1kTokens: 100_663_296,
               downloadUrl: URL(
                 string:
                   "https://huggingface.co/unsloth/Qwen3-30B-A3B-Instruct-2507-GGUF/resolve/main/Qwen3-30B-A3B-Instruct-2507-Q4_K_M.gguf"
@@ -304,11 +300,11 @@ extension Catalog {
           parameterCount: 4_022_468_096,
           releaseDate: date(2025, 7, 1),
           ctxWindow: 262_144,
+          ctxBytesPer1kTokens: 150_994_944,
           build: ModelBuild(
             id: "qwen3-2507-4b-q8",
             quantization: "Q8_0",
             fileSize: 4_280_405_600,
-            ctxBytesPer1kTokens: 150_994_944,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/ggml-org/Qwen3-4B-Instruct-2507-Q8_0-GGUF/resolve/main/qwen3-4b-instruct-2507-q8_0.gguf"
@@ -319,7 +315,6 @@ extension Catalog {
               id: "qwen3-2507-4b",
               quantization: "Q4_K_M",
               fileSize: 2_497_281_120,
-              ctxBytesPer1kTokens: 150_994_944,
               downloadUrl: URL(
                 string:
                   "https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q4_K_M.gguf"
@@ -341,11 +336,11 @@ extension Catalog {
           parameterCount: 30_532_122_624,
           releaseDate: date(2025, 7, 1),
           ctxWindow: 262_144,
+          ctxBytesPer1kTokens: 100_663_296,
           build: ModelBuild(
             id: "qwen3-2507-thinking-30b-q8",
             quantization: "Q8_0",
             fileSize: 32_483_932_576,
-            ctxBytesPer1kTokens: 100_663_296,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/ggml-org/Qwen3-30B-A3B-Thinking-2507-Q8_0-GGUF/resolve/main/qwen3-30b-a3b-thinking-2507-q8_0.gguf"
@@ -356,7 +351,6 @@ extension Catalog {
               id: "qwen3-2507-thinking-30b",
               quantization: "Q4_K_M",
               fileSize: 18_556_686_752,
-              ctxBytesPer1kTokens: 100_663_296,
               downloadUrl: URL(
                 string:
                   "https://huggingface.co/unsloth/Qwen3-30B-A3B-Thinking-2507-GGUF/resolve/main/Qwen3-30B-A3B-Thinking-2507-Q4_K_M.gguf"
@@ -369,11 +363,11 @@ extension Catalog {
           parameterCount: 4_022_468_096,
           releaseDate: date(2025, 7, 1),
           ctxWindow: 262_144,
+          ctxBytesPer1kTokens: 150_994_944,
           build: ModelBuild(
             id: "qwen3-2507-thinking-4b-q8",
             quantization: "Q8_0",
             fileSize: 4_280_405_632,
-            ctxBytesPer1kTokens: 150_994_944,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/ggml-org/Qwen3-4B-Thinking-2507-Q8_0-GGUF/resolve/main/qwen3-4b-thinking-2507-q8_0.gguf"
@@ -384,7 +378,6 @@ extension Catalog {
               id: "qwen3-2507-thinking-4b",
               quantization: "Q4_K_M",
               fileSize: 2_497_281_152,
-              ctxBytesPer1kTokens: 150_994_944,
               downloadUrl: URL(
                 string:
                   "https://huggingface.co/unsloth/Qwen3-4B-Thinking-2507-GGUF/resolve/main/Qwen3-4B-Thinking-2507-Q4_K_M.gguf"
@@ -406,6 +399,7 @@ extension Catalog {
           parameterCount: 31_070_754_032,
           releaseDate: date(2025, 10, 31),
           ctxWindow: 262_144,
+          ctxBytesPer1kTokens: 100_663_296,
           mmproj: URL(
             string:
               "https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Instruct-GGUF/resolve/main/mmproj-Qwen3VL-30B-A3B-Instruct-Q8_0.gguf"
@@ -414,7 +408,6 @@ extension Catalog {
             id: "qwen3-vl-instruct-30b-q8",
             quantization: "Q8_0",
             fileSize: 32_483_932_992,
-            ctxBytesPer1kTokens: 100_663_296,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Instruct-GGUF/resolve/main/Qwen3VL-30B-A3B-Instruct-Q8_0.gguf"
@@ -425,7 +418,6 @@ extension Catalog {
               id: "qwen3-vl-instruct-30b",
               quantization: "Q4_K_M",
               fileSize: 18_556_687_168,
-              ctxBytesPer1kTokens: 100_663_296,
               downloadUrl: URL(
                 string:
                   "https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Instruct-GGUF/resolve/main/Qwen3VL-30B-A3B-Instruct-Q4_K_M.gguf"
@@ -438,6 +430,7 @@ extension Catalog {
           parameterCount: 8_767_123_696,
           releaseDate: date(2025, 10, 31),
           ctxWindow: 262_144,
+          ctxBytesPer1kTokens: 150_994_944,
           mmproj: URL(
             string:
               "https://huggingface.co/Qwen/Qwen3-VL-8B-Instruct-GGUF/resolve/main/mmproj-Qwen3VL-8B-Instruct-Q8_0.gguf"
@@ -446,7 +439,6 @@ extension Catalog {
             id: "qwen3-vl-instruct-8b-q8",
             quantization: "Q8_0",
             fileSize: 8_709_519_456,
-            ctxBytesPer1kTokens: 150_994_944,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/Qwen/Qwen3-VL-8B-Instruct-GGUF/resolve/main/Qwen3VL-8B-Instruct-Q8_0.gguf"
@@ -457,7 +449,6 @@ extension Catalog {
               id: "qwen3-vl-instruct-8b",
               quantization: "Q4_K_M",
               fileSize: 5_027_784_800,
-              ctxBytesPer1kTokens: 150_994_944,
               downloadUrl: URL(
                 string:
                   "https://huggingface.co/Qwen/Qwen3-VL-8B-Instruct-GGUF/resolve/main/Qwen3VL-8B-Instruct-Q4_K_M.gguf"
@@ -470,6 +461,7 @@ extension Catalog {
           parameterCount: 4_437_815_808,
           releaseDate: date(2025, 10, 31),
           ctxWindow: 262_144,
+          ctxBytesPer1kTokens: 150_994_944,
           mmproj: URL(
             string:
               "https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct-GGUF/resolve/main/mmproj-Qwen3VL-4B-Instruct-Q8_0.gguf"
@@ -478,7 +470,6 @@ extension Catalog {
             id: "qwen3-vl-instruct-4b-q8",
             quantization: "Q8_0",
             fileSize: 4_280_406_144,
-            ctxBytesPer1kTokens: 150_994_944,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct-GGUF/resolve/main/Qwen3VL-4B-Instruct-Q8_0.gguf"
@@ -489,7 +480,6 @@ extension Catalog {
               id: "qwen3-vl-instruct-4b",
               quantization: "Q4_K_M",
               fileSize: 2_497_281_664,
-              ctxBytesPer1kTokens: 150_994_944,
               downloadUrl: URL(
                 string:
                   "https://huggingface.co/Qwen/Qwen3-VL-4B-Instruct-GGUF/resolve/main/Qwen3VL-4B-Instruct-Q4_K_M.gguf"
@@ -502,6 +492,7 @@ extension Catalog {
           parameterCount: 2_127_532_032,
           releaseDate: date(2025, 10, 31),
           ctxWindow: 262_144,
+          ctxBytesPer1kTokens: 117_440_512,
           mmproj: URL(
             string:
               "https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct-GGUF/resolve/main/mmproj-Qwen3VL-2B-Instruct-Q8_0.gguf"
@@ -510,7 +501,6 @@ extension Catalog {
             id: "qwen3-vl-instruct-2b-q8",
             quantization: "Q8_0",
             fileSize: 1_834_427_424,
-            ctxBytesPer1kTokens: 117_440_512,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct-GGUF/resolve/main/Qwen3VL-2B-Instruct-Q8_0.gguf"
@@ -521,7 +511,6 @@ extension Catalog {
               id: "qwen3-vl-instruct-2b",
               quantization: "Q4_K_M",
               fileSize: 1_107_409_952,
-              ctxBytesPer1kTokens: 117_440_512,
               downloadUrl: URL(
                 string:
                   "https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct-GGUF/resolve/main/Qwen3VL-2B-Instruct-Q4_K_M.gguf"
@@ -543,6 +532,7 @@ extension Catalog {
           parameterCount: 31_070_754_032,
           releaseDate: date(2025, 10, 31),
           ctxWindow: 262_144,
+          ctxBytesPer1kTokens: 100_663_296,
           mmproj: URL(
             string:
               "https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Thinking-GGUF/resolve/main/mmproj-Qwen3VL-30B-A3B-Thinking-Q8_0.gguf"
@@ -551,7 +541,6 @@ extension Catalog {
             id: "qwen3-vl-thinking-30b-q8",
             quantization: "Q8_0",
             fileSize: 32_483_933_024,
-            ctxBytesPer1kTokens: 100_663_296,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Thinking-GGUF/resolve/main/Qwen3VL-30B-A3B-Thinking-Q8_0.gguf"
@@ -562,7 +551,6 @@ extension Catalog {
               id: "qwen3-vl-thinking-30b",
               quantization: "Q4_K_M",
               fileSize: 18_556_687_200,
-              ctxBytesPer1kTokens: 100_663_296,
               downloadUrl: URL(
                 string:
                   "https://huggingface.co/Qwen/Qwen3-VL-30B-A3B-Thinking-GGUF/resolve/main/Qwen3VL-30B-A3B-Thinking-Q4_K_M.gguf"
@@ -575,6 +563,7 @@ extension Catalog {
           parameterCount: 8_767_123_696,
           releaseDate: date(2025, 10, 31),
           ctxWindow: 262_144,
+          ctxBytesPer1kTokens: 150_994_944,
           mmproj: URL(
             string:
               "https://huggingface.co/Qwen/Qwen3-VL-8B-Thinking-GGUF/resolve/main/mmproj-Qwen3VL-8B-Thinking-Q8_0.gguf"
@@ -583,7 +572,6 @@ extension Catalog {
             id: "qwen3-vl-thinking-8b-q8",
             quantization: "Q8_0",
             fileSize: 8_709_519_360,
-            ctxBytesPer1kTokens: 150_994_944,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/Qwen/Qwen3-VL-8B-Thinking-GGUF/resolve/main/Qwen3VL-8B-Thinking-Q8_0.gguf"
@@ -594,7 +582,6 @@ extension Catalog {
               id: "qwen3-vl-thinking-8b",
               quantization: "Q4_K_M",
               fileSize: 5_027_784_704,
-              ctxBytesPer1kTokens: 150_994_944,
               downloadUrl: URL(
                 string:
                   "https://huggingface.co/Qwen/Qwen3-VL-8B-Thinking-GGUF/resolve/main/Qwen3VL-8B-Thinking-Q4_K_M.gguf"
@@ -607,6 +594,7 @@ extension Catalog {
           parameterCount: 4_437_815_808,
           releaseDate: date(2025, 10, 31),
           ctxWindow: 262_144,
+          ctxBytesPer1kTokens: 150_994_944,
           mmproj: URL(
             string:
               "https://huggingface.co/Qwen/Qwen3-VL-4B-Thinking-GGUF/resolve/main/mmproj-Qwen3VL-4B-Thinking-Q8_0.gguf"
@@ -615,7 +603,6 @@ extension Catalog {
             id: "qwen3-vl-thinking-4b-q8",
             quantization: "Q8_0",
             fileSize: 4_280_405_952,
-            ctxBytesPer1kTokens: 150_994_944,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/Qwen/Qwen3-VL-4B-Thinking-GGUF/resolve/main/Qwen3VL-4B-Thinking-Q8_0.gguf"
@@ -626,7 +613,6 @@ extension Catalog {
               id: "qwen3-vl-thinking-4b",
               quantization: "Q4_K_M",
               fileSize: 2_497_281_472,
-              ctxBytesPer1kTokens: 150_994_944,
               downloadUrl: URL(
                 string:
                   "https://huggingface.co/Qwen/Qwen3-VL-4B-Thinking-GGUF/resolve/main/Qwen3VL-4B-Thinking-Q4_K_M.gguf"
@@ -639,6 +625,7 @@ extension Catalog {
           parameterCount: 2_127_532_032,
           releaseDate: date(2025, 10, 31),
           ctxWindow: 262_144,
+          ctxBytesPer1kTokens: 117_440_512,
           mmproj: URL(
             string:
               "https://huggingface.co/Qwen/Qwen3-VL-2B-Thinking-GGUF/resolve/main/mmproj-Qwen3VL-2B-Thinking-Q8_0.gguf"
@@ -647,7 +634,6 @@ extension Catalog {
             id: "qwen3-vl-thinking-2b-q8",
             quantization: "Q8_0",
             fileSize: 1_834_427_360,
-            ctxBytesPer1kTokens: 117_440_512,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/Qwen/Qwen3-VL-2B-Thinking-GGUF/resolve/main/Qwen3VL-2B-Thinking-Q8_0.gguf"
@@ -658,7 +644,6 @@ extension Catalog {
               id: "qwen3-vl-thinking-2b",
               quantization: "Q4_K_M",
               fileSize: 1_107_409_888,
-              ctxBytesPer1kTokens: 117_440_512,
               downloadUrl: URL(
                 string:
                   "https://huggingface.co/Qwen/Qwen3-VL-2B-Thinking-GGUF/resolve/main/Qwen3VL-2B-Thinking-Q4_K_M.gguf"
@@ -679,6 +664,7 @@ extension Catalog {
           parameterCount: 14_000_000_000,
           releaseDate: date(2025, 12, 2),
           ctxWindow: 262_144,
+          ctxBytesPer1kTokens: 40_960_000,
           mmproj: URL(
             string:
               "https://huggingface.co/ggml-org/Ministral-3-14B-Instruct-2512-GGUF/resolve/main/mmproj-Ministral-3-14B-Instruct-2512-Q8_0.gguf"
@@ -687,7 +673,6 @@ extension Catalog {
             id: "ministral-3-instruct-14b-q8",
             quantization: "Q8_0",
             fileSize: 14_359_311_264,
-            ctxBytesPer1kTokens: 40_960_000,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/ggml-org/Ministral-3-14B-Instruct-2512-GGUF/resolve/main/Ministral-3-14B-Instruct-2512-Q8_0.gguf"
@@ -698,7 +683,6 @@ extension Catalog {
               id: "ministral-3-instruct-14b",
               quantization: "Q4_K_M",
               fileSize: 8_239_593_024,
-              ctxBytesPer1kTokens: 40_960_000,
               downloadUrl: URL(
                 string:
                   "https://huggingface.co/mistralai/Ministral-3-14B-Instruct-2512-GGUF/resolve/main/Ministral-3-14B-Instruct-2512-Q4_K_M.gguf"
@@ -711,6 +695,7 @@ extension Catalog {
           parameterCount: 9_000_000_000,
           releaseDate: date(2025, 12, 2),
           ctxWindow: 262_144,
+          ctxBytesPer1kTokens: 34_817_856,
           mmproj: URL(
             string:
               "https://huggingface.co/ggml-org/Ministral-3-8B-Instruct-2512-GGUF/resolve/main/mmproj-Ministral-3-8B-Instruct-2512-Q8_0.gguf"
@@ -719,7 +704,6 @@ extension Catalog {
             id: "ministral-3-instruct-8b-q8",
             quantization: "Q8_0",
             fileSize: 9_703_104_512,
-            ctxBytesPer1kTokens: 34_817_856,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/ggml-org/Ministral-3-8B-Instruct-2512-GGUF/resolve/main/Ministral-3-8B-Instruct-2512-Q8_0.gguf"
@@ -730,7 +714,6 @@ extension Catalog {
               id: "ministral-3-instruct-8b",
               quantization: "Q4_K_M",
               fileSize: 5_198_911_904,
-              ctxBytesPer1kTokens: 34_817_856,
               downloadUrl: URL(
                 string:
                   "https://huggingface.co/mistralai/Ministral-3-8B-Instruct-2512-GGUF/resolve/main/Ministral-3-8B-Instruct-2512-Q4_K_M.gguf"
@@ -743,6 +726,7 @@ extension Catalog {
           parameterCount: 4_000_000_000,
           releaseDate: date(2025, 12, 2),
           ctxWindow: 262_144,
+          ctxBytesPer1kTokens: 26_625_928,
           mmproj: URL(
             string:
               "https://huggingface.co/ggml-org/Ministral-3-3B-Instruct-2512-GGUF/resolve/main/mmproj-Ministral-3-3B-Instruct-2512-Q8_0.gguf"
@@ -751,7 +735,6 @@ extension Catalog {
             id: "ministral-3-instruct-3b-q8",
             quantization: "Q8_0",
             fileSize: 3_913_606_144,
-            ctxBytesPer1kTokens: 26_625_928,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/ggml-org/Ministral-3-3B-Instruct-2512-GGUF/resolve/main/Ministral-3-3B-Instruct-2512-Q8_0.gguf"
@@ -762,7 +745,6 @@ extension Catalog {
               id: "ministral-3-instruct-3b",
               quantization: "Q4_K_M",
               fileSize: 2_147_023_008,
-              ctxBytesPer1kTokens: 26_625_928,
               downloadUrl: URL(
                 string:
                   "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-GGUF/resolve/main/Ministral-3-3B-Instruct-2512-Q4_K_M.gguf"
@@ -783,6 +765,7 @@ extension Catalog {
           parameterCount: 14_000_000_000,
           releaseDate: date(2025, 12, 2),
           ctxWindow: 262_144,
+          ctxBytesPer1kTokens: 40_960_000,
           mmproj: URL(
             string:
               "https://huggingface.co/ggml-org/Ministral-3-14B-Reasoning-2512-GGUF/resolve/main/mmproj-Ministral-3-14B-Reasoning-2512-Q8_0.gguf"
@@ -791,7 +774,6 @@ extension Catalog {
             id: "ministral-3-reasoning-14b-q8",
             quantization: "Q8_0",
             fileSize: 14_359_309_728,
-            ctxBytesPer1kTokens: 40_960_000,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/ggml-org/Ministral-3-14B-Reasoning-2512-GGUF/resolve/main/Ministral-3-14B-Reasoning-2512-Q8_0.gguf"
@@ -802,7 +784,6 @@ extension Catalog {
               id: "ministral-3-reasoning-14b",
               quantization: "Q4_K_M",
               fileSize: 8_239_591_488,
-              ctxBytesPer1kTokens: 40_960_000,
               downloadUrl: URL(
                 string:
                   "https://huggingface.co/mistralai/Ministral-3-14B-Reasoning-2512-GGUF/resolve/main/Ministral-3-14B-Reasoning-2512-Q4_K_M.gguf"
@@ -815,6 +796,7 @@ extension Catalog {
           parameterCount: 9_000_000_000,
           releaseDate: date(2025, 12, 2),
           ctxWindow: 262_144,
+          ctxBytesPer1kTokens: 34_817_856,
           mmproj: URL(
             string:
               "https://huggingface.co/ggml-org/Ministral-3-8B-Reasoning-2512-GGUF/resolve/main/mmproj-Ministral-3-8B-Reasoning-2512-Q8_0.gguf"
@@ -823,7 +805,6 @@ extension Catalog {
             id: "ministral-3-reasoning-8b-q8",
             quantization: "Q8_0",
             fileSize: 9_701_376_000,
-            ctxBytesPer1kTokens: 34_817_856,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/ggml-org/Ministral-3-8B-Reasoning-2512-GGUF/resolve/main/Ministral-3-8B-Reasoning-2512-Q8_0.gguf"
@@ -834,7 +815,6 @@ extension Catalog {
               id: "ministral-3-reasoning-8b",
               quantization: "Q4_K_M",
               fileSize: 5_198_910_368,
-              ctxBytesPer1kTokens: 34_817_856,
               downloadUrl: URL(
                 string:
                   "https://huggingface.co/mistralai/Ministral-3-8B-Reasoning-2512-GGUF/resolve/main/Ministral-3-8B-Reasoning-2512-Q4_K_M.gguf"
@@ -847,6 +827,7 @@ extension Catalog {
           parameterCount: 4_000_000_000,
           releaseDate: date(2025, 12, 2),
           ctxWindow: 262_144,
+          ctxBytesPer1kTokens: 26_625_928,
           mmproj: URL(
             string:
               "https://huggingface.co/ggml-org/Ministral-3-3B-Reasoning-2512-GGUF/resolve/main/mmproj-Ministral-3-3B-Reasoning-2512-Q8_0.gguf"
@@ -855,7 +836,6 @@ extension Catalog {
             id: "ministral-3-reasoning-3b-q8",
             quantization: "Q8_0",
             fileSize: 3_916_269_568,
-            ctxBytesPer1kTokens: 26_625_928,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/ggml-org/Ministral-3-3B-Reasoning-2512-GGUF/resolve/main/Ministral-3-3B-Reasoning-2512-Q8_0.gguf"
@@ -866,7 +846,6 @@ extension Catalog {
               id: "ministral-3-reasoning-3b",
               quantization: "Q4_K_M",
               fileSize: 2_147_021_472,
-              ctxBytesPer1kTokens: 26_625_928,
               downloadUrl: URL(
                 string:
                   "https://huggingface.co/mistralai/Ministral-3-3B-Reasoning-2512-GGUF/resolve/main/Ministral-3-3B-Reasoning-2512-Q4_K_M.gguf"
