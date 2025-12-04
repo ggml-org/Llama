@@ -110,7 +110,7 @@ private class FooterButton: NSButton {
 
   override var intrinsicContentSize: NSSize {
     let size = super.intrinsicContentSize
-    return NSSize(width: size.width + 10, height: size.height + 4)
+    return NSSize(width: size.width + 8, height: size.height + 4)
   }
 
   override func updateLayer() {
