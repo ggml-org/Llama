@@ -692,7 +692,19 @@ extension Catalog {
               string:
                 "https://huggingface.co/ggml-org/Ministral-3-14B-Instruct-2512-GGUF/resolve/main/Ministral-3-14B-Instruct-2512-Q8_0.gguf"
             )!
-          )
+          ),
+          quantizedBuilds: [
+            ModelBuild(
+              id: "ministral-3-instruct-14b",
+              quantization: "Q4_K_M",
+              fileSize: 8_239_593_024,
+              ctxBytesPer1kTokens: 40_960_000,
+              downloadUrl: URL(
+                string:
+                  "https://huggingface.co/mistralai/Ministral-3-14B-Instruct-2512-GGUF/resolve/main/Ministral-3-14B-Instruct-2512-Q4_K_M.gguf"
+              )!
+            )
+          ]
         ),
         ModelSize(
           name: "8B",
@@ -712,7 +724,19 @@ extension Catalog {
               string:
                 "https://huggingface.co/ggml-org/Ministral-3-8B-Instruct-2512-GGUF/resolve/main/Ministral-3-8B-Instruct-2512-Q8_0.gguf"
             )!
-          )
+          ),
+          quantizedBuilds: [
+            ModelBuild(
+              id: "ministral-3-instruct-8b",
+              quantization: "Q4_K_M",
+              fileSize: 5_198_911_904,
+              ctxBytesPer1kTokens: 34_817_856,
+              downloadUrl: URL(
+                string:
+                  "https://huggingface.co/mistralai/Ministral-3-8B-Instruct-2512-GGUF/resolve/main/Ministral-3-8B-Instruct-2512-Q4_K_M.gguf"
+              )!
+            )
+          ]
         ),
         ModelSize(
           name: "3B",
@@ -732,7 +756,19 @@ extension Catalog {
               string:
                 "https://huggingface.co/ggml-org/Ministral-3-3B-Instruct-2512-GGUF/resolve/main/Ministral-3-3B-Instruct-2512-Q8_0.gguf"
             )!
-          )
+          ),
+          quantizedBuilds: [
+            ModelBuild(
+              id: "ministral-3-instruct-3b",
+              quantization: "Q4_K_M",
+              fileSize: 2_147_023_008,
+              ctxBytesPer1kTokens: 26_625_928,
+              downloadUrl: URL(
+                string:
+                  "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512-GGUF/resolve/main/Ministral-3-3B-Instruct-2512-Q4_K_M.gguf"
+              )!
+            )
+          ]
         ),
       ]
     ),
@@ -760,7 +796,19 @@ extension Catalog {
               string:
                 "https://huggingface.co/ggml-org/Ministral-3-14B-Reasoning-2512-GGUF/resolve/main/Ministral-3-14B-Reasoning-2512-Q8_0.gguf"
             )!
-          )
+          ),
+          quantizedBuilds: [
+            ModelBuild(
+              id: "ministral-3-reasoning-14b",
+              quantization: "Q4_K_M",
+              fileSize: 8_239_591_488,
+              ctxBytesPer1kTokens: 40_960_000,
+              downloadUrl: URL(
+                string:
+                  "https://huggingface.co/mistralai/Ministral-3-14B-Reasoning-2512-GGUF/resolve/main/Ministral-3-14B-Reasoning-2512-Q4_K_M.gguf"
+              )!
+            )
+          ]
         ),
         ModelSize(
           name: "8B",
@@ -780,7 +828,19 @@ extension Catalog {
               string:
                 "https://huggingface.co/ggml-org/Ministral-3-8B-Reasoning-2512-GGUF/resolve/main/Ministral-3-8B-Reasoning-2512-Q8_0.gguf"
             )!
-          )
+          ),
+          quantizedBuilds: [
+            ModelBuild(
+              id: "ministral-3-reasoning-8b",
+              quantization: "Q4_K_M",
+              fileSize: 5_198_910_368,
+              ctxBytesPer1kTokens: 34_817_856,
+              downloadUrl: URL(
+                string:
+                  "https://huggingface.co/mistralai/Ministral-3-8B-Reasoning-2512-GGUF/resolve/main/Ministral-3-8B-Reasoning-2512-Q4_K_M.gguf"
+              )!
+            )
+          ]
         ),
         ModelSize(
           name: "3B",
@@ -800,7 +860,19 @@ extension Catalog {
               string:
                 "https://huggingface.co/ggml-org/Ministral-3-3B-Reasoning-2512-GGUF/resolve/main/Ministral-3-3B-Reasoning-2512-Q8_0.gguf"
             )!
-          )
+          ),
+          quantizedBuilds: [
+            ModelBuild(
+              id: "ministral-3-reasoning-3b",
+              quantization: "Q4_K_M",
+              fileSize: 2_147_021_472,
+              ctxBytesPer1kTokens: 26_625_928,
+              downloadUrl: URL(
+                string:
+                  "https://huggingface.co/mistralai/Ministral-3-3B-Reasoning-2512-GGUF/resolve/main/Ministral-3-3B-Reasoning-2512-Q4_K_M.gguf"
+              )!
+            )
+          ]
         ),
       ]
     ),
