@@ -41,7 +41,9 @@ enum UserSettings {
       defaults.bool(forKey: Keys.exposeToNetwork)
     }
     set {
+      guard defaults.bool(forKey: Keys.exposeToNetwork) != newValue else { return }
       defaults.set(newValue, forKey: Keys.exposeToNetwork)
+      NotificationCenter.default.post(name: .LBUserSettingsDidChange, object: nil)
     }
   }
 }
