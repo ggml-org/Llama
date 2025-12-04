@@ -217,21 +217,7 @@ final class InstalledModelItemView: ItemView, NSGestureRecognizerDelegate {
       sizeColor: line1Color
     )
 
-    if isActive && !isLoading, let ctx = server.activeCtxWindow {
-      let mutableName = NSMutableAttributedString(attributedString: nameAttr)
-      let ctxString = Format.tokens(ctx)
-      let ctxAttr = NSAttributedString(
-        string: " at \(ctxString) ctx",
-        attributes: [
-          .font: Typography.primary,
-          .foregroundColor: Typography.tertiaryColor,
-        ]
-      )
-      mutableName.append(ctxAttr)
-      modelNameLabel.attributedStringValue = mutableName
-    } else {
-      modelNameLabel.attributedStringValue = nameAttr
-    }
+    modelNameLabel.attributedStringValue = nameAttr
 
     // Line 2 uses tertiary for downloading, secondary otherwise
     let line2Color: NSColor =
@@ -242,14 +228,15 @@ final class InstalledModelItemView: ItemView, NSGestureRecognizerDelegate {
     let metadata = NSMutableAttributedString(
       attributedString: Format.modelMetadata(for: model, color: line2Color))
 
-    // Add memory usage for running models
     if isActive && !isLoading, let ctx = server.activeCtxWindow {
+      let ctxString = Format.tokens(ctx)
       let memMb = Catalog.runtimeMemoryUsageMb(for: model, ctxWindowTokens: Double(ctx))
-      let memText = Format.memory(mb: memMb) + " mem"
+      let memText = Format.memory(mb: memMb)
+
       metadata.append(Format.metadataSeparator())
       metadata.append(
         NSAttributedString(
-          string: memText,
+          string: "\(ctxString) ctx · \(memText) mem",
           attributes: [
             .font: Typography.secondary,
             .foregroundColor: Typography.tertiaryColor,
