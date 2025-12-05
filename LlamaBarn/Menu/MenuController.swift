@@ -254,22 +254,7 @@ final class MenuController: NSObject, NSMenuDelegate {
 
     for family in Catalog.families {
       let preferQuantized = UserSettings.preferQuantizedModels
-      let compatibleModels = family.allModels.filter { Catalog.isModelCompatible($0) }
-
-      // Group by size (e.g., "27B") to pick the preferred version
-      let modelsBySize = Dictionary(grouping: compatibleModels, by: { $0.size })
-
-      let validModels = modelsBySize.values.compactMap { models -> CatalogEntry? in
-        if preferQuantized {
-          // Prefer quantized, fallback to full precision
-          return models.first(where: { !$0.isFullPrecision })
-            ?? models.first(where: { $0.isFullPrecision })
-        } else {
-          // Prefer full precision, fallback to quantized
-          return models.first(where: { $0.isFullPrecision })
-            ?? models.first(where: { !$0.isFullPrecision })
-        }
-      }.sorted(by: CatalogEntry.displayOrder(_:_:))
+      let validModels = family.selectableModels(preferQuantized: preferQuantized)
 
       // Only show family if there are models available to install
       let availableModels = validModels.filter {
