@@ -664,7 +664,7 @@ extension Catalog {
           parameterCount: 14_000_000_000,
           releaseDate: date(2025, 12, 2),
           ctxWindow: 262_144,
-          ctxBytesPer1kTokens: 40_960_000,
+          ctxBytesPer1kTokens: 163_840_000,
           mmproj: URL(
             string:
               "https://huggingface.co/ggml-org/Ministral-3-14B-Instruct-2512-GGUF/resolve/main/mmproj-Ministral-3-14B-Instruct-2512-Q8_0.gguf"
@@ -695,7 +695,7 @@ extension Catalog {
           parameterCount: 9_000_000_000,
           releaseDate: date(2025, 12, 2),
           ctxWindow: 262_144,
-          ctxBytesPer1kTokens: 34_817_856,
+          ctxBytesPer1kTokens: 139_264_000,
           mmproj: URL(
             string:
               "https://huggingface.co/ggml-org/Ministral-3-8B-Instruct-2512-GGUF/resolve/main/mmproj-Ministral-3-8B-Instruct-2512-Q8_0.gguf"
@@ -726,7 +726,7 @@ extension Catalog {
           parameterCount: 4_000_000_000,
           releaseDate: date(2025, 12, 2),
           ctxWindow: 262_144,
-          ctxBytesPer1kTokens: 26_625_928,
+          ctxBytesPer1kTokens: 106_496_000,
           mmproj: URL(
             string:
               "https://huggingface.co/ggml-org/Ministral-3-3B-Instruct-2512-GGUF/resolve/main/mmproj-Ministral-3-3B-Instruct-2512-Q8_0.gguf"
@@ -765,7 +765,7 @@ extension Catalog {
           parameterCount: 14_000_000_000,
           releaseDate: date(2025, 12, 2),
           ctxWindow: 262_144,
-          ctxBytesPer1kTokens: 40_960_000,
+          ctxBytesPer1kTokens: 163_840_000,
           mmproj: URL(
             string:
               "https://huggingface.co/ggml-org/Ministral-3-14B-Reasoning-2512-GGUF/resolve/main/mmproj-Ministral-3-14B-Reasoning-2512-Q8_0.gguf"
@@ -796,7 +796,7 @@ extension Catalog {
           parameterCount: 9_000_000_000,
           releaseDate: date(2025, 12, 2),
           ctxWindow: 262_144,
-          ctxBytesPer1kTokens: 34_817_856,
+          ctxBytesPer1kTokens: 139_264_000,
           mmproj: URL(
             string:
               "https://huggingface.co/ggml-org/Ministral-3-8B-Reasoning-2512-GGUF/resolve/main/mmproj-Ministral-3-8B-Reasoning-2512-Q8_0.gguf"
@@ -827,7 +827,7 @@ extension Catalog {
           parameterCount: 4_000_000_000,
           releaseDate: date(2025, 12, 2),
           ctxWindow: 262_144,
-          ctxBytesPer1kTokens: 26_625_928,
+          ctxBytesPer1kTokens: 106_496_000,
           mmproj: URL(
             string:
               "https://huggingface.co/ggml-org/Ministral-3-3B-Reasoning-2512-GGUF/resolve/main/mmproj-Ministral-3-3B-Reasoning-2512-Q8_0.gguf"
