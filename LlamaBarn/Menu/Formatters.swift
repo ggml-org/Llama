@@ -41,13 +41,6 @@ enum Format {
     return formatDecimal(gb, unit: " GB")
   }
 
-  // MARK: - Metadata Formatting
-
-  /// Creates a bullet separator for metadata lines (e.g., "2.5 GB · 128k · 4 GB").
-  static func metadataSeparator() -> NSAttributedString {
-    NSAttributedString(string: " · ", attributes: Typography.tertiaryAttributes)
-  }
-
   // MARK: - Quantization Formatting
 
   /// Extracts the first segment of a quantization label for compact display.
@@ -66,7 +59,7 @@ enum Format {
 
   /// Calculates download progress percentage from a Progress object.
   /// Returns 0 if totalUnitCount is 0 or invalid, otherwise percentage 0-100.
-  private static func progress(_ progress: Progress) -> Int {
+  static func progress(_ progress: Progress) -> Int {
     guard progress.totalUnitCount > 0 else { return 0 }
     let fraction = Double(progress.completedUnitCount) / Double(progress.totalUnitCount)
     return max(0, min(100, Int(fraction * 100)))
@@ -75,6 +68,24 @@ enum Format {
   /// Formats progress percentage as a string (e.g., "42%").
   static func progressText(_ progress: Progress) -> String {
     "\(Format.progress(progress))%"
+  }
+
+  // MARK: - Private Helpers
+
+  /// Formats a value with one decimal place, omitting ".0" for whole numbers.
+  private static func formatDecimal(_ value: Double, unit: String) -> String {
+    let rounded = (value * 10).rounded() / 10
+    let format = rounded.truncatingRemainder(dividingBy: 1) == 0 ? "%.0f" : "%.1f"
+    return String(format: format + unit, rounded)
+  }
+}
+
+extension Format {
+  // MARK: - Metadata Formatting
+
+  /// Creates a bullet separator for metadata lines (e.g., "2.5 GB · 128k · 4 GB").
+  static func metadataSeparator() -> NSAttributedString {
+    NSAttributedString(string: " · ", attributes: Typography.tertiaryAttributes)
   }
 
   // MARK: - Model Metadata (composite)
@@ -139,14 +150,5 @@ enum Format {
       NSAttributedString(
         string: " \(size)", attributes: Typography.makePrimaryAttributes(color: sizeColor)))
     return result
-  }
-
-  // MARK: - Private Helpers
-
-  /// Formats a value with one decimal place, omitting ".0" for whole numbers.
-  private static func formatDecimal(_ value: Double, unit: String) -> String {
-    let rounded = (value * 10).rounded() / 10
-    let format = rounded.truncatingRemainder(dividingBy: 1) == 0 ? "%.0f" : "%.1f"
-    return String(format: format + unit, rounded)
   }
 }
