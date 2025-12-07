@@ -8,9 +8,12 @@ final class HeaderView: NSView {
   private let stackView = NSStackView()
   private let statusLabel = Typography.makeSecondaryLabel()
   private let linkButton = NSButton()
+  private let copyImageView = NSImageView()
   private let backgroundView = NSView()
 
   private var currentUrl: URL?
+  private var copyClickRecognizer: NSClickGestureRecognizer?
+  private var showingCopyConfirmation = false
 
   init(server: LlamaServer) {
     self.server = server
@@ -56,8 +59,21 @@ final class HeaderView: NSView {
     linkButton.target = self
     linkButton.action = #selector(openLink)
 
+    // Copy Image View Configuration
+    copyImageView.image = NSImage(
+      systemSymbolName: "doc.on.doc", accessibilityDescription: "Copy URL")
+    copyImageView.toolTip = "Copy URL"
+    copyImageView.contentTintColor = Typography.tertiaryColor
+    copyImageView.symbolConfiguration = .init(pointSize: 11, weight: .regular)
+    copyImageView.setContentHuggingPriority(.init(251), for: .horizontal)
+
+    let copyClick = NSClickGestureRecognizer(target: self, action: #selector(copyUrl))
+    copyImageView.addGestureRecognizer(copyClick)
+    copyClickRecognizer = copyClick
+
     stackView.addArrangedSubview(statusLabel)
     stackView.addArrangedSubview(linkButton)
+    stackView.addArrangedSubview(copyImageView)
 
     // Spacer
     let spacer = NSView()
@@ -88,11 +104,18 @@ final class HeaderView: NSView {
       )
       linkButton.attributedTitle = attrTitle
       linkButton.isHidden = false
+      copyImageView.isHidden = false
+
+      // Update copy icon based on confirmation state
+      let iconName = showingCopyConfirmation ? "checkmark" : "doc.on.doc"
+      copyImageView.image = NSImage(
+        systemSymbolName: iconName, accessibilityDescription: "Copy URL")
     } else {
       statusLabel.stringValue = "Select a model to run"
       statusLabel.textColor = Typography.secondaryColor
       linkButton.isHidden = true
       linkButton.toolTip = nil
+      copyImageView.isHidden = true
       currentUrl = nil
     }
 
@@ -102,6 +125,24 @@ final class HeaderView: NSView {
   @objc private func openLink() {
     if let url = currentUrl {
       NSWorkspace.shared.open(url)
+    }
+  }
+
+  @objc private func copyUrl() {
+    if let url = currentUrl {
+      let pasteboard = NSPasteboard.general
+      pasteboard.clearContents()
+      pasteboard.setString(url.absoluteString, forType: .string)
+
+      // Show checkmark confirmation
+      showingCopyConfirmation = true
+      refresh()
+
+      // Revert to copy icon after 1 second
+      DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+        self?.showingCopyConfirmation = false
+        self?.refresh()
+      }
     }
   }
 
