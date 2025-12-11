@@ -74,6 +74,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       self?.updaterController?.checkForUpdates(nil)
     }
 
+    #if DEBUG
+      // Auto-open menu in debug builds to save a click
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+        self?.menuController?.openMenu()
+      }
+    #endif
+
     logger.info("LlamaBarn startup complete")
   }
 

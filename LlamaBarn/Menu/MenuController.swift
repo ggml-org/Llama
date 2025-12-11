@@ -27,6 +27,10 @@ final class MenuController: NSObject, NSMenuDelegate {
     showWelcomeIfNeeded()
   }
 
+  func openMenu() {
+    statusItem.button?.performClick(nil)
+  }
+
   private func showWelcomeIfNeeded() {
     guard !UserSettings.hasSeenWelcome else { return }
 
