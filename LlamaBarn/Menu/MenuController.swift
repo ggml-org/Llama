@@ -253,7 +253,7 @@ final class MenuController: NSObject, NSMenuDelegate {
     var items: [NSMenuItem] = []
 
     for family in Catalog.families {
-      let preferQuantized = !UserSettings.preferFullPrecisionModels
+      let preferQuantized = UserSettings.preferQuantizedModels
       let validModels = family.selectableModels(preferQuantized: preferQuantized)
 
       // Only show family if there are models available to install
@@ -328,17 +328,17 @@ final class MenuController: NSObject, NSMenuDelegate {
       ))
     menu.addItem(launchAtLoginItem)
 
-    // Prefer full-precision models
-    let preferFullPrecisionItem = NSMenuItem.viewItem(
+    // Prefer quantized models
+    let preferQuantizedItem = NSMenuItem.viewItem(
       with: SettingsItemView(
-        title: "Prefer full-precision models",
-        subtitle: "Use uncompressed models for potentially better quality",
-        getValue: { UserSettings.preferFullPrecisionModels },
+        title: "Prefer quantized models",
+        subtitle: "Use compressed models to save memory and disk space",
+        getValue: { UserSettings.preferQuantizedModels },
         onToggle: { newValue in
-          UserSettings.preferFullPrecisionModels = newValue
+          UserSettings.preferQuantizedModels = newValue
         }
       ))
-    menu.addItem(preferFullPrecisionItem)
+    menu.addItem(preferQuantizedItem)
 
     #if DEBUG
       // Expose to Network

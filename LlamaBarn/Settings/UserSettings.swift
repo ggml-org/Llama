@@ -3,26 +3,26 @@ import Foundation
 /// Centralized access to simple persisted preferences.
 enum UserSettings {
   private enum Keys {
-    static let preferFullPrecisionModels = "preferFullPrecisionModels"
+    static let preferQuantizedModels = "preferQuantizedModels"
     static let hasSeenWelcome = "hasSeenWelcome"
     static let exposeToNetwork = "exposeToNetwork"
   }
 
   private static let defaults = UserDefaults.standard
 
-  /// Whether to prefer full-precision models over quantized ones when both are available.
-  /// Defaults to `false` (quantized models are preferred to save memory and disk space).
-  static var preferFullPrecisionModels: Bool {
+  /// Whether to prefer quantized models over full-precision ones when both are available.
+  /// Defaults to `false` (full-precision models are preferred for better quality).
+  static var preferQuantizedModels: Bool {
     get {
-      // Default to false if not set (prefer quantized)
-      if defaults.object(forKey: Keys.preferFullPrecisionModels) == nil {
+      // Default to false if not set (prefer full-precision)
+      if defaults.object(forKey: Keys.preferQuantizedModels) == nil {
         return false
       }
-      return defaults.bool(forKey: Keys.preferFullPrecisionModels)
+      return defaults.bool(forKey: Keys.preferQuantizedModels)
     }
     set {
-      guard defaults.bool(forKey: Keys.preferFullPrecisionModels) != newValue else { return }
-      defaults.set(newValue, forKey: Keys.preferFullPrecisionModels)
+      guard defaults.bool(forKey: Keys.preferQuantizedModels) != newValue else { return }
+      defaults.set(newValue, forKey: Keys.preferQuantizedModels)
       NotificationCenter.default.post(name: .LBUserSettingsDidChange, object: nil)
     }
   }
