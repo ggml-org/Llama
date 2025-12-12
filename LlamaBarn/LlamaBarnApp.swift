@@ -101,7 +101,7 @@ extension AppDelegate: SPUStandardUserDriverDelegate {
   // Tells Sparkle this app supports gentle reminders for background update checks.
   // This prevents intrusive modal dialogs and allows us to show dock badges instead.
   var supportsGentleScheduledUpdateReminders: Bool {
-    return true
+    true
   }
 
   // Called when Sparkle is about to show an update dialog.

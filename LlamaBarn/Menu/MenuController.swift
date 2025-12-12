@@ -100,31 +100,25 @@ final class MenuController: NSObject, NSMenuDelegate {
   /// Called from model rows when a user starts/cancels a download.
   /// Rebuilds both installed and catalog sections to reflect changes while keeping submenus open.
   private func didChangeDownloadStatus(for _: CatalogEntry) {
-    if let menu = statusItem.menu {
-      rebuildMenu(menu)
-    }
+    rebuildMenuIfPossible()
     refresh()
   }
 
-  /// Helper to observe a notification and call refresh on the main actor
-  private func observeAndRefresh(_ name: Notification.Name) {
-    NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) {
-      [weak self] _ in
-      MainActor.assumeIsolated {
-        self?.refresh()
-      }
+  private func rebuildMenuIfPossible() {
+    if let menu = statusItem.menu {
+      rebuildMenu(menu)
     }
   }
 
-  /// Helper to observe a notification and rebuild the menu on the main actor
-  private func observeAndRebuild(_ name: Notification.Name) {
+  private func observe(_ name: Notification.Name, rebuildMenu: Bool = false) {
     NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) {
       [weak self] _ in
       MainActor.assumeIsolated {
-        if let menu = self?.statusItem.menu {
-          self?.rebuildMenu(menu)
+        guard let self else { return }
+        if rebuildMenu {
+          self.rebuildMenuIfPossible()
         }
-        self?.refresh()
+        self.refresh()
       }
     }
   }
@@ -132,19 +126,19 @@ final class MenuController: NSObject, NSMenuDelegate {
   // Observe server and download changes while the menu is open.
   private func setupObservers() {
     // Server started/stopped - update icon and views
-    observeAndRefresh(.LBServerStateDidChange)
+    observe(.LBServerStateDidChange)
 
     // Server memory usage changed - update running model stats
-    observeAndRefresh(.LBServerMemoryDidChange)
+    observe(.LBServerMemoryDidChange)
 
     // Download progress updated - refresh progress indicators
-    observeAndRefresh(.LBModelDownloadsDidChange)
+    observe(.LBModelDownloadsDidChange)
 
     // Model downloaded or deleted - rebuild both installed and catalog sections
-    observeAndRebuild(.LBModelDownloadedListDidChange)
+    observe(.LBModelDownloadedListDidChange, rebuildMenu: true)
 
     // User settings changed - rebuild menu
-    observeAndRebuild(.LBUserSettingsDidChange)
+    observe(.LBUserSettingsDidChange, rebuildMenu: true)
 
     refresh()
   }
@@ -219,9 +213,7 @@ final class MenuController: NSObject, NSMenuDelegate {
 
   private func toggleInstalledCollapsed() {
     isInstalledCollapsed.toggle()
-    if let menu = statusItem.menu {
-      rebuildMenu(menu)
-    }
+    rebuildMenuIfPossible()
   }
 
   private func installedModels() -> [CatalogEntry] {
@@ -308,9 +300,7 @@ final class MenuController: NSObject, NSMenuDelegate {
     } else {
       collapsedFamilies.insert(family)
     }
-    if let menu = statusItem.menu {
-      rebuildMenu(menu)
-    }
+    rebuildMenuIfPossible()
   }
 
   // MARK: - Settings Section
@@ -349,8 +339,6 @@ final class MenuController: NSObject, NSMenuDelegate {
 
   private func toggleSettings() {
     isSettingsOpen.toggle()
-    if let menu = statusItem.menu {
-      rebuildMenu(menu)
-    }
+    rebuildMenuIfPossible()
   }
 }
