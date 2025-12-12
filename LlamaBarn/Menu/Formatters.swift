@@ -117,11 +117,11 @@ extension Format {
       .foregroundColor: color,
     ]
 
-    // Size
+    // Size (build)
     result.append(
       NSAttributedString(string: model.totalSize, attributes: attributes))
 
-    // Quantization
+    // Quantization (build)
     if model.quantizationLabel != nil {
       result.append(Format.metadataSeparator())
       result.append(
