@@ -325,7 +325,7 @@ final class MenuController: NSObject, NSMenuDelegate {
     let showMemUsageItem = NSMenuItem.viewItem(
       with: SettingsItemView(
         title: "Show estimated memory usage",
-        subtitle: "Shows estimate for max context when 'Run at max context' is enabled",
+        subtitle: "Shows estimate for device-capable context when 'Run at max context' is enabled",
         getValue: { UserSettings.showMemUsageFor4kCtx },
         onToggle: { newValue in
           UserSettings.showMemUsageFor4kCtx = newValue

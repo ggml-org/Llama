@@ -35,7 +35,8 @@ enum UserSettings {
     }
   }
 
-  /// Whether to show estimated memory usage for 4k context next to size on disk.
+  /// Whether to show estimated memory usage next to size on disk.
+  /// Shows 4k context by default, or device-capable context when 'Run at max context' is enabled.
   /// Defaults to `false`.
   static var showMemUsageFor4kCtx: Bool {
     get {
