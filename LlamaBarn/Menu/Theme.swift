@@ -11,7 +11,13 @@ enum Theme {
       dark: NSColor.white.withAlphaComponent(0.85)
     )
     // Tertiary text color -- used for less prominent text
-    static let textSecondary = NSColor.tertiaryLabelColor
+    // Switched from NSColor.tertiaryLabelColor to custom dynamic color for predictability,
+    // as semantic colors can have varying transparency across contexts, leading to contrast issues
+    // (e.g., quantization labels becoming invisible on highlighted backgrounds).
+    static let textSecondary = NSColor.dynamic(
+      light: NSColor.black.withAlphaComponent(0.65),
+      dark: NSColor.white.withAlphaComponent(0.65)
+    )
 
     // Tint color for inactive model icons -- balanced between primary and secondary text
     static let modelIconTint = NSColor.dynamic(
