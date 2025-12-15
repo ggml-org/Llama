@@ -8,7 +8,7 @@ final class HeaderView: NSView {
   private let appNameLabel = Theme.primaryLabel()
   private let statusStackView = NSStackView()
   private let statusLabel = Theme.secondaryLabel()
-  private let linkButton = NSButton()
+  private let linkLabel = Theme.secondaryLabel()
   private let copyImageView = NSImageView()
   private let backgroundView = NSView()
 
@@ -62,12 +62,10 @@ final class HeaderView: NSView {
       bottom: 6
     )
 
-    // Link Button Configuration
-    linkButton.isBordered = false
-    linkButton.setButtonType(.momentaryChange)
-    linkButton.imagePosition = .noImage
-    linkButton.target = self
-    linkButton.action = #selector(openLink)
+    // Link Label Configuration
+    let linkClick = NSClickGestureRecognizer(target: self, action: #selector(openLink))
+    linkLabel.addGestureRecognizer(linkClick)
+    linkLabel.isSelectable = false  // Make it look like a label, not editable
 
     // Copy Image View Configuration
     copyImageView.image = NSImage(
@@ -81,7 +79,14 @@ final class HeaderView: NSView {
     copyImageView.addGestureRecognizer(copyClick)
 
     statusStackView.addArrangedSubview(statusLabel)
-    statusStackView.addArrangedSubview(linkButton)
+    statusStackView.addArrangedSubview(linkLabel)
+
+    // Spacer between URL and copy button
+    let urlCopySpacer = NSView()
+    urlCopySpacer.translatesAutoresizingMaskIntoConstraints = false
+    urlCopySpacer.widthAnchor.constraint(equalToConstant: 4).isActive = true
+    statusStackView.addArrangedSubview(urlCopySpacer)
+
     statusStackView.addArrangedSubview(copyImageView)
 
     // Spacer
@@ -111,8 +116,8 @@ final class HeaderView: NSView {
           .underlineStyle: NSUnderlineStyle.single.rawValue,
         ]
       )
-      linkButton.attributedTitle = attrTitle
-      linkButton.isHidden = false
+      linkLabel.attributedStringValue = attrTitle
+      linkLabel.isHidden = false
       copyImageView.isHidden = false
 
       // Update copy icon based on confirmation state
@@ -122,8 +127,7 @@ final class HeaderView: NSView {
     } else {
       statusLabel.stringValue = "Select a model to run"
       statusLabel.textColor = Theme.Colors.textPrimary
-      linkButton.isHidden = true
-      linkButton.toolTip = nil
+      linkLabel.isHidden = true
       copyImageView.isHidden = true
       currentUrl = nil
     }
