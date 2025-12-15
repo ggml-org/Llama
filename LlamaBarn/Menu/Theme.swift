@@ -4,8 +4,12 @@ import AppKit
 enum Theme {
   // Colors used throughout the app
   enum Colors {
-    // Primary text color -- uses system label color for automatic light/dark mode support
-    static let textPrimary = NSColor.labelColor
+    // Use custom color instead of NSColor.labelColor for better consistency with other macOS menus
+    // labelColor's pure white in dark mode was too prominent
+    static let textPrimary = NSColor.dynamic(
+      light: NSColor.black.withAlphaComponent(0.85),
+      dark: NSColor.white.withAlphaComponent(0.85)
+    )
     // Tertiary text color -- used for less prominent text
     static let textSecondary = NSColor.tertiaryLabelColor
 
