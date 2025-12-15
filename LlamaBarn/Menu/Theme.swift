@@ -1,42 +1,59 @@
 import AppKit
 
+// Theme provides centralized styling for the app's UI
 enum Theme {
+  // Colors used throughout the app
   enum Colors {
+    // Primary text color -- uses system label color for automatic light/dark mode support
     static let textPrimary = NSColor.labelColor
+    // Tertiary text color -- used for less prominent text
     static let textSecondary = NSColor.tertiaryLabelColor
 
+    // Subtle background color for visual grouping -- adapts to light/dark mode
     static let subtleBackground = NSColor.dynamic(
       light: NSColor.black.withAlphaComponent(0.06),
       dark: NSColor.white.withAlphaComponent(0.11)
     )
 
+    // Border color for separators and dividers -- adapts to light/dark mode
     static let border = NSColor.dynamic(
       light: NSColor.black.withAlphaComponent(0.15),
       dark: NSColor.white.withAlphaComponent(0.25)
     )
   }
 
+  // Fonts used throughout the app
   enum Fonts {
+    // Primary font -- used for main text like model names
     static let primary = NSFont.systemFont(ofSize: 13)
+    // Secondary font -- used for metadata and supplementary text
     static let secondary = NSFont.systemFont(ofSize: 11)
   }
 }
 
 // MARK: - Label Factories
 
+// Factory methods for creating consistently styled text labels
 extension Theme {
+  // Creates a label with primary font (13pt) and primary text color
+  // Used for main content like model names (line 1)
   static func primaryLabel(_ text: String = "") -> NSTextField {
     makeLabel(text, font: Fonts.primary, color: Colors.textPrimary)
   }
 
+  // Creates a label with secondary font (11pt) and primary text color
+  // Used for important metadata that should be smaller than primary text
   static func secondaryLabel(_ text: String = "") -> NSTextField {
     makeLabel(text, font: Fonts.secondary, color: Colors.textPrimary)
   }
 
+  // Creates a label with secondary font (11pt) and tertiary text color
+  // Used for less prominent metadata like model details (line 2)
   static func tertiaryLabel(_ text: String = "") -> NSTextField {
     makeLabel(text, font: Fonts.secondary, color: Colors.textSecondary)
   }
 
+  // Internal helper -- creates a non-editable, non-selectable label with specified styling
   private static func makeLabel(_ text: String, font: NSFont, color: NSColor) -> NSTextField {
     let label = NSTextField(labelWithString: text)
     label.font = font
@@ -47,15 +64,22 @@ extension Theme {
 
 // MARK: - Attributed String Helpers
 
+// Attribute dictionaries for creating styled NSAttributedString instances
 extension Theme {
+  // Returns attributes for primary-style text with custom color
+  // Used when you need primary font but want control over the color
   static func primaryAttributes(color: NSColor) -> [NSAttributedString.Key: Any] {
     [.font: Fonts.primary, .foregroundColor: color]
   }
 
+  // Returns attributes for secondary-style text with custom color
+  // Used when you need secondary font but want control over the color
   static func secondaryAttributes(color: NSColor) -> [NSAttributedString.Key: Any] {
     [.font: Fonts.secondary, .foregroundColor: color]
   }
 
+  // Attributes for tertiary-style text with fixed color
+  // Used for de-emphasized metadata text
   static let tertiaryAttributes: [NSAttributedString.Key: Any] = [
     .font: Fonts.secondary,
     .foregroundColor: Colors.textSecondary,
@@ -64,7 +88,15 @@ extension Theme {
 
 // MARK: - Image View Configuration
 
+// Helper for configuring image views with SF Symbols
 extension Theme {
+  // Configures an NSImageView with an SF Symbol icon and consistent styling
+  // - Parameters:
+  //   - view: The image view to configure
+  //   - symbol: SF Symbol name (e.g., "circle.fill", "arrow.down")
+  //   - tooltip: Optional hover tooltip text
+  //   - color: Tint color for the symbol (defaults to textSecondary)
+  //   - pointSize: Size of the symbol in points (defaults to 13)
   static func configure(
     _ view: NSImageView,
     symbol: String,
@@ -82,7 +114,13 @@ extension Theme {
 
 // MARK: - Helpers
 
+// Creates colors that automatically adapt to light/dark mode
 extension NSColor {
+  // Creates a dynamic color that changes based on the system appearance
+  // - Parameters:
+  //   - light: Color to use in light mode
+  //   - dark: Color to use in dark mode
+  // - Returns: An NSColor that adapts to the current appearance
   static func dynamic(light: NSColor, dark: NSColor) -> NSColor {
     NSColor(name: nil) { appearance in
       appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
@@ -90,17 +128,32 @@ extension NSColor {
   }
 }
 
+// Helpers for setting CALayer colors that respect dynamic appearance
 extension CALayer {
+  // Sets the layer's background color, resolving dynamic colors for current appearance
+  // - Parameters:
+  //   - color: The color to set (can be dynamic)
+  //   - view: The view whose appearance should be used for resolving the color
   func setBackgroundColor(_ color: NSColor, in view: NSView) {
     backgroundColor = color.resolvedColor(in: view)
   }
 
+  // Sets the layer's border color, resolving dynamic colors for current appearance
+  // - Parameters:
+  //   - color: The color to set (can be dynamic)
+  //   - view: The view whose appearance should be used for resolving the color
   func setBorderColor(_ color: NSColor, in view: NSView) {
     borderColor = color.resolvedColor(in: view)
   }
 }
 
+// Internal helper for resolving dynamic NSColor to CGColor
 extension NSColor {
+  // Resolves this NSColor to a CGColor using the view's effective appearance
+  // This is needed because CALayer uses CGColor, not NSColor, and dynamic colors
+  // need to be resolved in the context of a specific appearance
+  // - Parameter view: The view whose effective appearance should be used
+  // - Returns: A resolved CGColor appropriate for the current appearance
   fileprivate func resolvedColor(in view: NSView) -> CGColor {
     var resolved = NSColor.clear.cgColor
     view.effectiveAppearance.performAsCurrentDrawingAppearance {
