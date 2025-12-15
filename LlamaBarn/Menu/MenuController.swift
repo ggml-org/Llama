@@ -351,20 +351,6 @@ final class MenuController: NSObject, NSMenuDelegate {
       ))
     menu.addItem(defaultContextWindowItem)
 
-    #if DEBUG
-      // Expose to Network
-      let exposeToNetworkItem = NSMenuItem.viewItem(
-        with: SettingsItemView(
-          title: "Expose to network",
-          subtitle: "Bind to 0.0.0.0 instead of localhost, dev-only",
-          getValue: { UserSettings.exposeToNetwork },
-          onToggle: { newValue in
-            UserSettings.exposeToNetwork = newValue
-          }
-        ))
-      menu.addItem(exposeToNetworkItem)
-    #endif
-
   }
 
   private func toggleSettings() {
