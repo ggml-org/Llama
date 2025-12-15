@@ -28,18 +28,6 @@ final class CatalogModelItemView: StandardItemView {
 
   override var intrinsicContentSize: NSSize { NSSize(width: Layout.menuWidth, height: 40) }
 
-  // Only allow highlight for available models.
-  // Catalog items should never show downloading or installed states.
-  override var highlightEnabled: Bool {
-    let status = modelManager.status(for: model)
-    guard case .available = status else { return false }
-    return true
-  }
-
-  override func highlightDidChange(_ highlighted: Bool) {
-    // No color changes on hover - catalog models stay with secondary colors
-  }
-
   override func viewDidMoveToWindow() {
     super.viewDidMoveToWindow()
     guard rowClickRecognizer == nil else { return }

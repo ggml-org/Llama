@@ -69,8 +69,6 @@ class ItemView: NSView {
 
   override func mouseEntered(with event: NSEvent) {
     super.mouseEntered(with: event)
-    // Early exit when highlight is disabled - avoids unnecessary work compared to checking only in setHighlight
-    guard highlightEnabled else { return }
     setHighlight(true)
   }
 
