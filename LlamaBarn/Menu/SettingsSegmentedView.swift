@@ -14,7 +14,8 @@ final class SettingsSegmentedView: TitledItemView {
     super.init(frame: .zero)
 
     titleLabel.stringValue = title
-    configureSubtitle(subtitle, width: 270)
+    // Calculate available width: 300 (menu) - 10 (outer) - 16 (inner) - ~100 (segmented) - 8 (spacing) = ~166
+    configureSubtitle(subtitle, width: 160)
 
     segmentedControl.segmentCount = labels.count
     for (index, label) in labels.enumerated() {
@@ -24,6 +25,7 @@ final class SettingsSegmentedView: TitledItemView {
     segmentedControl.action = #selector(segmentChanged)
     segmentedControl.controlSize = .mini
     segmentedControl.font = NSFont.systemFont(ofSize: 10)
+    segmentedControl.segmentDistribution = .fillEqually
 
     setup()
     refresh()
@@ -44,23 +46,19 @@ final class SettingsSegmentedView: TitledItemView {
 
     segmentedControl.translatesAutoresizingMaskIntoConstraints = false
 
-    let mainStack = NSStackView(views: [textStack, segmentedControl])
-    mainStack.orientation = .vertical
-    mainStack.alignment = .leading
-    mainStack.spacing = 8
-    mainStack.translatesAutoresizingMaskIntoConstraints = false
-
-    contentView.addSubview(mainStack)
+    contentView.addSubview(textStack)
+    contentView.addSubview(segmentedControl)
 
     NSLayoutConstraint.activate([
-      mainStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-      mainStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-      mainStack.topAnchor.constraint(equalTo: contentView.topAnchor),
-      mainStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+      textStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+      textStack.trailingAnchor.constraint(
+        lessThanOrEqualTo: segmentedControl.leadingAnchor, constant: -8),
+      textStack.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+      textStack.topAnchor.constraint(greaterThanOrEqualTo: contentView.topAnchor),
+      textStack.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor),
 
-      // Make segmented control full width
-      segmentedControl.leadingAnchor.constraint(equalTo: mainStack.leadingAnchor),
-      segmentedControl.trailingAnchor.constraint(equalTo: mainStack.trailingAnchor),
+      segmentedControl.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+      segmentedControl.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
     ])
   }
 

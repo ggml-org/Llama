@@ -326,7 +326,7 @@ final class MenuController: NSObject, NSMenuDelegate {
     let defaultContextWindowItem = NSMenuItem.viewItem(
       with: SettingsSegmentedView(
         title: "Context length",
-        subtitle: "Higher values use more memory",
+        subtitle: nil,
         labels: contextWindowLabels,
         getSelectedIndex: {
           UserSettings.ContextWindowSize.allCases.firstIndex(of: UserSettings.defaultContextWindow)
