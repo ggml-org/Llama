@@ -15,8 +15,8 @@ enum Theme {
     // as semantic colors can have varying transparency across contexts, leading to contrast issues
     // (e.g., quantization labels becoming invisible on highlighted backgrounds).
     static let textSecondary = NSColor.dynamic(
-      light: NSColor.black.withAlphaComponent(0.25),
-      dark: NSColor.white.withAlphaComponent(0.25)
+      light: NSColor.black.withAlphaComponent(0.45),
+      dark: NSColor.white.withAlphaComponent(0.45)
     )
 
     // Tint color for inactive model icons -- balanced between primary and secondary text
