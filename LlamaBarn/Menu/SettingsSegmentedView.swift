@@ -26,6 +26,7 @@ final class SettingsSegmentedView: TitledItemView {
     segmentedControl.controlSize = .mini
     segmentedControl.font = NSFont.systemFont(ofSize: 10)
     segmentedControl.segmentDistribution = .fillEqually
+    segmentedControl.appearance = NSApp.effectiveAppearance
 
     setup()
     refresh()
