@@ -322,11 +322,11 @@ final class MenuController: NSObject, NSMenuDelegate {
       ))
     menu.addItem(showMemUsageItem)
 
-    // Default context length
+    // Default context length cap
     let contextWindowLabels = UserSettings.ContextWindowSize.allCases.map { $0.displayName }
     let defaultContextWindowItem = NSMenuItem.viewItem(
       with: SettingsSegmentedView(
-        title: "Context length",
+        title: "Context length cap",
         subtitle: nil,
         labels: contextWindowLabels,
         getSelectedIndex: {
