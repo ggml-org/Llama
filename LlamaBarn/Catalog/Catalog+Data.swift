@@ -225,42 +225,6 @@ extension Catalog {
         ),
       ]
     ),
-    // MARK: Qwen3-Coder
-    ModelFamily(
-      name: "Qwen3 Coder",
-      series: "qwen",
-      serverArgs: ["--temp", "0.7", "--top-p", "0.8", "--top-k", "20"],
-      overheadMultiplier: 1.1,
-      sizes: [
-        ModelSize(
-          name: "30B-A3B",
-          parameterCount: 30_532_122_624,
-          releaseDate: date(2025, 7, 31),
-          ctxWindow: 262_144,
-          ctxBytesPer1kTokens: 100_663_296,
-          build: ModelBuild(
-            id: "qwen3-coder-30b-q8",
-            quantization: "Q8_0",
-            fileSize: 32_483_935_392,
-            downloadUrl: URL(
-              string:
-                "https://huggingface.co/unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF/resolve/main/Qwen3-Coder-30B-A3B-Instruct-Q8_0.gguf"
-            )!
-          ),
-          quantizedBuilds: [
-            ModelBuild(
-              id: "qwen3-coder-30b",
-              quantization: "Q4_K_M",
-              fileSize: 18_556_689_568,
-              downloadUrl: URL(
-                string:
-                  "https://huggingface.co/unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF/resolve/main/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf"
-              )!
-            )
-          ]
-        )
-      ]
-    ),
     // MARK: Qwen3
     ModelFamily(
       name: "Qwen3",
@@ -651,6 +615,42 @@ extension Catalog {
             )
           ]
         ),
+      ]
+    ),
+    // MARK: Qwen3-Coder
+    ModelFamily(
+      name: "Qwen3 Coder",
+      series: "qwen",
+      serverArgs: ["--temp", "0.7", "--top-p", "0.8", "--top-k", "20"],
+      overheadMultiplier: 1.1,
+      sizes: [
+        ModelSize(
+          name: "30B-A3B",
+          parameterCount: 30_532_122_624,
+          releaseDate: date(2025, 7, 31),
+          ctxWindow: 262_144,
+          ctxBytesPer1kTokens: 100_663_296,
+          build: ModelBuild(
+            id: "qwen3-coder-30b-q8",
+            quantization: "Q8_0",
+            fileSize: 32_483_935_392,
+            downloadUrl: URL(
+              string:
+                "https://huggingface.co/unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF/resolve/main/Qwen3-Coder-30B-A3B-Instruct-Q8_0.gguf"
+            )!
+          ),
+          quantizedBuilds: [
+            ModelBuild(
+              id: "qwen3-coder-30b",
+              quantization: "Q4_K_M",
+              fileSize: 18_556_689_568,
+              downloadUrl: URL(
+                string:
+                  "https://huggingface.co/unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF/resolve/main/Qwen3-Coder-30B-A3B-Instruct-Q4_K_M.gguf"
+              )!
+            )
+          ]
+        )
       ]
     ),
     // MARK: Ministral 3
