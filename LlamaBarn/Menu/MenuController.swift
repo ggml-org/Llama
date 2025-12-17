@@ -10,7 +10,6 @@ final class MenuController: NSObject, NSMenuDelegate {
   private let server: LlamaServer
 
   // Section State
-  private var isInstalledCollapsed = false
   private var isSettingsOpen = false
   private var collapsedFamilies: Set<String> = Set(Catalog.families.map { $0.name })
 
@@ -73,7 +72,6 @@ final class MenuController: NSObject, NSMenuDelegate {
     guard menu === statusItem.menu else { return }
 
     // Reset section collapse state
-    isInstalledCollapsed = false
     isSettingsOpen = false
     collapsedFamilies = Set(Catalog.families.map { $0.name })
   }
@@ -189,27 +187,17 @@ final class MenuController: NSObject, NSMenuDelegate {
     let models = installedModels()
     guard !models.isEmpty else { return }
 
-    // Create header with model count when collapsed
-    let sizes = isInstalledCollapsed ? ["\(models.count)"] : []
+    // Create header (not collapsible)
     let headerView = FamilyHeaderView(
       family: "Installed",
-      sizes: sizes,
-      isCollapsed: isInstalledCollapsed
-    ) { [weak self] _ in
-      self?.toggleInstalledCollapsed()
-    }
+      sizes: [],
+      isCollapsed: false
+    )
     let headerItem = NSMenuItem.viewItem(with: headerView)
     menu.addItem(headerItem)
 
-    // Only show models if not collapsed
-    if !isInstalledCollapsed {
-      buildInstalledItems(models).forEach { menu.addItem($0) }
-    }
-  }
-
-  private func toggleInstalledCollapsed() {
-    isInstalledCollapsed.toggle()
-    rebuildMenuIfPossible()
+    // Always show models
+    buildInstalledItems(models).forEach { menu.addItem($0) }
   }
 
   private func installedModels() -> [CatalogEntry] {

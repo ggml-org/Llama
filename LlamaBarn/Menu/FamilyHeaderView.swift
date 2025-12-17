@@ -4,9 +4,9 @@ import AppKit
 final class FamilyHeaderView: ItemView {
   private let label = Theme.tertiaryLabel()
   let family: String
-  private let onToggle: (String) -> Void
+  private let onToggle: ((String) -> Void)?
 
-  init(family: String, sizes: [String], isCollapsed: Bool, onToggle: @escaping (String) -> Void) {
+  init(family: String, sizes: [String], isCollapsed: Bool, onToggle: ((String) -> Void)? = nil) {
     self.family = family
     self.onToggle = onToggle
     super.init(frame: .zero)
@@ -26,20 +26,24 @@ final class FamilyHeaderView: ItemView {
     ])
 
     // Accessibility
-    setAccessibilityElement(true)
-    setAccessibilityRole(.button)
-    let state = isCollapsed ? "collapsed" : "expanded"
-    setAccessibilityLabel("\(family), \(state)")
+    if onToggle != nil {
+      setAccessibilityElement(true)
+      setAccessibilityRole(.button)
+      let state = isCollapsed ? "collapsed" : "expanded"
+      setAccessibilityLabel("\(family), \(state)")
+    }
   }
 
   required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+  override var highlightEnabled: Bool { onToggle != nil }
 
   override var intrinsicContentSize: NSSize { NSSize(width: Layout.menuWidth, height: 22) }
 
   override func mouseUp(with event: NSEvent) {
     super.mouseUp(with: event)
     // Only toggle if mouse is still within bounds (allows canceling by dragging away)
-    if bounds.contains(convert(event.locationInWindow, from: nil)) {
+    if bounds.contains(convert(event.locationInWindow, from: nil)), let onToggle = onToggle {
       onToggle(family)
     }
   }
