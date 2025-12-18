@@ -137,20 +137,20 @@ extension Format {
       model.usableCtxWindow(desiredTokens: desiredTokens, maximizeContext: false)
       ?? Int(CatalogEntry.compatibilityCtxWindowTokens)
 
-    // Memory usage (optional)
-    if UserSettings.showEstimatedMemoryUsage {
-      result.append(Format.metadataSeparator())
-      let memMb = model.runtimeMemoryUsageMb(ctxWindowTokens: Double(displayUsableCtx))
-      let memString = Format.memory(mb: memMb)
-      result.append(NSAttributedString(string: memString + " mem", attributes: attributes))
-    }
-
     // Context info: displayed when the usable context is less than desired,
     // either due to memory constraints or the model's maximum context window.
     if displayUsableCtx != desiredTokens {
       result.append(Format.metadataSeparator())
       let ctxLabel = Format.tokens(displayUsableCtx)
       result.append(NSAttributedString(string: ctxLabel + " ctx", attributes: attributes))
+    }
+
+    // Memory usage (optional)
+    if UserSettings.showEstimatedMemoryUsage {
+      result.append(Format.metadataSeparator())
+      let memMb = model.runtimeMemoryUsageMb(ctxWindowTokens: Double(displayUsableCtx))
+      let memString = Format.memory(mb: memMb)
+      result.append(NSAttributedString(string: memString + " mem", attributes: attributes))
     }
 
     // Vision support removed - now shown in model name
