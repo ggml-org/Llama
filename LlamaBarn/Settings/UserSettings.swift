@@ -13,7 +13,7 @@ enum UserSettings {
       case .fourK: return "4k"
       case .sixteenK: return "16k"
       case .sixtyFourK: return "64k"
-      case .max: return "∞"
+      case .max: return "Max"
       }
     }
   }
