@@ -6,6 +6,7 @@ final class SettingsSegmentedView: StandardItemView {
   private let getSelectedIndex: () -> Int
   private let infoIcon = NSImageView()
   private let infoText: String?
+  private let mainStack = NSStackView()
 
   init(
     title: String, infoText: String? = nil, labels: [String],
@@ -24,6 +25,7 @@ final class SettingsSegmentedView: StandardItemView {
 
     setupInfoView()
     configureSegmentedControl()
+    setupLayout()
 
     accessoryStack.addArrangedSubview(segmentedControl)
     refresh()
@@ -39,16 +41,6 @@ final class SettingsSegmentedView: StandardItemView {
       color: Theme.Colors.textSecondary)
     infoIcon.addGestureRecognizer(
       NSClickGestureRecognizer(target: self, action: #selector(toggleInfo)))
-
-    // Move subtitleLabel to a new row below the main content
-    rootStack.removeFromSuperview()
-    let containerStack = NSStackView(views: [rootStack, subtitleLabel])
-    containerStack.orientation = .vertical
-    containerStack.alignment = .leading
-    containerStack.spacing = Layout.textLineSpacing
-    contentView.addSubview(containerStack)
-    containerStack.pinToSuperview()
-    subtitleLabel.isHidden = true
   }
 
   private func configureSegmentedControl() {
@@ -58,6 +50,34 @@ final class SettingsSegmentedView: StandardItemView {
     segmentedControl.font = NSFont.systemFont(ofSize: 10)
     segmentedControl.segmentDistribution = .fillEqually
     segmentedControl.appearance = NSApp.effectiveAppearance
+  }
+
+  private func setupLayout() {
+    // Move rootStack (created by super) into our vertical mainStack
+    rootStack.removeFromSuperview()
+
+    // Configure mainStack
+    mainStack.orientation = .vertical
+    mainStack.alignment = .leading
+    mainStack.spacing = 0  // Initially 0 as subtitle is hidden
+
+    // Add views
+    mainStack.addArrangedSubview(rootStack)
+    mainStack.addArrangedSubview(subtitleLabel)
+
+    // Add mainStack to contentView
+    contentView.addSubview(mainStack)
+    mainStack.pinToSuperview()
+
+    // Ensure rootStack fills the width
+    rootStack.widthAnchor.constraint(equalTo: mainStack.widthAnchor).isActive = true
+
+    // Configure subtitle initially
+    subtitleLabel.isHidden = true
+
+    // Enforce minimum height on rootStack to prevent layout shift when toggling info
+    // 30 (min item height) - 8 (vertical padding) = 22
+    rootStack.heightAnchor.constraint(greaterThanOrEqualToConstant: 22).isActive = true
   }
 
   override func makeTextStack() -> NSStackView {
@@ -90,11 +110,15 @@ final class SettingsSegmentedView: StandardItemView {
     guard let infoText = infoText else { return }
 
     if subtitleLabel.isHidden {
-      // Calculate full available width: menu - outer padding - inner padding = 300 - 10 - 16 = 274
-      configureSubtitle(infoText, width: 274)
+      // Show info
+      configureSubtitle(infoText, width: 274)  // 300 - 10 - 16
       subtitleLabel.textColor = Theme.Colors.textSecondary
+      subtitleLabel.isHidden = false
+      mainStack.spacing = Layout.textLineSpacing
     } else {
+      // Hide info
       subtitleLabel.isHidden = true
+      mainStack.spacing = 0
     }
 
     invalidateIntrinsicContentSize()
