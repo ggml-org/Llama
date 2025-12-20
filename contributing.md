@@ -1,10 +1,14 @@
 ## Issues
 
-Use GitHub issues for bug reports and feature requests.
+Use GitHub Issues for bug reports.
 
-For feature requests, focus on actionable, high-impact work. As an early stage product, we prioritize easy wins (clear benefits, minimal costs, no ongoing maintenance burden) and important features that matter now.
+## Discussions
 
-The tracker is for work that matters now, not "someday" features or wishlists. Feature requests that don't meet this bar will be closed, but can be re-opened later if needed.
+Use GitHub Discussions for feature requests and ideas.
+
+As an early stage product, we prioritize easy wins (clear benefits, minimal costs, no ongoing maintenance burden) and high-leverage features (broad user impact, foundational improvements that enable future work).
+
+We use Discussions to gather community feedback and gauge interest without cluttering the issue tracker. If a feature in Discussions is selected for development, we will open an Issue to track it.
 
 ## Pull Requests
 
