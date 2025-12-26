@@ -891,5 +891,49 @@ extension Catalog {
         ),
       ]
     ),
+    // MARK: Devstral 2
+    ModelFamily(
+      name: "Devstral 2",
+      series: "mistral",
+      serverArgs: nil,
+      sizes: [
+        ModelSize(
+          name: "24B",
+          parameterCount: 24_000_000_000,
+          releaseDate: date(2025, 12, 18),
+          ctxWindow: 393_216,
+          ctxBytesPer1kTokens: 40_960_000,
+          mmproj: URL(
+            string:
+              "https://huggingface.co/ggml-org/Devstral-Small-2-24B-Instruct-2512-GGUF/resolve/main/mmproj-Devstral-Small-2-24B-Instruct-2512-F16.guf"
+          )!,
+          build: ModelBuild(
+            id: "devstral-small-2-24b-q8",
+            quantization: "Q8_0",
+            fileSize: 25_055_308_352,
+            downloadUrl: URL(
+              string:
+                "https://huggingface.co/ggml-org/Devstral-Small-2-24B-Instruct-2512-GGUF/resolve/main/Devstral-Small-2-24B-Instruct-2512-Q8_0.gguf"
+            )!
+          )
+        ),
+        ModelSize(
+          name: "123B",
+          parameterCount: 123_000_000_000,
+          releaseDate: date(2025, 12, 19),
+          ctxWindow: 262_144,
+          ctxBytesPer1kTokens: 90_177_152,
+          build: ModelBuild(
+            id: "devstral-2-123b-q8",
+            quantization: "Q8_0",
+            fileSize: 132_854_938_656,
+            downloadUrl: URL(
+              string:
+                "https://huggingface.co/ggml-org/Devstral-2-123B-Instruct-2512-GGUF/resolve/main/Devstral-2-123B-Instruct-2512-Q8_0.gguf"
+            )!
+          )
+        ),
+      ]
+    ),
   ]
 }
