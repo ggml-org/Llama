@@ -39,13 +39,18 @@ enum Catalog {
     }
 
     func selectableModels() -> [CatalogEntry] {
-      let compatibleModels = allModels.filter { $0.isCompatible() }
-
       // Group by size (e.g., "27B") to pick the preferred version
-      let modelsBySize = Dictionary(grouping: compatibleModels, by: { $0.size })
+      let modelsBySize = Dictionary(grouping: allModels, by: { $0.size })
 
       return modelsBySize.values.compactMap { models in
-        bestModel(in: models)
+        // First try to find a compatible model
+        let compatibleModels = models.filter { $0.isCompatible() }
+        if let bestCompatible = bestModel(in: compatibleModels) {
+          return bestCompatible
+        }
+
+        // Fallback to best model regardless of compatibility
+        return bestModel(in: models)
       }.sorted(by: CatalogEntry.displayOrder(_:_:))
     }
 
