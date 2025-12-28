@@ -97,10 +97,6 @@ final class ModelItemView: StandardItemView, NSGestureRecognizerDelegate {
   }
 
   @objc private func didClickRow() {
-    if !model.isCompatible() && !modelManager.isInstalled(model) {
-      NSSound.beep()
-      return
-    }
     actionHandler.performPrimaryAction(for: model)
     refresh()
   }
@@ -157,9 +153,7 @@ final class ModelItemView: StandardItemView, NSGestureRecognizerDelegate {
     // It will be moved to the installed section in the next frame.
     let showAsDownloading = !isInCatalog && (isDownloading || isCancelled)
 
-    let baseTextColor = showAsDownloading ? Theme.Colors.textSecondary : Theme.Colors.textPrimary
-    let isCompatible = model.isCompatible()
-    let textColor = isCompatible ? baseTextColor : Theme.Colors.textSecondary
+    let textColor = showAsDownloading ? Theme.Colors.textSecondary : Theme.Colors.textPrimary
 
     titleLabel.attributedStringValue = Format.modelName(
       family: model.family,
@@ -170,12 +164,7 @@ final class ModelItemView: StandardItemView, NSGestureRecognizerDelegate {
       quantization: model.quantizationLabel
     )
 
-    let incompatibility = !isCompatible ? model.incompatibilitySummary() : nil
-    subtitleLabel.attributedStringValue = Format.modelMetadata(
-      for: model,
-      color: textColor,
-      incompatibility: incompatibility
-    )
+    subtitleLabel.attributedStringValue = Format.modelMetadata(for: model, color: textColor)
 
     if let progress {
       progressLabel.stringValue = Format.progressText(progress)
@@ -183,8 +172,7 @@ final class ModelItemView: StandardItemView, NSGestureRecognizerDelegate {
     progressLabel.isHidden = !showAsDownloading
     cancelImageView.isHidden = !showAsDownloading
 
-    iconView.inactiveTintColor =
-      isCompatible ? Theme.Colors.modelIconTint : Theme.Colors.textSecondary
+    iconView.inactiveTintColor = Theme.Colors.modelIconTint
 
     // Delete and finder buttons only for installed models on right-click
     // Reset showingDeleteButton if model is no longer installed
@@ -199,14 +187,6 @@ final class ModelItemView: StandardItemView, NSGestureRecognizerDelegate {
     iconView.isActive = isActive
 
     needsDisplay = true
-  }
-
-  override var highlightEnabled: Bool {
-    // Disable highlight for incompatible models that are not installed
-    if !model.isCompatible() && !modelManager.isInstalled(model) {
-      return false
-    }
-    return true
   }
 
   override func highlightDidChange(_ highlighted: Bool) {
