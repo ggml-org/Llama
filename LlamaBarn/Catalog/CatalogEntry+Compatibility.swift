@@ -35,7 +35,7 @@ extension CatalogEntry {
         let setting = UserSettings.defaultContextWindow
         return setting == .max ? ctxWindow : (setting.rawValue * 1024)
       }()
-    var effectiveDesired = desiredTokens.flatMap { $0 > 0 ? $0 : nil } ?? defaultContext
+    let effectiveDesired = desiredTokens.flatMap { $0 > 0 ? $0 : nil } ?? defaultContext
 
     let desiredTokensDouble = Double(effectiveDesired)
 
