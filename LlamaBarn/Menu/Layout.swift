@@ -4,9 +4,9 @@ import AppKit
 enum Layout {
   /// Standard menu width for all items.
   static let menuWidth: CGFloat = 300
-  /// Distance from menu edge to background view (used in all menu items and headers).
+  /// Distance from menu edge to background view (used in all menu items).
   static let outerHorizontalPadding: CGFloat = 5
-  /// Distance from background edge to content (used in all menu items and headers).
+  /// Distance from background edge to content (used in all menu items).
   static let innerHorizontalPadding: CGFloat = 8
   /// Vertical spacing between content and background edge (used in ItemView).
   static let verticalPadding: CGFloat = 4
