@@ -45,7 +45,11 @@ struct ModelFamily {
       }
 
       // Fallback to best model regardless of compatibility
-      return bestModel(in: models)
+      // If no compatible models, pick the one with the lowest memory usage (lightest)
+      // to show the minimum requirements.
+      return models.min(by: {
+        $0.runtimeMemoryUsageMb() < $1.runtimeMemoryUsageMb()
+      })
     }.sorted(by: CatalogEntry.displayOrder(_:_:))
   }
 
