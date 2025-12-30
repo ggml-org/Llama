@@ -161,7 +161,7 @@ extension Format {
   }
 
   /// Formats family header text as "Family  ∣  Size · Size".
-  static func familyHeader(name: String, sizes: [String]) -> NSAttributedString {
+  static func familyHeader(name: String, sizes: [(String, Bool)]) -> NSAttributedString {
     let result = NSMutableAttributedString()
 
     // Family name (more prominent)
@@ -174,15 +174,36 @@ extension Format {
         ]))
 
     if !sizes.isEmpty {
-      // Sizes list (less prominent)
-      let sizesText = "  ∣  " + sizes.joined(separator: " · ")
+      // Separator
       result.append(
         NSAttributedString(
-          string: sizesText,
+          string: "  ∣  ",
           attributes: [
             .font: Theme.Fonts.secondary,
             .foregroundColor: Theme.Colors.textSecondary,
           ]))
+
+      // Sizes list
+      for (index, (size, isCompatible)) in sizes.enumerated() {
+        if index > 0 {
+          result.append(
+            NSAttributedString(
+              string: " · ",
+              attributes: [
+                .font: Theme.Fonts.secondary,
+                .foregroundColor: Theme.Colors.textSecondary,
+              ]))
+        }
+
+        let color = isCompatible ? Theme.Colors.modelIconTint : Theme.Colors.textSecondary
+        result.append(
+          NSAttributedString(
+            string: size,
+            attributes: [
+              .font: Theme.Fonts.secondary,
+              .foregroundColor: color,
+            ]))
+      }
     }
 
     return result

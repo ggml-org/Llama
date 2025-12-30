@@ -277,14 +277,22 @@ final class MenuController: NSObject, NSMenuDelegate {
       }
 
       // Collect unique sizes for header from available models
-      let sizes = availableModels.map {
-        $0.size
-          .replacingOccurrences(of: " Thinking", with: "")
-          .replacingOccurrences(of: " Reasoning", with: "")
-      }
-      .reduce(into: [String]()) { result, size in
-        if result.last != size { result.append(size) }
-      }
+      let sizes =
+        availableModels
+        .sorted { $0.parameterCount < $1.parameterCount }
+        .map { model -> (String, Bool) in
+          let sizeName = model.size
+            .replacingOccurrences(of: " Thinking", with: "")
+            .replacingOccurrences(of: " Reasoning", with: "")
+          return (sizeName, model.isCompatible())
+        }
+        .reduce(into: [(String, Bool)]()) { result, item in
+          if let lastIndex = result.indices.last, result[lastIndex].0 == item.0 {
+            if item.1 { result[lastIndex].1 = true }
+          } else {
+            result.append(item)
+          }
+        }
 
       let headerView = FamilyHeaderView(
         family: family.name,

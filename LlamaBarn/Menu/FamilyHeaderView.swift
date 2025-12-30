@@ -9,7 +9,7 @@ final class FamilyHeaderView: ItemView {
 
   init(
     family: String,
-    sizes: [String],
+    sizes: [(String, Bool)],
     description: String? = nil,
     isExpanded: Bool = false,
     onAction: ((String) -> Void)? = nil
