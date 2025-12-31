@@ -1,12 +1,10 @@
 import AppKit
 
 /// Interactive item for catalog families.
-final class FamilyItemView: ItemView {
-  private let label = Theme.tertiaryLabel()
-  private let descriptionLabel = Theme.tertiaryLabel()
-  private let chevronView = NSImageView()
+final class FamilyItemView: StandardItemView {
   let family: String
   private let onAction: ((String) -> Void)?
+  private let chevronView = NSImageView()
 
   init(
     family: String,
@@ -19,19 +17,33 @@ final class FamilyItemView: ItemView {
     self.onAction = onAction
     super.init(frame: .zero)
 
-    label.translatesAutoresizingMaskIntoConstraints = false
-    label.attributedStringValue = Format.familyItem(name: family, sizes: sizes)
-    label.lineBreakMode = .byTruncatingTail
+    // Configure StandardItemView elements
+    iconView.isHidden = true
 
-    descriptionLabel.translatesAutoresizingMaskIntoConstraints = false
-    descriptionLabel.stringValue = description ?? ""
-    descriptionLabel.isHidden = description == nil
-    descriptionLabel.maximumNumberOfLines = isExpanded ? 0 : 1
-    descriptionLabel.lineBreakMode = isExpanded ? .byWordWrapping : .byTruncatingTail
-    descriptionLabel.cell?.wraps = true
-    descriptionLabel.cell?.truncatesLastVisibleLine = true
-    descriptionLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+    // Title
+    titleLabel.font = Theme.Fonts.secondary
+    titleLabel.textColor = Theme.Colors.textSecondary
+    titleLabel.attributedStringValue = Format.familyItem(name: family, sizes: sizes)
+    titleLabel.lineBreakMode = .byTruncatingTail
 
+    // Subtitle (Description)
+    subtitleLabel.textColor = Theme.Colors.textSecondary
+
+    // Calculate available width:
+    // Menu (300) - Outer (5*2) - Inner (8*2) - Chevron (10) - Spacing (6) = ~258
+    let availableWidth =
+      Layout.menuWidth - (Layout.outerHorizontalPadding * 2) - (Layout.innerHorizontalPadding * 2)
+      - 16
+    configureSubtitle(description, width: availableWidth)
+
+    if description != nil {
+      subtitleLabel.maximumNumberOfLines = isExpanded ? 0 : 1
+      subtitleLabel.lineBreakMode = isExpanded ? .byWordWrapping : .byTruncatingTail
+      subtitleLabel.cell?.truncatesLastVisibleLine = true
+      subtitleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+    }
+
+    // Chevron
     Theme.configure(
       chevronView,
       symbol: "chevron.right",
@@ -40,37 +52,7 @@ final class FamilyItemView: ItemView {
     )
     chevronView.isHidden = onAction == nil || isExpanded
 
-    let textStack = NSStackView(views: [label])
-    textStack.orientation = .vertical
-    textStack.alignment = .leading
-    textStack.spacing = 2
-    textStack.translatesAutoresizingMaskIntoConstraints = false
-
-    if let description = description, !description.isEmpty {
-      textStack.addArrangedSubview(descriptionLabel)
-    }
-
-    contentView.addSubview(textStack)
-
-    if !chevronView.isHidden {
-      contentView.addSubview(chevronView)
-      NSLayoutConstraint.activate([
-        chevronView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-        chevronView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-        textStack.trailingAnchor.constraint(equalTo: chevronView.leadingAnchor, constant: -8),
-      ])
-    } else {
-      NSLayoutConstraint.activate([
-        textStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor)
-      ])
-    }
-
-    NSLayoutConstraint.activate([
-      textStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-      textStack.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-      textStack.topAnchor.constraint(greaterThanOrEqualTo: contentView.topAnchor),
-      textStack.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor),
-    ])
+    accessoryStack.addArrangedSubview(chevronView)
 
     // Accessibility
     if onAction != nil {
@@ -83,10 +65,6 @@ final class FamilyItemView: ItemView {
   required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
   override var highlightEnabled: Bool { onAction != nil }
-
-  override var intrinsicContentSize: NSSize {
-    NSSize(width: Layout.menuWidth, height: NSView.noIntrinsicMetric)
-  }
 
   override func mouseUp(with event: NSEvent) {
     super.mouseUp(with: event)
