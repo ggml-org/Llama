@@ -57,17 +57,12 @@ enum Format {
 
   // MARK: - Progress Formatting
 
-  /// Calculates download progress percentage from a Progress object.
-  /// Returns 0 if totalUnitCount is 0 or invalid, otherwise percentage 0-100.
-  static func progress(_ progress: Progress) -> Int {
-    guard progress.totalUnitCount > 0 else { return 0 }
-    let fraction = Double(progress.completedUnitCount) / Double(progress.totalUnitCount)
-    return max(0, min(100, Int(fraction * 100)))
-  }
-
-  /// Formats progress percentage as a string (e.g., "42%").
+  /// Formats progress percentage as a string (e.g., "42%" or "42.5%").
   static func progressText(_ progress: Progress) -> String {
-    "\(Format.progress(progress))%"
+    guard progress.totalUnitCount > 0 else { return "0%" }
+    let fraction = Double(progress.completedUnitCount) / Double(progress.totalUnitCount)
+    let percentage = max(0, min(100, fraction * 100))
+    return formatDecimal(percentage, unit: "%")
   }
 
   // MARK: - Private Helpers
@@ -76,7 +71,7 @@ enum Format {
   private static func formatDecimal(_ value: Double, unit: String) -> String {
     let rounded = (value * 10).rounded() / 10
     let format = rounded.truncatingRemainder(dividingBy: 1) == 0 ? "%.0f" : "%.1f"
-    return String(format: format + unit, rounded)
+    return String(format: format, rounded) + unit
   }
 
   /// Creates an attributed string containing an SF Symbol with the specified color.
