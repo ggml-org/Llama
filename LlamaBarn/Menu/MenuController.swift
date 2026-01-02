@@ -13,6 +13,7 @@ final class MenuController: NSObject, NSMenuDelegate {
   // Section State
   private var isSettingsOpen = false
   private var selectedFamily: String?
+  private let settingsTag = 999
 
   private var welcomePopover: WelcomePopover?
 
@@ -317,9 +318,17 @@ final class MenuController: NSObject, NSMenuDelegate {
   private func addSettingsSection(to menu: NSMenu) {
     guard isSettingsOpen else { return }
 
-    menu.addItem(NSMenuItem.viewItem(with: SeparatorView()))
-    menu.addItem(makeLaunchAtLoginItem())
-    menu.addItem(makeContextLengthItem())
+    let separator = NSMenuItem.viewItem(with: SeparatorView())
+    separator.tag = settingsTag
+    menu.addItem(separator)
+
+    let launchItem = makeLaunchAtLoginItem()
+    launchItem.tag = settingsTag
+    menu.addItem(launchItem)
+
+    let contextItem = makeContextLengthItem()
+    contextItem.tag = settingsTag
+    menu.addItem(contextItem)
   }
 
   private func makeLaunchAtLoginItem() -> NSMenuItem {
@@ -354,6 +363,13 @@ final class MenuController: NSObject, NSMenuDelegate {
 
   private func toggleSettings() {
     isSettingsOpen.toggle()
-    rebuildMenuIfPossible()
+
+    guard let menu = statusItem.menu else { return }
+
+    if isSettingsOpen {
+      addSettingsSection(to: menu)
+    } else {
+      menu.items.filter { $0.tag == settingsTag }.forEach { menu.removeItem($0) }
+    }
   }
 }
