@@ -137,7 +137,6 @@ class LlamaServer {
       "--port", String(port),
       "--alias", modelName,
       "--log-file", "/tmp/llama-server.log",
-      "--no-mmap",
       "--jinja",
     ]
 
