@@ -344,10 +344,28 @@ final class MenuController: NSObject, NSMenuDelegate {
 
   private func makeContextLengthItem() -> NSMenuItem {
     let contextWindowLabels = UserSettings.ContextWindowSize.allCases.map { $0.displayName }
+
+    let infoText: String = {
+      let sysMemMb = SystemMemory.memoryMb
+      guard sysMemMb > 0 else {
+        return
+          "Higher context lengths use more memory. If the selected context doesn't fit, LlamaBarn reduces it (down to 4k) and may use a quantized build to stay within a safe memory budget."
+      }
+
+      let sysMemGb = Double(sysMemMb) / 1024.0
+      let fraction = CatalogEntry.availableMemoryFraction(forSystemMemoryMb: sysMemMb)
+      let budgetGb = sysMemGb * fraction
+
+      let budgetGbRounded = Int(budgetGb.rounded())
+
+      return
+        "Higher context lengths use more memory. LlamaBarn stays within a safe memory budget (\(budgetGbRounded)\u{00A0}GB on this Mac) by reducing context (down to 4k) and, if needed, using a quantized build."
+    }()
+
     return NSMenuItem.viewItem(
       with: SettingsSegmentedView(
         title: "Context length",
-        infoText: "Higher context lengths use more memory.",
+        infoText: infoText,
         labels: contextWindowLabels,
         getSelectedIndex: {
           UserSettings.ContextWindowSize.allCases.firstIndex(of: UserSettings.defaultContextWindow)
