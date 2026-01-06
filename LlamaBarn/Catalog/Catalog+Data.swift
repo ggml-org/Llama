@@ -596,7 +596,7 @@ extension Catalog {
           parameterCount: 31_577_940_288,
           releaseDate: date(2025, 12, 15),
           ctxWindow: 262_144,
-          ctxBytesPer1kTokens: 100_663_296,
+          ctxBytesPer1kTokens: 6_291_456,
           build: ModelBuild(
             id: "nemotron-nano-3-30b-q8",
             quantization: "Q8_0",
