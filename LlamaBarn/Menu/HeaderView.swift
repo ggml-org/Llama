@@ -10,8 +10,10 @@ final class HeaderView: ItemView {
   private let statusLabel = Theme.secondaryLabel()
   private let linkLabel = Theme.secondaryLabel()
   private let copyImageView = NSImageView()
+  private let webUiLabel = Theme.secondaryLabel()
 
   private var currentUrl: URL?
+  private var webUiUrl: URL?
   private var showingCopyConfirmation = false
 
   init(server: LlamaServer) {
@@ -47,8 +49,6 @@ final class HeaderView: ItemView {
     mainStack.pinToSuperview()
 
     // Link Label Configuration
-    let linkClick = NSClickGestureRecognizer(target: self, action: #selector(openLink))
-    linkLabel.addGestureRecognizer(linkClick)
     linkLabel.isSelectable = false  // Make it look like a label, not editable
 
     // Copy Image View Configuration
@@ -62,6 +62,11 @@ final class HeaderView: ItemView {
     let copyClick = NSClickGestureRecognizer(target: self, action: #selector(copyUrl))
     copyImageView.addGestureRecognizer(copyClick)
 
+    // Web UI Label Configuration
+    let webUiClick = NSClickGestureRecognizer(target: self, action: #selector(openWebUi))
+    webUiLabel.addGestureRecognizer(webUiClick)
+    webUiLabel.isSelectable = false
+
     statusStackView.addArrangedSubview(statusLabel)
     statusStackView.addArrangedSubview(linkLabel)
 
@@ -73,6 +78,14 @@ final class HeaderView: ItemView {
 
     statusStackView.addArrangedSubview(copyImageView)
 
+    // Spacer between Copy and Web UI
+    let copyWebUiSpacer = NSView()
+    copyWebUiSpacer.translatesAutoresizingMaskIntoConstraints = false
+    copyWebUiSpacer.widthAnchor.constraint(equalToConstant: 8).isActive = true
+    statusStackView.addArrangedSubview(copyWebUiSpacer)
+
+    statusStackView.addArrangedSubview(webUiLabel)
+
     // Spacer
     let spacer = NSView()
     spacer.setContentHuggingPriority(.init(1), for: .horizontal)
@@ -82,45 +95,64 @@ final class HeaderView: ItemView {
   func refresh() {
     // Update server status based on server state.
     if server.isRunning {
+      appNameLabel.stringValue = "LlamaBarn is running on port \(LlamaServer.defaultPort)"
+
       let host =
         UserSettings.exposeToNetwork ? (LlamaServer.getLocalIpAddress() ?? "0.0.0.0") : "localhost"
       let linkText = "\(host):\(LlamaServer.defaultPort)"
-      let url = URL(string: "http://\(linkText)/")!
+      let apiUrlString = "http://\(linkText)/v1"
+      let webUiUrlString = "http://\(linkText)/"
 
-      self.currentUrl = url
+      self.currentUrl = URL(string: apiUrlString)!
+      self.webUiUrl = URL(string: webUiUrlString)!
 
-      statusLabel.stringValue = "Running on "
-      statusLabel.textColor = Theme.Colors.textPrimary
+      statusLabel.stringValue = "Base URL: "
+      statusLabel.textColor = Theme.Colors.textSecondary
+      statusLabel.isHidden = false
 
       let attrTitle = NSAttributedString(
-        string: linkText,
+        string: apiUrlString,
+        attributes: [
+          .foregroundColor: Theme.Colors.textPrimary,
+          .font: Theme.Fonts.secondary,
+        ]
+      )
+      linkLabel.attributedStringValue = attrTitle
+      linkLabel.isHidden = false
+      copyImageView.isHidden = false
+      webUiLabel.isHidden = false
+
+      let attrWebUi = NSAttributedString(
+        string: "Web UI",
         attributes: [
           .foregroundColor: NSColor.linkColor,
           .font: Theme.Fonts.secondary,
           .underlineStyle: NSUnderlineStyle.single.rawValue,
         ]
       )
-      linkLabel.attributedStringValue = attrTitle
-      linkLabel.isHidden = false
-      copyImageView.isHidden = false
+      webUiLabel.attributedStringValue = attrWebUi
 
       // Update copy icon based on confirmation state
       let iconName = showingCopyConfirmation ? "checkmark" : "doc.on.doc"
       copyImageView.image = NSImage(
         systemSymbolName: iconName, accessibilityDescription: "Copy URL")
     } else {
+      appNameLabel.stringValue = "LlamaBarn"
       statusLabel.stringValue = "Select a model to run"
       statusLabel.textColor = Theme.Colors.textPrimary
+      statusLabel.isHidden = false
       linkLabel.isHidden = true
+      webUiLabel.isHidden = true
       copyImageView.isHidden = true
       currentUrl = nil
+      webUiUrl = nil
     }
 
     needsDisplay = true
   }
 
-  @objc private func openLink() {
-    if let url = currentUrl {
+  @objc private func openWebUi() {
+    if let url = webUiUrl {
       NSWorkspace.shared.open(url)
     }
   }
