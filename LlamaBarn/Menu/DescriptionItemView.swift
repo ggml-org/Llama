@@ -3,7 +3,7 @@ import AppKit
 /// A simple item view that displays a multi-line description text.
 /// Used for family descriptions in the catalog detail view.
 final class DescriptionItemView: ItemView {
-  private let label = Theme.secondaryLabel()
+  private let label = Theme.tertiaryLabel()
 
   init(text: String) {
     super.init(frame: .zero)
