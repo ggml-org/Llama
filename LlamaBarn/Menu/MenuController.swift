@@ -349,7 +349,7 @@ final class MenuController: NSObject, NSMenuDelegate {
       let sysMemMb = SystemMemory.memoryMb
       guard sysMemMb > 0 else {
         return
-          "Higher context lengths use more memory. If the selected context doesn't fit, LlamaBarn reduces it and may use a quantized build to stay within a safe memory budget."
+          "Higher context lengths use more memory. The app may reduce the context length to stay within a safe memory budget."
       }
 
       let sysMemGb = Double(sysMemMb) / 1024.0
@@ -359,7 +359,7 @@ final class MenuController: NSObject, NSMenuDelegate {
       let budgetGbRounded = Int(budgetGb.rounded())
 
       return
-        "Higher context lengths use more memory. LlamaBarn stays within a safe memory budget (\(budgetGbRounded)\u{00A0}GB on this Mac) by reducing context and, if needed, using a quantized build."
+        "Higher context lengths use more memory. The app may reduce the context length to stay within a safe memory budget: \(budgetGbRounded)\u{00A0}GB on this Mac."
     }()
 
     return NSMenuItem.viewItem(
