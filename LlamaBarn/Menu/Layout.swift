@@ -20,9 +20,30 @@ enum Layout {
   static let progressWidth: CGFloat = 48
   /// Vertical spacing between text lines in stacked labels (e.g., model name and metadata).
   static let textLineSpacing: CGFloat = 2
+
+  /// Constrains a view to the standard UI icon size (width and height).
+  static func constrainToIconSize(_ view: NSView) {
+    view.widthAnchor.constraint(lessThanOrEqualToConstant: uiIconSize).isActive = true
+    view.heightAnchor.constraint(lessThanOrEqualToConstant: uiIconSize).isActive = true
+  }
 }
 
 extension NSView {
+  /// Creates a fixed-width spacer view for use in stack views.
+  static func spacer(width: CGFloat) -> NSView {
+    let view = NSView()
+    view.translatesAutoresizingMaskIntoConstraints = false
+    view.widthAnchor.constraint(equalToConstant: width).isActive = true
+    return view
+  }
+
+  /// Creates a flexible spacer that expands to fill available space.
+  static func flexibleSpacer() -> NSView {
+    let view = NSView()
+    view.setContentHuggingPriority(.init(1), for: .horizontal)
+    return view
+  }
+
   /// Applies or clears the standard selection highlight background on a container view.
   /// Uses dynamic colors resolved for the view's effective appearance and sets a rounded corner.
   func setHighlight(_ highlighted: Bool, cornerRadius: CGFloat = Layout.cornerRadius) {

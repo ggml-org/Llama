@@ -1,65 +1,66 @@
 import AppKit
 
-/// A clickable menu item for navigating back to the catalog.
-final class BackItemView: ItemView {
-  private let onAction: () -> Void
-  private let iconView = NSImageView()
-  private let label = Theme.secondaryLabel()
+/// A simple text-based menu item with optional back arrow and action.
+/// Replaces both BackItemView and TitleItemView with a single unified view.
+final class TextItemView: ItemView {
+  private let label: NSTextField
+  private let iconView: NSImageView?
+  private let onAction: (() -> Void)?
 
-  init(title: String, onAction: @escaping () -> Void) {
+  /// Creates a text item view.
+  /// - Parameters:
+  ///   - text: The text to display
+  ///   - showBackArrow: If true, shows a back arrow icon before the text
+  ///   - onAction: Optional action to perform on click. If nil, item is non-interactive.
+  init(text: String, showBackArrow: Bool = false, onAction: (() -> Void)? = nil) {
     self.onAction = onAction
+
+    // Configure label style based on whether it's a back button or title
+    if showBackArrow {
+      self.label = Theme.secondaryLabel()
+      self.label.textColor = Theme.Colors.textSecondary
+
+      let icon = NSImageView()
+      Theme.configure(
+        icon,
+        symbol: "arrow.left",
+        color: Theme.Colors.textSecondary,
+        pointSize: 10
+      )
+      self.iconView = icon
+    } else {
+      self.label = Theme.primaryLabel()
+      self.label.font = Theme.Fonts.primary
+      self.label.textColor = Theme.Colors.textPrimary
+      self.iconView = nil
+    }
+
     super.init(frame: .zero)
 
-    // Icon
-    Theme.configure(
-      iconView,
-      symbol: "arrow.left",
-      color: Theme.Colors.textSecondary,
-      pointSize: 10
-    )
+    label.stringValue = text
 
-    // Label
-    label.stringValue = title
-    label.textColor = Theme.Colors.textSecondary
-
-    // Stack
-    let stack = NSStackView(views: [iconView, label])
-    stack.orientation = .horizontal
-    stack.spacing = 4
-    stack.alignment = .centerY
-
-    contentView.addSubview(stack)
-    stack.pinToSuperview()
+    // Build content
+    if let iconView {
+      let stack = NSStackView(views: [iconView, label])
+      stack.orientation = .horizontal
+      stack.spacing = 4
+      stack.alignment = .centerY
+      contentView.addSubview(stack)
+      stack.pinToSuperview()
+    } else {
+      contentView.addSubview(label)
+      label.pinToSuperview()
+    }
   }
 
   required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-  override var highlightEnabled: Bool { true }
+  override var highlightEnabled: Bool { onAction != nil }
 
   override func mouseUp(with event: NSEvent) {
     super.mouseUp(with: event)
     if bounds.contains(convert(event.locationInWindow, from: nil)) {
-      onAction()
+      onAction?()
     }
   }
-}
-
-/// A non-interactive header item for the family detail view.
-final class TitleItemView: ItemView {
-  private let label = Theme.primaryLabel()
-
-  init(text: String) {
-    super.init(frame: .zero)
-
-    label.stringValue = text
-    label.font = Theme.Fonts.primary
-    label.textColor = Theme.Colors.textPrimary
-
-    contentView.addSubview(label)
-    label.pinToSuperview()
-  }
-
-  required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-
-  override var highlightEnabled: Bool { false }
 }

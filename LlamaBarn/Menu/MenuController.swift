@@ -230,14 +230,14 @@ final class MenuController: NSObject, NSMenuDelegate {
     menu.addItem(NSMenuItem.viewItem(with: SeparatorView()))
 
     // Back Item
-    let backView = BackItemView(title: "back") { [weak self] in
+    let backView = TextItemView(text: "back", showBackArrow: true) { [weak self] in
       self?.selectedFamily = nil
       self?.rebuildMenuIfPossible()
     }
     menu.addItem(NSMenuItem.viewItem(with: backView))
 
     // Family Title
-    let titleView = TitleItemView(text: familyName)
+    let titleView = TextItemView(text: familyName)
     menu.addItem(NSMenuItem.viewItem(with: titleView))
 
     if let description = family.description {

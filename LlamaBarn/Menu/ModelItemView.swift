@@ -61,21 +61,12 @@ final class ModelItemView: StandardItemView, NSGestureRecognizerDelegate {
     accessoryStack.addArrangedSubview(finderImageView)
     accessoryStack.addArrangedSubview(deleteImageView)
 
-    NSLayoutConstraint.activate([
-      cancelImageView.widthAnchor.constraint(lessThanOrEqualToConstant: Layout.uiIconSize),
-      cancelImageView.heightAnchor.constraint(lessThanOrEqualToConstant: Layout.uiIconSize),
-
-      progressLabel.widthAnchor.constraint(lessThanOrEqualToConstant: Layout.progressWidth),
-
-      finderImageView.widthAnchor.constraint(lessThanOrEqualToConstant: Layout.uiIconSize),
-      finderImageView.heightAnchor.constraint(lessThanOrEqualToConstant: Layout.uiIconSize),
-
-      deleteImageView.widthAnchor.constraint(lessThanOrEqualToConstant: Layout.uiIconSize),
-      deleteImageView.heightAnchor.constraint(lessThanOrEqualToConstant: Layout.uiIconSize),
-
-      hfImageView.widthAnchor.constraint(lessThanOrEqualToConstant: Layout.uiIconSize),
-      hfImageView.heightAnchor.constraint(lessThanOrEqualToConstant: Layout.uiIconSize),
-    ])
+    Layout.constrainToIconSize(cancelImageView)
+    Layout.constrainToIconSize(finderImageView)
+    Layout.constrainToIconSize(deleteImageView)
+    Layout.constrainToIconSize(hfImageView)
+    progressLabel.widthAnchor.constraint(lessThanOrEqualToConstant: Layout.progressWidth).isActive =
+      true
 
     titleLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
     titleLabel.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)

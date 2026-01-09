@@ -69,26 +69,10 @@ final class HeaderView: ItemView {
 
     statusStackView.addArrangedSubview(statusLabel)
     statusStackView.addArrangedSubview(linkLabel)
-
-    // Spacer between URL and copy button
-    let urlCopySpacer = NSView()
-    urlCopySpacer.translatesAutoresizingMaskIntoConstraints = false
-    urlCopySpacer.widthAnchor.constraint(equalToConstant: 4).isActive = true
-    statusStackView.addArrangedSubview(urlCopySpacer)
-
+    statusStackView.addArrangedSubview(NSView.spacer(width: 4))
     statusStackView.addArrangedSubview(copyImageView)
-
-    // Spacer between Copy and Web UI
-    let copyWebUiSpacer = NSView()
-    copyWebUiSpacer.translatesAutoresizingMaskIntoConstraints = false
-    copyWebUiSpacer.widthAnchor.constraint(equalToConstant: 8).isActive = true
-    statusStackView.addArrangedSubview(copyWebUiSpacer)
-
-    // Flexible spacer to right-align Web UI
-    let webUiSpacer = NSView()
-    webUiSpacer.setContentHuggingPriority(.init(1), for: .horizontal)
-    statusStackView.addArrangedSubview(webUiSpacer)
-
+    statusStackView.addArrangedSubview(NSView.spacer(width: 8))
+    statusStackView.addArrangedSubview(NSView.flexibleSpacer())
     statusStackView.addArrangedSubview(webUiLabel)
   }
 
