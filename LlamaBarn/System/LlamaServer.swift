@@ -46,7 +46,6 @@ class LlamaServer {
     didSet { NotificationCenter.default.post(name: .LBServerStateDidChange, object: self) }
   }
   var activeModelPath: String?
-  private(set) var activeCtxWindow: Int?
   var memoryUsageMb: Double = 0 {
     didSet { NotificationCenter.default.post(name: .LBServerMemoryDidChange, object: self) }
   }
@@ -177,7 +176,6 @@ class LlamaServer {
       logger.error("Failed to launch process: \(error)")
       self.state = .error(.launchFailed(errorMessage))
       self.activeModelPath = nil
-      self.activeCtxWindow = nil
       return
     }
     startHealthCheck(port: port)
@@ -190,7 +188,6 @@ class LlamaServer {
     state = .idle
 
     activeModelPath = nil
-    activeCtxWindow = nil
 
     cleanUpResources()
   }
@@ -249,55 +246,13 @@ class LlamaServer {
     // In Router Mode with --models-autoload, the model will be loaded on demand.
     // We update local state so the UI knows what's selected.
     self.activeModelPath = model.modelFilePath
-    self.activeCtxWindow = model.ctxWindow
     logger.info("Selected active model: \(model.displayName)")
   }
 
   /// Deselects the current model in the UI.
   func unloadModel() {
     activeModelPath = nil
-    activeCtxWindow = nil
   }
-
-  private func makeLaunchConfiguration(
-    for model: CatalogEntry,
-    requestedCtx: Int?,
-    maximizeContext: Bool = false
-  ) -> (applied: Int, args: [String])? {
-    let sanitizedArgs = Self.removeContextArguments(from: model.serverArgs)
-    guard
-      let usableCtx = model.usableCtxWindow(
-        desiredTokens: requestedCtx, maximizeContext: maximizeContext)
-    else {
-      logger.error("No usable context length for model \(model.displayName, privacy: .public)")
-      return nil
-    }
-    let args = ["-c", String(usableCtx)] + sanitizedArgs
-    return (usableCtx, args)
-  }
-
-  private static func removeContextArguments(from args: [String]) -> [String] {
-    var result: [String] = []
-    var skipNext = false
-    for arg in args {
-      if skipNext {
-        skipNext = false
-        continue
-      }
-      if arg == "-c" || arg == "--ctx-size" {
-        skipNext = true
-        continue
-      }
-      if arg.hasPrefix("--ctx-size=") {
-        continue
-      }
-      result.append(arg)
-    }
-    return result
-  }
-
-  // Removed: startWithMaxContext(model:) — not used by current UI.
-  // Removed: toggle(model:) — UI calls start/stop explicitly.
 
   private func cleanUpPipes() {
     outputPipe?.fileHandleForReading.readabilityHandler = nil

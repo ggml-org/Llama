@@ -170,8 +170,11 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
       content += "[\(model.id)]\n"
       content += "model = \(model.modelFilePath)\n"
 
-      if model.ctxWindow > 0 {
-        content += "ctx_size = \(model.ctxWindow)\n"
+      // Use the calculated usable context window to prevent OOM on devices with limited RAM.
+      // Falls back to the model's default if calculation fails (rare).
+      let ctxSize = model.usableCtxWindow() ?? model.ctxWindow
+      if ctxSize > 0 {
+        content += "ctx_size = \(ctxSize)\n"
       }
 
       if let mmproj = model.mmprojFilePath {
