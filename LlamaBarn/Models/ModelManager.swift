@@ -174,7 +174,7 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
       // Falls back to the model's default if calculation fails (rare).
       let ctxSize = model.usableCtxWindow() ?? model.ctxWindow
       if ctxSize > 0 {
-        content += "ctx_size = \(ctxSize)\n"
+        content += "ctx-size = \(ctxSize)\n"
       }
 
       if let mmproj = model.mmprojFilePath {
@@ -184,7 +184,7 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
       // Enable larger batch size for better performance on high-memory devices (≥32 GB RAM)
       let systemMemoryGb = Double(SystemMemory.memoryMb) / 1024.0
       if systemMemoryGb >= 32.0 {
-        content += "ubatch_size = 2048\n"
+        content += "ubatch-size = 2048\n"
       }
 
       // Add model-specific server arguments (sampling params, etc.)
@@ -200,7 +200,7 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
           continue
         }
 
-        let key = String(arg.dropFirst(2)).replacingOccurrences(of: "-", with: "_")
+        let key = String(arg.dropFirst(2))
 
         if i + 1 < model.serverArgs.count && !model.serverArgs[i + 1].hasPrefix("-") {
           // Key-value pair (e.g. --temp 0.7)
