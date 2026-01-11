@@ -268,7 +268,7 @@ class LlamaServer {
       _ = try? await URLSession.shared.data(for: request)
     }
 
-    // In Router Mode with --models-autoload, the model will be loaded on demand.
+    // In Router Mode, the model is loaded via the /models/load endpoint.
     // We update local state so the UI knows what's selected.
     self.activeModelPath = model.modelFilePath
     logger.info("Requested active model: \(model.displayName)")
