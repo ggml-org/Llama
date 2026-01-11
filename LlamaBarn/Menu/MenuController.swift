@@ -138,6 +138,9 @@ final class MenuController: NSObject, NSMenuDelegate {
     // Server memory usage changed - update running model stats
     observe(.LBServerMemoryDidChange)
 
+    // Model status changed (loaded/unloaded)
+    observe(.LBModelStatusDidChange)
+
     // Download progress updated - refresh progress indicators
     observe(.LBModelDownloadsDidChange)
 

@@ -46,6 +46,9 @@ class LlamaServer {
     didSet { NotificationCenter.default.post(name: .LBServerStateDidChange, object: self) }
   }
   var activeModelPath: String?
+  var modelStatuses: [String: String] = [:] {
+    didSet { NotificationCenter.default.post(name: .LBModelStatusDidChange, object: self) }
+  }
   var memoryUsageMb: Double = 0 {
     didSet { NotificationCenter.default.post(name: .LBServerMemoryDidChange, object: self) }
   }
@@ -178,7 +181,7 @@ class LlamaServer {
       self.activeModelPath = nil
       return
     }
-    startHealthCheck(port: port)
+    startStatusPolling(port: port)
   }
 
   /// Terminates the currently running llama-server process and resets state
@@ -196,7 +199,7 @@ class LlamaServer {
   private func cleanUpResources() {
     stopActiveProcess()
     cleanUpPipes()
-    stopHealthCheck()
+    stopStatusPolling()
     stopMemoryMonitoring()
   }
 
@@ -233,7 +236,12 @@ class LlamaServer {
 
   /// Checks if the specified model is currently active
   func isActive(model: CatalogEntry) -> Bool {
-    return activeModelPath == model.modelFilePath
+    return modelStatuses[model.id] == "loaded"
+  }
+
+  /// Checks if the specified model is currently loading
+  func isLoading(model: CatalogEntry) -> Bool {
+    return modelStatuses[model.id] == "loading"
   }
 
   /// Switch the active model in the UI. In Router Mode, this doesn't restart the server,
@@ -243,13 +251,43 @@ class LlamaServer {
       start()
     }
 
+    Task {
+      guard let url = URL(string: "http://localhost:\(Self.defaultPort)/models/load") else {
+        return
+      }
+      var request = URLRequest(url: url)
+      request.httpMethod = "POST"
+      request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+      let body = ["model": model.id]
+      request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+      _ = try? await URLSession.shared.data(for: request)
+    }
+
     // In Router Mode with --models-autoload, the model will be loaded on demand.
     // We update local state so the UI knows what's selected.
     self.activeModelPath = model.modelFilePath
-    logger.info("Selected active model: \(model.displayName)")
+    logger.info("Requested active model: \(model.displayName)")
   }
 
   /// Deselects the current model in the UI.
+  func unloadModel(_ model: CatalogEntry) {
+    Task {
+      guard let url = URL(string: "http://localhost:\(Self.defaultPort)/models/unload") else {
+        return
+      }
+      var request = URLRequest(url: url)
+      request.httpMethod = "POST"
+      request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+      let body = ["model": model.id]
+      request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+      _ = try? await URLSession.shared.data(for: request)
+    }
+
+    if activeModelPath == model.modelFilePath {
+      activeModelPath = nil
+    }
+  }
+
   func unloadModel() {
     activeModelPath = nil
   }
@@ -263,64 +301,61 @@ class LlamaServer {
     errorPipe = nil
   }
 
-  private func startHealthCheck(port: Int) {
-    stopHealthCheck()
+  private func startStatusPolling(port: Int) {
+    stopStatusPolling()
 
     healthCheckTask = Task {
-      // Poll /health to detect when the server is ready. In Router Mode, llama-server starts
-      // without loading any model and returns 503 until the server infrastructure is ready,
-      // then 200 when it can accept requests. Models are loaded on-demand. Polling is the
-      // recommended approach as there's no standard signal for process readiness.
-      // Try for up to 30 seconds with 2-second intervals.
-      for _ in 1...15 {
-        if Task.isCancelled { return }
-
-        if await checkHealth(port: port) {
-          return
-        }
-
-        try await Task.sleep(nanoseconds: 2_000_000_000)
-      }
-
-      // Health check failed
-      if !Task.isCancelled {
-        _ = await MainActor.run {
-          if self.state != .idle {
-            self.state = .error(.healthCheckFailed)
-          }
-        }
+      // Poll /models to detect status.
+      while !Task.isCancelled {
+        await checkStatus(port: port)
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
       }
     }
   }
 
-  private func stopHealthCheck() {
+  private func stopStatusPolling() {
     healthCheckTask?.cancel()
     healthCheckTask = nil
   }
 
-  private func checkHealth(port: Int) async -> Bool {
-    guard let url = URL(string: "http://localhost:\(port)/health") else { return false }
+  private struct ModelsResponse: Decodable {
+    struct ModelData: Decodable {
+      let id: String
+      let status: ModelStatus?
+    }
+    struct ModelStatus: Decodable {
+      let value: String
+    }
+    let data: [ModelData]
+  }
+
+  private func checkStatus(port: Int) async {
+    guard let url = URL(string: "http://localhost:\(port)/models") else { return }
 
     do {
       var request = URLRequest(url: url)
-      request.timeoutInterval = 5.0
+      request.timeoutInterval = 2.0
 
-      let (_, response) = try await URLSession.shared.data(for: request)
+      let (data, response) = try await URLSession.shared.data(for: request)
 
       if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
-        if let pid = activeProcess?.processIdentifier {
-          let memoryValue = await Task.detached { Self.measureMemoryUsageMb(pid: pid) }.value
-          if self.state != .idle {
-            self.state = .running
-            self.memoryUsageMb = memoryValue
-            self.startMemoryMonitoring()
+        if let decoded = try? JSONDecoder().decode(ModelsResponse.self, from: data) {
+          let newStatuses = decoded.data.reduce(into: [String: String]()) { dict, item in
+            dict[item.id] = item.status?.value ?? "unloaded"
+          }
+
+          await MainActor.run {
+            if self.state == .loading {
+              self.state = .running
+              self.startMemoryMonitoring()
+            }
+            if self.modelStatuses != newStatuses {
+              self.modelStatuses = newStatuses
+            }
           }
         }
-        return true
       }
     } catch {}
-
-    return false
   }
 
   private func startMemoryMonitoring() {

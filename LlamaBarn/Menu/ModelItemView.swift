@@ -150,7 +150,7 @@ final class ModelItemView: StandardItemView, NSGestureRecognizerDelegate {
 
   func refresh() {
     let isActive = server.isActive(model: model)
-    let isLoading = isActive && server.isLoading
+    let isLoading = server.isLoading(model: model)
     let progress = modelManager.downloadProgress(for: model)
     let isDownloading = progress != nil
     let isInstalled = modelManager.isInstalled(model)
