@@ -159,6 +159,8 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
     do {
       try presets.write(to: destinationURL, atomically: true, encoding: .utf8)
       logger.info("Updated presets file at \(destinationURL.path)")
+      // Notify server to pick up configuration changes
+      LlamaServer.shared.reload()
     } catch {
       logger.error("Failed to write presets file: \(error)")
     }

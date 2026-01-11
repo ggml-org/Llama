@@ -195,6 +195,13 @@ class LlamaServer {
     cleanUpResources()
   }
 
+  /// Reloads the server (restarts) to pick up changes in configuration (e.g. models list)
+  func reload() {
+    guard isRunning || isLoading else { return }
+    logger.info("Restarting server to apply configuration changes")
+    start()
+  }
+
   /// Cleans up all background resources tied to the server process
   private func cleanUpResources() {
     stopActiveProcess()
