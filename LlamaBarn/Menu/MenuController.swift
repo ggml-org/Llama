@@ -182,10 +182,15 @@ final class MenuController: NSObject, NSMenuDelegate {
   }
 
   private func refresh() {
+    // Update icon opacity: full when loaded, mid when loading, dim when idle
     if let button = statusItem.button {
-      let running = server.isAnyModelLoaded
-      // Update opacity based on whether a model is loaded
-      button.alphaValue = running ? 1.0 : 0.35
+      if server.isAnyModelLoaded {
+        button.alphaValue = 1.0
+      } else if server.isAnyModelLoading {
+        button.alphaValue = 0.65
+      } else {
+        button.alphaValue = 0.35
+      }
     }
 
     guard let menu = statusItem.menu else { return }
