@@ -116,7 +116,6 @@ class LlamaServer {
 
     state = .loading
 
-    Task { @MainActor in ModelManager.shared.updatePresetsFile() }
     let presetsPath = CatalogEntry.modelStorageDirectory.appendingPathComponent("models.ini").path
 
     let llamaServerPath = libFolderPath + "/llama-server"
@@ -162,12 +161,11 @@ class LlamaServer {
       Task { @MainActor in
         guard let self = self else { return }
 
-        // Skip handler if we're already idle (intentional stop) or no model was running
+        // Skip handler if we're already idle (intentional stop) or this is an old process
         guard self.state != .idle else { return }
+        guard self.activeProcess == proc else { return }
 
-        if self.activeProcess == proc {
-          self.cleanUpResources()
-        }
+        self.cleanUpResources()
 
         if proc.terminationStatus == 0 {
           self.state = .idle
@@ -204,7 +202,8 @@ class LlamaServer {
 
   /// Reloads the server (restarts) to pick up changes in configuration (e.g. models list)
   func reload() {
-    guard isRunning || isLoading else { return }
+    // Skip reload only if server is idle (never started or intentionally stopped)
+    guard state != .idle else { return }
     logger.info("Restarting server to apply configuration changes")
     start()
   }

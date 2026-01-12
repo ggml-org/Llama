@@ -77,6 +77,10 @@ final class HeaderView: ItemView {
   }
 
   func refresh() {
+    // Dim title while server is loading/reloading
+    appNameLabel.textColor =
+      server.isLoading ? Theme.Colors.textSecondary : Theme.Colors.textPrimary
+
     // Connect to server info
     appNameLabel.stringValue = "LlamaBarn"
 

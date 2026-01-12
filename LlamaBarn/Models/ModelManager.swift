@@ -110,11 +110,13 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
 
   /// Safely deletes a downloaded model and its associated files.
   func deleteDownloadedModel(_ model: CatalogEntry) {
+    cancelModelDownload(model)
+
+    // Clear active model path if we're deleting the active model
     let llamaServer = LlamaServer.shared
     if llamaServer.activeModelPath == model.modelFilePath {
-      llamaServer.stop()
+      llamaServer.activeModelPath = nil
     }
-    cancelModelDownload(model)
 
     let paths = model.allLocalModelPaths
 
