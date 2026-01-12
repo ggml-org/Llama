@@ -5,15 +5,20 @@ final class FamilyItemView: StandardItemView {
   let family: String
   private let onAction: ((String) -> Void)?
   private let chevronView = NSImageView()
+  private let linkLabel = Theme.secondaryLabel()
+  private var linkUrl: URL?
 
   init(
     family: String,
     sizes: [(String, Bool)],
     description: String? = nil,
+    linkText: String? = nil,
+    linkUrl: URL? = nil,
     onAction: ((String) -> Void)? = nil
   ) {
     self.family = family
     self.onAction = onAction
+    self.linkUrl = linkUrl
     super.init(frame: .zero)
 
     // Configure StandardItemView elements
@@ -24,6 +29,35 @@ final class FamilyItemView: StandardItemView {
     titleLabel.textColor = Theme.Colors.textPrimary
     titleLabel.attributedStringValue = Format.familyItem(name: family, sizes: sizes)
     titleLabel.lineBreakMode = .byTruncatingTail
+
+    // Link (optional, shown inline after title)
+    if let linkText = linkText, linkUrl != nil {
+      let attrLink = NSAttributedString(
+        string: linkText,
+        attributes: [
+          .foregroundColor: NSColor.linkColor,
+          .font: Theme.Fonts.secondary,
+        ]
+      )
+      linkLabel.attributedStringValue = attrLink
+      linkLabel.isSelectable = false
+      let linkClick = NSClickGestureRecognizer(target: self, action: #selector(openLink))
+      linkLabel.addGestureRecognizer(linkClick)
+
+      // Insert link label right after title in the title's superview (the text stack)
+      if let textStack = titleLabel.superview as? NSStackView {
+        // Remove title, create horizontal stack with title + link, insert back
+        textStack.removeArrangedSubview(titleLabel)
+        titleLabel.removeFromSuperview()
+
+        let titleRow = NSStackView(views: [titleLabel, linkLabel])
+        titleRow.orientation = .horizontal
+        titleRow.spacing = 6
+        titleRow.alignment = .firstBaseline
+
+        textStack.insertArrangedSubview(titleRow, at: 0)
+      }
+    }
 
     // Subtitle (Description)
     subtitleLabel.textColor = Theme.Colors.textSecondary
@@ -70,6 +104,12 @@ final class FamilyItemView: StandardItemView {
     // Only toggle if mouse is still within bounds (allows canceling by dragging away)
     if bounds.contains(convert(event.locationInWindow, from: nil)), let onAction = onAction {
       onAction(family)
+    }
+  }
+
+  @objc private func openLink() {
+    if let url = linkUrl {
+      NSWorkspace.shared.open(url)
     }
   }
 }

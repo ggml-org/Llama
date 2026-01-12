@@ -111,7 +111,6 @@ final class HeaderView: ItemView {
       attributes: [
         .foregroundColor: NSColor.linkColor,
         .font: Theme.Fonts.secondary,
-        .underlineStyle: NSUnderlineStyle.single.rawValue,
       ]
     )
     webUiLabel.attributedStringValue = attrWebUi

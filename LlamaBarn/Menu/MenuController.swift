@@ -231,10 +231,17 @@ final class MenuController: NSObject, NSMenuDelegate {
     let models = modelManager.managedModels
     guard !models.isEmpty else { return }
 
-    // Create family item (not collapsible)
+    // Build the /models endpoint URL
+    let host =
+      UserSettings.exposeToNetwork ? (LlamaServer.getLocalIpAddress() ?? "0.0.0.0") : "localhost"
+    let modelsUrl = URL(string: "http://\(host):\(LlamaServer.defaultPort)/models")
+
+    // Create family item (not collapsible) with link to /models endpoint
     let familyView = FamilyItemView(
       family: "Installed",
-      sizes: []
+      sizes: [],
+      linkText: "/models",
+      linkUrl: modelsUrl
     )
     let familyItem = NSMenuItem.viewItem(with: familyView)
     menu.addItem(familyItem)
