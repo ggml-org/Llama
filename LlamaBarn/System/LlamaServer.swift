@@ -117,7 +117,7 @@ class LlamaServer {
     state = .loading
 
     Task { @MainActor in ModelManager.shared.updatePresetsFile() }
-    let presetsPath = CatalogEntry.modelStorageDirectory.appendingPathComponent("presets.ini").path
+    let presetsPath = CatalogEntry.modelStorageDirectory.appendingPathComponent("models.ini").path
 
     let llamaServerPath = libFolderPath + "/llama-server"
 

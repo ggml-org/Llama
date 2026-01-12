@@ -25,6 +25,7 @@ final class ModelItemView: StandardItemView, NSGestureRecognizerDelegate {
   private let finderImageView = NSImageView()
   private let deleteImageView = NSImageView()
   private let hfImageView = NSImageView()
+  private let copyIdImageView = NSImageView()
 
   // Hover handling is provided by MenuItemView
   private var showingActions = false
@@ -47,16 +48,19 @@ final class ModelItemView: StandardItemView, NSGestureRecognizerDelegate {
     Theme.configure(finderImageView, symbol: "folder", tooltip: "Show in Finder")
     Theme.configure(deleteImageView, symbol: "trash", tooltip: "Delete model")
     Theme.configure(hfImageView, symbol: "globe", tooltip: "Open on Hugging Face")
+    Theme.configure(copyIdImageView, symbol: "doc.on.doc", tooltip: "Copy model ID")
 
     // Start hidden
     cancelImageView.isHidden = true
     finderImageView.isHidden = true
     deleteImageView.isHidden = true
     hfImageView.isHidden = true
+    copyIdImageView.isHidden = true
     progressLabel.isHidden = true
 
     accessoryStack.addArrangedSubview(progressLabel)
     accessoryStack.addArrangedSubview(cancelImageView)
+    accessoryStack.addArrangedSubview(copyIdImageView)
     accessoryStack.addArrangedSubview(hfImageView)
     accessoryStack.addArrangedSubview(finderImageView)
     accessoryStack.addArrangedSubview(deleteImageView)
@@ -65,6 +69,7 @@ final class ModelItemView: StandardItemView, NSGestureRecognizerDelegate {
     Layout.constrainToIconSize(finderImageView)
     Layout.constrainToIconSize(deleteImageView)
     Layout.constrainToIconSize(hfImageView)
+    Layout.constrainToIconSize(copyIdImageView)
     progressLabel.widthAnchor.constraint(lessThanOrEqualToConstant: Layout.progressWidth).isActive =
       true
 
@@ -78,6 +83,8 @@ final class ModelItemView: StandardItemView, NSGestureRecognizerDelegate {
     finderImageView.setContentCompressionResistancePriority(.required, for: .horizontal)
     hfImageView.setContentHuggingPriority(.required, for: .horizontal)
     hfImageView.setContentCompressionResistancePriority(.required, for: .horizontal)
+    copyIdImageView.setContentHuggingPriority(.required, for: .horizontal)
+    copyIdImageView.setContentCompressionResistancePriority(.required, for: .horizontal)
 
     setupGestures()
     refresh()
@@ -94,6 +101,7 @@ final class ModelItemView: StandardItemView, NSGestureRecognizerDelegate {
     addGesture(to: deleteImageView, action: #selector(didClickDelete))
     addGesture(to: finderImageView, action: #selector(didClickFinder))
     addGesture(to: hfImageView, action: #selector(didClickHF))
+    addGesture(to: copyIdImageView, action: #selector(didClickCopyId))
     addGesture(action: #selector(didRightClick), buttonMask: 0x2)
   }
 
@@ -119,6 +127,10 @@ final class ModelItemView: StandardItemView, NSGestureRecognizerDelegate {
     actionHandler.openHuggingFacePage(model: model)
   }
 
+  @objc private func didClickCopyId() {
+    actionHandler.copyModelId(model: model)
+  }
+
   @objc private func didRightClick() {
     showingActions.toggle()
     refresh()
@@ -142,6 +154,11 @@ final class ModelItemView: StandardItemView, NSGestureRecognizerDelegate {
 
     let hfPoint = hfImageView.convert(loc, from: nil)
     if hfImageView.bounds.contains(hfPoint) && !hfImageView.isHidden {
+      return false
+    }
+
+    let copyIdPoint = copyIdImageView.convert(loc, from: nil)
+    if copyIdImageView.bounds.contains(copyIdPoint) && !copyIdImageView.isHidden {
       return false
     }
 
@@ -204,6 +221,7 @@ final class ModelItemView: StandardItemView, NSGestureRecognizerDelegate {
     deleteImageView.isHidden = !showingActions || !isInstalled
     finderImageView.isHidden = !showingActions || !isInstalled
     hfImageView.isHidden = !showingActions
+    copyIdImageView.isHidden = !showingActions || !isInstalled
 
     // Update icon state
     iconView.setLoading(isLoading)
@@ -234,5 +252,6 @@ final class ModelItemView: StandardItemView, NSGestureRecognizerDelegate {
     finderImageView.contentTintColor = .tertiaryLabelColor
     deleteImageView.contentTintColor = .tertiaryLabelColor
     hfImageView.contentTintColor = .tertiaryLabelColor
+    copyIdImageView.contentTintColor = .tertiaryLabelColor
   }
 }

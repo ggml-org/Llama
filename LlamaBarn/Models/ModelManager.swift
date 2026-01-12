@@ -151,11 +151,11 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
     logger.error("Failed to delete model: \(error.localizedDescription)")
   }
 
-  /// Updates the `presets.ini` file required for using llama-server in Router Mode.
+  /// Updates the `models.ini` file required for using llama-server in Router Mode.
   /// This file lists all installed models and their configuration parameters.
   func updatePresetsFile() {
     let presets = generatePresetsContent()
-    let destinationURL = CatalogEntry.modelStorageDirectory.appendingPathComponent("presets.ini")
+    let destinationURL = CatalogEntry.modelStorageDirectory.appendingPathComponent("models.ini")
     do {
       try presets.write(to: destinationURL, atomically: true, encoding: .utf8)
       logger.info("Updated presets file at \(destinationURL.path)")

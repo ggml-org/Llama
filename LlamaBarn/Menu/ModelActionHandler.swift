@@ -51,6 +51,12 @@ final class ModelActionHandler {
     NSWorkspace.shared.open(model.huggingFaceUrl)
   }
 
+  func copyModelId(model: CatalogEntry) {
+    let pasteboard = NSPasteboard.general
+    pasteboard.clearContents()
+    pasteboard.setString(model.id, forType: .string)
+  }
+
   private func startDownload(for model: CatalogEntry) {
     do {
       try modelManager.downloadModel(model)
