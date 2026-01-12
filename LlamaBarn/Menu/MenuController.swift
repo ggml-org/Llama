@@ -57,9 +57,11 @@ final class MenuController: NSObject, NSMenuDelegate {
   private func configureStatusItem() {
     if let button = statusItem.button {
       button.image =
-        NSImage(named: server.isAnyModelLoaded ? "MenuIconOn" : "MenuIconOff")
+        NSImage(named: "MenuIcon")
         ?? NSImage(systemSymbolName: "brain", accessibilityDescription: nil)
       button.image?.isTemplate = true
+      // Dim the icon when no model is loaded
+      button.alphaValue = server.isAnyModelLoaded ? 1.0 : 0.35
     }
 
     let menu = NSMenu()
@@ -182,11 +184,8 @@ final class MenuController: NSObject, NSMenuDelegate {
   private func refresh() {
     if let button = statusItem.button {
       let running = server.isAnyModelLoaded
-      let imageName = running ? "MenuIconOn" : "MenuIconOff"
-      if button.image?.name() != imageName {
-        button.image = NSImage(named: imageName) ?? button.image
-        button.image?.isTemplate = true
-      }
+      // Update opacity based on whether a model is loaded
+      button.alphaValue = running ? 1.0 : 0.35
     }
 
     guard let menu = statusItem.menu else { return }
