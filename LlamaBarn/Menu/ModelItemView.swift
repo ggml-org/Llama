@@ -29,6 +29,8 @@ final class ModelItemView: StandardItemView, NSGestureRecognizerDelegate {
 
   // Hover handling is provided by MenuItemView
   private var showingActions = false
+  // Tracks whether we're showing the copy confirmation checkmark
+  private var showingCopyConfirmation = false
 
   init(
     model: CatalogEntry, server: LlamaServer, modelManager: ModelManager,
@@ -129,6 +131,16 @@ final class ModelItemView: StandardItemView, NSGestureRecognizerDelegate {
 
   @objc private func didClickCopyId() {
     actionHandler.copyModelId(model: model)
+
+    // Show checkmark confirmation
+    showingCopyConfirmation = true
+    refresh()
+
+    // Revert to copy icon after 1 second
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+      self?.showingCopyConfirmation = false
+      self?.refresh()
+    }
   }
 
   @objc private func didRightClick() {
@@ -204,6 +216,11 @@ final class ModelItemView: StandardItemView, NSGestureRecognizerDelegate {
     finderImageView.isHidden = !showingActions || !isInstalled
     hfImageView.isHidden = !showingActions
     copyIdImageView.isHidden = !showingActions || !isInstalled
+
+    // Update copy icon based on confirmation state
+    let copyIconName = showingCopyConfirmation ? "checkmark" : "doc.on.doc"
+    copyIdImageView.image = NSImage(
+      systemSymbolName: copyIconName, accessibilityDescription: "Copy model ID")
 
     // Update icon state
     iconView.setLoading(isLoading)
