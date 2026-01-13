@@ -34,10 +34,19 @@ enum Catalog {
     let effectiveArgs =
       (family.serverArgs ?? []) + (size.serverArgs ?? []) + (build.serverArgs ?? [])
 
-    let isFullPrecision = build.id == size.build.id
+    // Primary build = the one in size.build (higher quality, e.g. Q8)
+    // Quantized builds = the ones in size.quantizedBuilds (lower quality, e.g. Q4)
+    let isFullPrecision = build.downloadUrl == size.build.downloadUrl
+
+    // Generate ID from family name + size, normalized to lowercase with dashes.
+    // Quantized builds get a "-q4" suffix to distinguish them.
+    let baseId = "\(family.name) \(size.name)"
+      .lowercased()
+      .replacingOccurrences(of: " ", with: "-")
+    let id = isFullPrecision ? baseId : "\(baseId)-q4"
 
     return CatalogEntry(
-      id: build.id,
+      id: id,
       family: family.name,
       parameterCount: size.parameterCount,
       size: size.name,

@@ -420,7 +420,7 @@ class LlamaServer {
   }
 
   private func checkSleepingStatus(port: Int, modelId: String) async {
-    // Construct URL with query parameter ?model={modelId}
+    // Construct URL with query parameter ?model={modelId}// Construct URL w/ query parameter ?model={modelId}
     guard var components = URLComponents(string: "http://localhost:\(port)/props") else { return }
     components.queryItems = [URLQueryItem(name: "model", value: modelId)]
 
