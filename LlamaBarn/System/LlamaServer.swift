@@ -283,6 +283,10 @@ class LlamaServer {
       start()
     }
 
+    // Optimistically set status to "loading" for immediate UI feedback.
+    // The polling will update to "loaded" once the server confirms.
+    modelStatuses[model.id] = "loading"
+
     Task {
       _ = await api.loadModel(id: model.id)
     }
@@ -295,6 +299,10 @@ class LlamaServer {
 
   /// Deselects the current model in the UI.
   func unloadModel(_ model: CatalogEntry) {
+    // Optimistically set status to "unloaded" for immediate UI feedback.
+    // The polling will confirm once the server acknowledges.
+    modelStatuses[model.id] = "unloaded"
+
     Task {
       _ = await api.unloadModel(id: model.id)
     }
