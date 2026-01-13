@@ -22,7 +22,7 @@ final class ModelActionHandler {
   func performPrimaryAction(for model: CatalogEntry) {
     if modelManager.isInstalled(model) {
       if server.isActive(model: model) {
-        server.unloadModel()
+        server.unloadModel(model)
       } else {
         server.loadModel(model)
       }
