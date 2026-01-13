@@ -427,7 +427,7 @@ final class MenuController: NSObject, NSMenuDelegate {
 
     return NSMenuItem.viewItem(
       with: SettingsSegmentedView(
-        title: "Sleep when idle",
+        title: "Unload when idle",
         infoText: "Automatically unloads the model from memory when not in use.",
         labels: labels,
         getSelectedIndex: {
