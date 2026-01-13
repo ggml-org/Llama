@@ -20,6 +20,10 @@ enum Layout {
   static let progressWidth: CGFloat = 48
   /// Vertical spacing between text lines in stacked labels (e.g., model name and metadata).
   static let textLineSpacing: CGFloat = 2
+  /// Available width for content inside menu items (menu width minus outer and inner padding).
+  static var contentWidth: CGFloat {
+    menuWidth - (outerHorizontalPadding * 2) - (innerHorizontalPadding * 2)
+  }
 
   /// Constrains a view to the standard UI icon size (width and height).
   static func constrainToIconSize(_ view: NSView) {

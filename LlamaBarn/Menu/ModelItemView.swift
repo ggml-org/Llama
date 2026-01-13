@@ -136,33 +136,15 @@ final class ModelItemView: StandardItemView, NSGestureRecognizerDelegate {
     refresh()
   }
 
-  // Prevent row toggle when clicking the delete or finder buttons.
+  // Prevent row toggle when clicking the action buttons (delete, finder, etc.).
   func gestureRecognizer(
     _ gestureRecognizer: NSGestureRecognizer, shouldAttemptToRecognizeWith event: NSEvent
   ) -> Bool {
     let loc = event.locationInWindow
-
-    let deletePoint = deleteImageView.convert(loc, from: nil)
-    if deleteImageView.bounds.contains(deletePoint) && !deleteImageView.isHidden {
-      return false
+    let actionButtons = [deleteImageView, finderImageView, hfImageView, copyIdImageView]
+    return !actionButtons.contains { view in
+      !view.isHidden && view.bounds.contains(view.convert(loc, from: nil))
     }
-
-    let finderPoint = finderImageView.convert(loc, from: nil)
-    if finderImageView.bounds.contains(finderPoint) && !finderImageView.isHidden {
-      return false
-    }
-
-    let hfPoint = hfImageView.convert(loc, from: nil)
-    if hfImageView.bounds.contains(hfPoint) && !hfImageView.isHidden {
-      return false
-    }
-
-    let copyIdPoint = copyIdImageView.convert(loc, from: nil)
-    if copyIdImageView.bounds.contains(copyIdPoint) && !copyIdImageView.isHidden {
-      return false
-    }
-
-    return true
   }
 
   func refresh() {

@@ -62,12 +62,8 @@ final class FamilyItemView: StandardItemView {
     // Subtitle (Description)
     subtitleLabel.textColor = Theme.Colors.textSecondary
 
-    // Calculate available width:
-    // Menu (300) - Outer (5*2) - Inner (8*2) - Chevron (10) - Spacing (6) = ~258
-    let availableWidth =
-      Layout.menuWidth - (Layout.outerHorizontalPadding * 2) - (Layout.innerHorizontalPadding * 2)
-      - 16
-    configureSubtitle(description, width: availableWidth)
+    // Content width minus chevron (10) and spacing (6)
+    configureSubtitle(description, width: Layout.contentWidth - 16)
 
     if description != nil {
       subtitleLabel.maximumNumberOfLines = 1

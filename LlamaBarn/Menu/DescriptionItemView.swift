@@ -14,12 +14,7 @@ final class DescriptionItemView: ItemView {
     label.usesSingleLineMode = false
     label.maximumNumberOfLines = 0
     label.lineBreakMode = .byWordWrapping
-
-    // Calculate available width:
-    // Menu (300) - Outer (5*2) - Inner (8*2) = 274
-    let availableWidth =
-      Layout.menuWidth - (Layout.outerHorizontalPadding * 2) - (Layout.innerHorizontalPadding * 2)
-    label.preferredMaxLayoutWidth = availableWidth
+    label.preferredMaxLayoutWidth = Layout.contentWidth
 
     contentView.addSubview(label)
     label.pinToSuperview()

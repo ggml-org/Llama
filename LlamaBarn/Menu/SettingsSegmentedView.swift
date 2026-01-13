@@ -62,7 +62,7 @@ final class SettingsSegmentedView: StandardItemView {
 
     // Configure subtitle
     if let infoText = infoText {
-      configureSubtitle(infoText, width: 274)  // 300 - 10 - 16
+      configureSubtitle(infoText, width: Layout.contentWidth)
       subtitleLabel.textColor = Theme.Colors.textSecondary
       subtitleLabel.isHidden = false
       mainStack.spacing = Layout.textLineSpacing
