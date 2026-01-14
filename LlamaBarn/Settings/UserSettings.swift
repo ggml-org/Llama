@@ -4,16 +4,16 @@ import Foundation
 enum UserSettings {
   enum ContextWindowSize: Int, CaseIterable {
     case fourK = 4
-    case sixteenK = 16
+    case thirtyTwoK = 32
     case sixtyFourK = 64
-    case max = -1
+    case oneTwentyEightK = 128
 
     var displayName: String {
       switch self {
       case .fourK: return "4k"
-      case .sixteenK: return "16k"
+      case .thirtyTwoK: return "32k"
       case .sixtyFourK: return "64k"
-      case .max: return "Max"
+      case .oneTwentyEightK: return "128k"
       }
     }
   }

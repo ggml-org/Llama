@@ -127,12 +127,7 @@ extension Format {
         NSAttributedString(string: model.totalSize, attributes: attributes))
 
       // Calculate desired tokens and usable context
-      let desiredTokens: Int
-      if UserSettings.defaultContextWindow == .max {
-        desiredTokens = 131_072
-      } else {
-        desiredTokens = UserSettings.defaultContextWindow.rawValue * 1024
-      }
+      let desiredTokens: Int = UserSettings.defaultContextWindow.rawValue * 1024
 
       let displayUsableCtx =
         model.usableCtxWindow(desiredTokens: desiredTokens, maximizeContext: false)
