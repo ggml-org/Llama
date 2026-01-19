@@ -245,8 +245,16 @@ final class MenuController: NSObject, NSMenuDelegate {
     guard !models.isEmpty else { return }
 
     // Build the /models endpoint URL
-    let host =
-      UserSettings.exposeToNetwork ? (LlamaServer.getLocalIpAddress() ?? "0.0.0.0") : "localhost"
+    // For 0.0.0.0, show the actual local IP for user convenience
+    let host: String
+    if let bindAddress = UserSettings.networkBindAddress {
+      host =
+        bindAddress == "0.0.0.0"
+        ? (LlamaServer.getLocalIpAddress() ?? "0.0.0.0")
+        : bindAddress
+    } else {
+      host = "localhost"
+    }
     let modelsUrl = URL(string: "http://\(host):\(LlamaServer.defaultPort)/models")
 
     // Create family item (not collapsible) with link to /models endpoint

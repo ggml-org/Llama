@@ -151,9 +151,9 @@ class LlamaServer {
       "--fit-target", String(Int(CatalogEntry.memOverheadMb)),
     ]
 
-    // Bind to 0.0.0.0 if exposeToNetwork is enabled
-    if UserSettings.exposeToNetwork {
-      arguments.append(contentsOf: ["--host", "0.0.0.0"])
+    // Bind to custom address if network exposure is enabled
+    if let bindAddress = UserSettings.networkBindAddress {
+      arguments.append(contentsOf: ["--host", bindAddress])
     }
 
     // Unload model from memory when idle

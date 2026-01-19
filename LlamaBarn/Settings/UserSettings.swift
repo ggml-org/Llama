@@ -53,18 +53,24 @@ enum UserSettings {
     }
   }
 
-  /// Whether to expose llama-server to the network (bind to 0.0.0.0).
-  /// Defaults to `false` (localhost only). When `true`, allows connections from other devices
-  /// on the same network.
-  static var exposeToNetwork: Bool {
-    get {
-      defaults.bool(forKey: Keys.exposeToNetwork)
+  /// The network bind address for llama-server, or `nil` for localhost only.
+  /// Accepts either a bool (`true` binds to `0.0.0.0`) or a specific IP address string.
+  /// Examples:
+  ///   `defaults write app.llamabarn.LlamaBarn exposeToNetwork -bool true` → binds to 0.0.0.0
+  ///   `defaults write app.llamabarn.LlamaBarn exposeToNetwork -string "192.168.1.100"` → binds to that IP
+  ///   `defaults delete app.llamabarn.LlamaBarn exposeToNetwork` → localhost only
+  static var networkBindAddress: String? {
+    let obj = defaults.object(forKey: Keys.exposeToNetwork)
+    // If it's a string, use it directly as the bind address
+    if let str = obj as? String {
+      return str
     }
-    set {
-      guard defaults.bool(forKey: Keys.exposeToNetwork) != newValue else { return }
-      defaults.set(newValue, forKey: Keys.exposeToNetwork)
-      NotificationCenter.default.post(name: .LBUserSettingsDidChange, object: nil)
+    // If it's a bool and true, bind to all interfaces
+    if let bool = obj as? Bool, bool {
+      return "0.0.0.0"
     }
+    // Not set or false → localhost only
+    return nil
   }
 
   /// The default context length in thousands of tokens.

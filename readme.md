@@ -60,7 +60,14 @@ See complete API reference in `llama-server` [docs](https://github.com/ggml-org/
 **Expose to network** — By default, the server is only accessible from your Mac (`localhost`). This option allows connections from other devices on your local network. Only enable this if you understand the security risks.
 
 ```sh
+# bind to all interfaces (0.0.0.0)
 defaults write app.llamabarn.LlamaBarn exposeToNetwork -bool YES
+
+# or bind to a specific IP (e.g., for Tailscale)
+defaults write app.llamabarn.LlamaBarn exposeToNetwork -string "100.x.x.x"
+
+# disable (default)
+defaults delete app.llamabarn.LlamaBarn exposeToNetwork
 ```
 
 ## Roadmap

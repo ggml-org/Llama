@@ -78,8 +78,17 @@ final class HeaderView: ItemView {
     // Connect to server info
     appNameLabel.stringValue = "LlamaBarn"
 
-    let host =
-      UserSettings.exposeToNetwork ? (LlamaServer.getLocalIpAddress() ?? "0.0.0.0") : "localhost"
+    // Determine host: use bind address if set, otherwise localhost
+    // For 0.0.0.0, show the actual local IP for user convenience
+    let host: String
+    if let bindAddress = UserSettings.networkBindAddress {
+      host =
+        bindAddress == "0.0.0.0"
+        ? (LlamaServer.getLocalIpAddress() ?? "0.0.0.0")
+        : bindAddress
+    } else {
+      host = "localhost"
+    }
     let linkText = "\(host):\(LlamaServer.defaultPort)"
     let apiUrlString = "http://\(linkText)/v1"
     let webUiUrlString = "http://\(linkText)/"
