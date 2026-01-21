@@ -250,7 +250,7 @@ extension Catalog {
           ctxBytesPer1kTokens: 100_663_296,
           build: ModelBuild(
             quantization: "Q8_0",
-            fileSize: 32_483_932_576,
+            fileSize: 32_483_931_872,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/ggml-org/Qwen3-30B-A3B-Thinking-2507-Q8_0-GGUF/resolve/main/qwen3-30b-a3b-thinking-2507-q8_0.gguf"

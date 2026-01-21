@@ -372,38 +372,23 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
       let fileSize =
         (try? FileManager.default.attributesOfItem(
           atPath: destinationURL.path)[.size] as? NSNumber)?.int64Value ?? 0
-      // Sanity check downloaded file size to catch truncated/corrupted downloads.
-      let isSingleFile = (model.additionalParts ?? []).isEmpty && model.mmprojUrl == nil
 
-      if isSingleFile {
-        // For single-file models, we expect the file size to match exactly.
-        if fileSize != model.fileSize {
-          try? fileManager.removeItem(at: destinationURL)
-          handleDownloadFailure(
-            modelId: modelId,
-            model: model,
-            tempLocation: nil,
-            destinationURL: destinationURL,
-            reason: "file size mismatch (expected \(model.fileSize), got \(fileSize))"
-          )
-          return
-        }
-      } else {
-        // For multi-part models, we use a heuristic.
-        // Threshold is 1 MB minimum.
-        // This catches obviously broken downloads (network errors, server issues).
-        let minThreshold = Int64(1_000_000)
-        if fileSize <= minThreshold {
-          try? fileManager.removeItem(at: destinationURL)
-          handleDownloadFailure(
-            modelId: modelId,
-            model: model,
-            tempLocation: nil,
-            destinationURL: destinationURL,
-            reason: "file too small (\(fileSize) B)"
-          )
-          return
-        }
+      // Sanity check: reject obviously broken downloads (error pages, empty files).
+      // We don't check for exact size match because:
+      // 1. URLSession already validates Content-Length (catches truncation)
+      // 2. Catalog sizes can become stale if files are re-uploaded to HF
+      // The 1 MB threshold catches garbage responses without being brittle.
+      let minThreshold = Int64(1_000_000)
+      if fileSize <= minThreshold {
+        try? fileManager.removeItem(at: destinationURL)
+        handleDownloadFailure(
+          modelId: modelId,
+          model: model,
+          tempLocation: nil,
+          destinationURL: destinationURL,
+          reason: "file too small (\(fileSize) B)"
+        )
+        return
       }
 
       // Update state on main queue (activeDownloads dict must be accessed from main queue)
