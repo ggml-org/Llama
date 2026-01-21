@@ -111,9 +111,13 @@ final class SettingsItemView: ItemView {
 
   override var intrinsicContentSize: NSSize {
     let width = Layout.menuWidth
-    layoutSubtreeIfNeeded()
-    let height = contentView.fittingSize.height + (Layout.verticalPadding * 2)
-    return NSSize(width: width, height: max(30, height))
+    // Calculate height based on whether we have a subtitle.
+    // Using a fixed height avoids multiple layout passes that cause visual jitter
+    // when the menu expands (the subtitle's text wrapping can cause fittingSize
+    // to return different values before layout is complete).
+    let hasSubtitle = !subtitleLabel.stringValue.isEmpty
+    let height: CGFloat = hasSubtitle ? 70 : 30
+    return NSSize(width: width, height: height)
   }
 
   func refresh() {
