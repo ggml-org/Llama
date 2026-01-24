@@ -1,6 +1,9 @@
 import AppKit
 import Foundation
 
+/// Displays a context tier variant (4k, 32k, 128k) in the expanded model view.
+/// Shows the tier label, estimated memory usage, loaded status, and a copy button.
+/// This is an informational row, not an interactive menu item — hover highlighting is disabled.
 final class VariantItemView: ItemView {
   private let model: CatalogEntry
   private let tier: ContextTier
@@ -37,7 +40,11 @@ final class VariantItemView: ItemView {
 
   required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-  override var intrinsicContentSize: NSSize { NSSize(width: Layout.menuWidth, height: 32) }
+  // Compact height for info-only rows
+  override var intrinsicContentSize: NSSize { NSSize(width: Layout.menuWidth, height: 24) }
+
+  // Disable hover highlight since this is an info row, not an interactive item
+  override var highlightEnabled: Bool { false }
 
   private func setupLayout() {
     // Layout:  [Indent] [4k] ... [Memory] [Copy] [Status] [Padding]
