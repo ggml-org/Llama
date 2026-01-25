@@ -31,7 +31,7 @@ final class ModelActionsView: ItemView {
 
     // Delete button styled as text
     deleteButton.isBordered = false
-    deleteButton.title = "delete"
+    deleteButton.title = "Delete"
     deleteButton.font = Theme.Fonts.secondary
     deleteButton.contentTintColor = Theme.Colors.textSecondary
     deleteButton.target = self

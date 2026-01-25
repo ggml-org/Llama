@@ -62,37 +62,44 @@ final class VariantItemView: ItemView {
     let stack = NSStackView(views: [indent, infoLabel, copyButton, loadedIndicator])
     stack.orientation = .horizontal
     stack.alignment = .centerY
-    stack.spacing = 6
+    stack.spacing = 0
 
     contentView.addSubview(stack)
     stack.pinToSuperview(top: 0, leading: 0, trailing: 0, bottom: 0)
   }
 
   private func configureViews() {
-    let color = isCompatible ? Theme.Colors.textSecondary : NSColor.disabledControlTextColor
+    // Values (4k, ~2.5 GB) use a more prominent color than labels (ctx, mem)
+    let secondaryColor = Theme.Colors.textSecondary
+    let valueColor = isCompatible ? Theme.Colors.modelIconTint : Theme.Colors.textSecondary
 
     if isCompatible {
       let ramMb = model.runtimeMemoryUsageMb(ctxWindowTokens: Double(tier.rawValue))
       let ramGb = Double(ramMb) / 1024.0
-      infoLabel.stringValue = String(format: "– %@ ctx  ~%.1f GB mem", tier.label, ramGb)
-      copyButton.isHidden = false
+      let ramStr = String(format: "~%.1f GB", ramGb)
 
-      if isLoaded {
-        loadedIndicator.stringValue = "●"
-        loadedIndicator.textColor = .systemGreen
-        loadedIndicator.toolTip = "Currently loaded"
-      } else {
-        loadedIndicator.stringValue = ""
-      }
+      // Build attributed string: "– 4k ctx  ~2.5 GB mem"
+      // Values (4k, ~2.5 GB) are darker, labels (ctx, mem) are lighter
+      let result = NSMutableAttributedString()
+      let secondaryAttrs = Theme.secondaryAttributes(color: secondaryColor)
+      let valueAttrs = Theme.secondaryAttributes(color: valueColor)
+
+      result.append(NSAttributedString(string: "– ", attributes: secondaryAttrs))
+      result.append(NSAttributedString(string: tier.label, attributes: valueAttrs))
+      result.append(NSAttributedString(string: " ctx  ", attributes: secondaryAttrs))
+      result.append(NSAttributedString(string: ramStr, attributes: valueAttrs))
+      result.append(NSAttributedString(string: " mem  ", attributes: secondaryAttrs))
+
+      infoLabel.attributedStringValue = result
+      copyButton.isHidden = false
+      loadedIndicator.stringValue = ""
     } else {
       // Incompatible tier: show tier label + "not enough memory" as plain text
-      infoLabel.stringValue = "– \(tier.label) ctx"
+      infoLabel.stringValue = "– \(tier.label) ctx  not enough memory"
+      infoLabel.textColor = secondaryColor
       copyButton.isHidden = true
-      loadedIndicator.stringValue = "not enough memory"
-      loadedIndicator.textColor = color
+      loadedIndicator.stringValue = ""
     }
-
-    infoLabel.textColor = color
   }
 
   @objc private func didClickCopy() {

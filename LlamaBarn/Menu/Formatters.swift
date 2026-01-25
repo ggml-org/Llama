@@ -103,10 +103,12 @@ extension Format {
   /// Formats model metadata text.
   /// Format: "2.53 GB · 128k ctx · 4.2 GB mem"
   /// If incompatibility is provided: "Requires a Mac with 32 GB+ of memory"
+  /// If loadedTier is provided, that tier label is shown in blue.
   static func modelMetadata(
     for model: CatalogEntry,
     color: NSColor = Theme.Colors.textPrimary,
-    incompatibility: String? = nil
+    incompatibility: String? = nil,
+    loadedTier: ContextTier? = nil
   ) -> NSAttributedString {
     let result = NSMutableAttributedString()
 
@@ -143,7 +145,11 @@ extension Format {
 
         let isCompatible = model.isCompatible(ctxWindowTokens: Double(tier.rawValue))
         var tierAttributes = attributes
-        if !isCompatible {
+
+        if tier == loadedTier {
+          // Running tier: show in blue to match the active model icon
+          tierAttributes[.foregroundColor] = NSColor.controlAccentColor
+        } else if !isCompatible {
           tierAttributes[.foregroundColor] = color.withAlphaComponent(0.4)
         }
 
