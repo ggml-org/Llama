@@ -25,7 +25,7 @@ final class ExpandedModelHeaderView: ItemView {
     indent.translatesAutoresizingMaskIntoConstraints = false
     indent.widthAnchor.constraint(equalToConstant: Layout.expandedIndent).isActive = true
 
-    label.stringValue = "Context variants / memory usage"
+    label.stringValue = "Context / memory usage"
     label.textColor = Theme.Colors.textSecondary
 
     let stack = NSStackView(views: [indent, label])

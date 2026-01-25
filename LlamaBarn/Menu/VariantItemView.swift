@@ -77,7 +77,7 @@ final class VariantItemView: ItemView {
     if isCompatible {
       let ramMb = model.runtimeMemoryUsageMb(ctxWindowTokens: Double(tier.rawValue))
       let ramGb = Double(ramMb) / 1024.0
-      let ramStr = String(format: "~%.1f GB", ramGb)
+      let ramStr = String(format: "%.1f GB", ramGb)
 
       // Build attributed string: "– 4k ctx  ~2.5 GB mem"
       // Values (4k, ~2.5 GB) are darker, labels (ctx, mem) are lighter
@@ -85,7 +85,7 @@ final class VariantItemView: ItemView {
       let secondaryAttrs = Theme.secondaryAttributes(color: secondaryColor)
       let valueAttrs = Theme.secondaryAttributes(color: valueColor)
 
-      result.append(NSAttributedString(string: "– ", attributes: secondaryAttrs))
+      result.append(NSAttributedString(string: "•  ", attributes: secondaryAttrs))
       result.append(NSAttributedString(string: tier.label, attributes: valueAttrs))
       result.append(NSAttributedString(string: " ctx  ", attributes: secondaryAttrs))
       result.append(NSAttributedString(string: ramStr, attributes: valueAttrs))
@@ -96,7 +96,7 @@ final class VariantItemView: ItemView {
       loadedIndicator.stringValue = ""
     } else {
       // Incompatible tier: show tier label + "not enough memory" as plain text
-      infoLabel.stringValue = "– \(tier.label) ctx  not enough memory"
+      infoLabel.stringValue = "•  \(tier.label) ctx  not enough memory"
       infoLabel.textColor = secondaryColor
       copyButton.isHidden = true
       loadedIndicator.stringValue = ""
