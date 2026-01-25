@@ -245,13 +245,7 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
       }
 
       for tier in tiers {
-        // Generate explicit tier entry
         appendEntry(id: "\(model.id)\(tier.suffix)", ctxSize: tier.rawValue, for: model)
-
-        // Generate legacy base entry for 4k tier
-        if tier == .k4 {
-          appendEntry(id: model.id, ctxSize: tier.rawValue, for: model)
-        }
       }
     }
     return content
