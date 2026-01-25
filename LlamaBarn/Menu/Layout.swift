@@ -20,6 +20,8 @@ enum Layout {
   static let progressWidth: CGFloat = 48
   /// Vertical spacing between text lines in stacked labels (e.g., model name and metadata).
   static let textLineSpacing: CGFloat = 2
+  /// Indent width to align expanded content with model text (icon + spacing).
+  static let expandedIndent: CGFloat = iconViewSize + 6
   /// Available width for content inside menu items (menu width minus outer and inner padding).
   static var contentWidth: CGFloat {
     menuWidth - (outerHorizontalPadding * 2) - (innerHorizontalPadding * 2)

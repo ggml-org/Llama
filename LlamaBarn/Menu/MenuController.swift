@@ -290,6 +290,11 @@ final class MenuController: NSObject, NSMenuDelegate {
       items.append(NSMenuItem.viewItem(with: view))
 
       if isExpanded {
+        // Header row
+        let headerView = ExpandedModelHeaderView()
+        items.append(NSMenuItem.viewItem(with: headerView))
+
+        // Context tier variants
         for tier in ContextTier.allCases {
           let loadedId = server.loadedVariantId(for: model)
           let isLoaded: Bool = {
@@ -311,6 +316,7 @@ final class MenuController: NSObject, NSMenuDelegate {
           items.append(NSMenuItem.viewItem(with: variantView))
         }
 
+        // Delete action
         let actionsView = ModelActionsView(model: model, actionHandler: actionHandler)
         items.append(NSMenuItem.viewItem(with: actionsView))
       }

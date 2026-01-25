@@ -1,12 +1,12 @@
 import AppKit
 import Foundation
 
+/// Action row in the expanded model view.
+/// Shows a "delete" text button to remove the model.
 final class ModelActionsView: ItemView {
   private let model: CatalogEntry
   private let actionHandler: ModelActionHandler
 
-  private let finderButton = NSButton()
-  private let hfButton = NSButton()
   private let deleteButton = NSButton()
 
   init(model: CatalogEntry, actionHandler: ModelActionHandler) {
@@ -14,68 +14,36 @@ final class ModelActionsView: ItemView {
     self.actionHandler = actionHandler
     super.init(frame: .zero)
     setupLayout()
-    configureViews()
   }
 
   required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-  override var intrinsicContentSize: NSSize { NSSize(width: Layout.menuWidth, height: 32) }
+  override var intrinsicContentSize: NSSize { NSSize(width: Layout.menuWidth, height: 24) }
+
+  // Disable hover highlight since this is an action row
+  override var highlightEnabled: Bool { false }
 
   private func setupLayout() {
-    // Indent (match VariantItemView indentation: 44px)
+    // Indent to align with model text
     let indent = NSView()
     indent.translatesAutoresizingMaskIntoConstraints = false
-    indent.widthAnchor.constraint(equalToConstant: 44).isActive = true
+    indent.widthAnchor.constraint(equalToConstant: Layout.expandedIndent).isActive = true
 
-    // Spacer
-    let spacer = NSView()
-    spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+    // Delete button styled as text
+    deleteButton.isBordered = false
+    deleteButton.title = "delete"
+    deleteButton.font = Theme.Fonts.secondary
+    deleteButton.contentTintColor = Theme.Colors.textSecondary
+    deleteButton.target = self
+    deleteButton.action = #selector(didClickDelete)
 
-    // Button stack
-    // Order: [HF] [Finder] [Delete]
-    let buttonStack = NSStackView(views: [hfButton, finderButton, deleteButton])
-    buttonStack.orientation = .horizontal
-    buttonStack.alignment = .centerY
-    buttonStack.spacing = 6
-
-    // Root stack
-    let rootStack = NSStackView(views: [indent, spacer, buttonStack])
+    let rootStack = NSStackView(views: [indent, deleteButton])
     rootStack.orientation = .horizontal
     rootStack.alignment = .centerY
     rootStack.spacing = 0
 
     contentView.addSubview(rootStack)
-
-    // Match VariantItemView padding
-    rootStack.pinToSuperview(top: 0, leading: 10, trailing: 16, bottom: 0)
-
-    // Constrain buttons
-    Layout.constrainToIconSize(hfButton)
-    Layout.constrainToIconSize(finderButton)
-    Layout.constrainToIconSize(deleteButton)
-  }
-
-  private func configureViews() {
-    Theme.configure(hfButton, symbol: "globe", tooltip: "Open on Hugging Face")
-    Theme.configure(finderButton, symbol: "folder", tooltip: "Show in Finder")
-    Theme.configure(deleteButton, symbol: "trash", tooltip: "Delete model")
-
-    finderButton.target = self
-    finderButton.action = #selector(didClickFinder)
-
-    hfButton.target = self
-    hfButton.action = #selector(didClickHF)
-
-    deleteButton.target = self
-    deleteButton.action = #selector(didClickDelete)
-  }
-
-  @objc private func didClickFinder() {
-    actionHandler.showInFinder(model: model)
-  }
-
-  @objc private func didClickHF() {
-    actionHandler.openHuggingFacePage(model: model)
+    rootStack.pinToSuperview(top: 0, leading: 0, trailing: 0, bottom: 4)
   }
 
   @objc private func didClickDelete() {

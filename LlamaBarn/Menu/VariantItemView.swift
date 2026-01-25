@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 
 /// Displays a context tier variant (4k, 32k, 128k) in the expanded model view.
-/// Shows the tier label, estimated memory usage, loaded status, and a copy button.
+/// Format: "– 4k ctx  ~2.5 GB mem  (copy model ID)"
 /// This is an informational row, not an interactive menu item — hover highlighting is disabled.
 final class VariantItemView: ItemView {
   private let model: CatalogEntry
@@ -11,12 +11,9 @@ final class VariantItemView: ItemView {
   private let isCompatible: Bool
   private let copyAction: (String) -> Void
 
-  private let leadingLabel = Theme.secondaryLabel()
-  private let memoryLabel = Theme.secondaryLabel()
-  private let statusLabel = Theme.secondaryLabel()
+  private let infoLabel = Theme.secondaryLabel()
   private let copyButton = NSButton()
-
-  private var showingCopyConfirmation = false
+  private let loadedIndicator = Theme.secondaryLabel()
 
   init(
     model: CatalogEntry,
@@ -30,7 +27,6 @@ final class VariantItemView: ItemView {
     self.copyAction = copyAction
 
     // Check compatibility for this specific tier
-    // Note: We use Double(tier.rawValue) for token count
     self.isCompatible = model.isCompatible(ctxWindowTokens: Double(tier.rawValue))
 
     super.init(frame: .zero)
@@ -41,98 +37,73 @@ final class VariantItemView: ItemView {
   required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
   // Compact height for info-only rows
-  override var intrinsicContentSize: NSSize { NSSize(width: Layout.menuWidth, height: 24) }
+  override var intrinsicContentSize: NSSize { NSSize(width: Layout.menuWidth, height: 22) }
 
   // Disable hover highlight since this is an info row, not an interactive item
   override var highlightEnabled: Bool { false }
 
   private func setupLayout() {
-    // Layout:  [Indent] [4k] ... [Memory] [Copy] [Status] [Padding]
+    // Layout: [Indent] [– 4k ctx  ~2.5 GB mem  (copy model ID)] [loaded indicator]
+    // Natural text flow, no spacer pushing things apart
 
-    // Indent (match model icon center roughly)
+    // Indent to align with model text
     let indent = NSView()
-    indent.widthAnchor.constraint(equalToConstant: 44).isActive = true
+    indent.translatesAutoresizingMaskIntoConstraints = false
+    indent.widthAnchor.constraint(equalToConstant: Layout.expandedIndent).isActive = true
 
-    // Context Label (fixed width for alignment)
-    leadingLabel.widthAnchor.constraint(equalToConstant: 40).isActive = true
-    leadingLabel.font = .monospacedDigitSystemFont(ofSize: 12, weight: .regular)
-
-    // Middle Spacer
-    let spacer = NSView()
-
-    let stack = NSStackView(views: [indent, leadingLabel, memoryLabel, copyButton, statusLabel])
-    stack.orientation = .horizontal
-    stack.alignment = .centerY
-    stack.spacing = 12
-
-    // Add spacer after memory label manually via stack distribution or by inserting it
-    stack.removeView(copyButton)
-    stack.removeView(statusLabel)
-    stack.addArrangedSubview(spacer)
-    stack.addArrangedSubview(copyButton)
-    stack.addArrangedSubview(statusLabel)
-
-    // Ensure spacer pushes content
-    spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-
-    contentView.addSubview(stack)
-    stack.pinToSuperview(top: 0, leading: 10, trailing: 16, bottom: 0)
-
-    Theme.configure(copyButton, symbol: "doc.on.doc", tooltip: "Copy ID with context suffix")
+    // Copy button styled as text link
+    copyButton.isBordered = false
+    copyButton.title = "(copy model ID)"
+    copyButton.font = Theme.Fonts.secondary
+    copyButton.contentTintColor = Theme.Colors.textSecondary
     copyButton.target = self
     copyButton.action = #selector(didClickCopy)
-    Layout.constrainToIconSize(copyButton)
+
+    let stack = NSStackView(views: [indent, infoLabel, copyButton, loadedIndicator])
+    stack.orientation = .horizontal
+    stack.alignment = .centerY
+    stack.spacing = 6
+
+    contentView.addSubview(stack)
+    stack.pinToSuperview(top: 0, leading: 0, trailing: 0, bottom: 0)
   }
 
   private func configureViews() {
-    leadingLabel.stringValue = tier.label
+    let color = isCompatible ? Theme.Colors.textSecondary : NSColor.disabledControlTextColor
 
     if isCompatible {
-      let ramBytes = model.runtimeMemoryUsageMb(ctxWindowTokens: Double(tier.rawValue))
-      // runtimeMemoryUsageMb returns MB (UInt64), Format.memory checks bytes usually?
-      // model.runtimeMemoryUsageMb returns MB.
-      // Let's format it.
-      let ramGb = Double(ramBytes) / 1024.0
-      memoryLabel.stringValue = String(format: "~%.1f GB", ramGb)
-
+      let ramMb = model.runtimeMemoryUsageMb(ctxWindowTokens: Double(tier.rawValue))
+      let ramGb = Double(ramMb) / 1024.0
+      infoLabel.stringValue = String(format: "– %@ ctx  ~%.1f GB mem", tier.label, ramGb)
       copyButton.isHidden = false
 
       if isLoaded {
-        statusLabel.stringValue = "● loaded"
-        statusLabel.textColor = .systemGreen
+        loadedIndicator.stringValue = "●"
+        loadedIndicator.textColor = .systemGreen
+        loadedIndicator.toolTip = "Currently loaded"
       } else {
-        statusLabel.stringValue = ""
+        loadedIndicator.stringValue = ""
       }
     } else {
-      memoryLabel.stringValue = "not enough memory"
+      // Incompatible tier: show tier label + "not enough memory" as plain text
+      infoLabel.stringValue = "– \(tier.label) ctx"
       copyButton.isHidden = true
-      statusLabel.stringValue = ""
+      loadedIndicator.stringValue = "not enough memory"
+      loadedIndicator.textColor = color
     }
 
-    let color = isCompatible ? Theme.Colors.textSecondary : NSColor.disabledControlTextColor
-    leadingLabel.textColor = color
-    memoryLabel.textColor = color
+    infoLabel.textColor = color
   }
 
   @objc private func didClickCopy() {
-    // Format: id:suffix (e.g. model:32k)
-    // For 4k, RFC says "Base ID defaults to 4k".
-    // But "Copy button ... copy the model ID (e.g., qwen3-coder-32b:32k)"
-    // If I select 4k, should I copy base ID or :4k?
-    // "No magic rounding — explicit is better".
-    // "Requesting a variant that doesn't exist ... returns not found".
-    // If I copy the ID, explicit is safer.
-
     let idToCopy = "\(model.id)\(tier.suffix)"
     copyAction(idToCopy)
 
-    showingCopyConfirmation = true
-    Theme.updateCopyIcon(copyButton, showingConfirmation: true)
+    copyButton.title = "(copied)"
 
     DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
       guard let self else { return }
-      self.showingCopyConfirmation = false
-      Theme.updateCopyIcon(self.copyButton, showingConfirmation: false)
+      self.copyButton.title = "(copy model ID)"
     }
   }
 }

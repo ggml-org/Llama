@@ -126,8 +126,14 @@ extension Format {
       result.append(
         NSAttributedString(string: model.totalSize, attributes: attributes))
 
-      // Separator
-      result.append(Format.metadataSeparator())
+      // Pipe separator between size and context tiers (like family items)
+      result.append(
+        NSAttributedString(
+          string: "  ∣  ",
+          attributes: [
+            .font: Theme.Fonts.secondary,
+            .foregroundColor: Theme.Colors.textSecondary,
+          ]))
 
       // Context Tiers
       for (index, tier) in ContextTier.allCases.sorted().enumerated() {
