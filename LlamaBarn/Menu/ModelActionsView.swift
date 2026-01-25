@@ -2,11 +2,12 @@ import AppKit
 import Foundation
 
 /// Action row in the expanded model view.
-/// Shows a "delete" text button to remove the model.
+/// Shows "Show in Finder" and "Delete" text buttons.
 final class ModelActionsView: ItemView {
   private let model: CatalogEntry
   private let actionHandler: ModelActionHandler
 
+  private let showInFinderButton = NSButton()
   private let deleteButton = NSButton()
 
   init(model: CatalogEntry, actionHandler: ModelActionHandler) {
@@ -29,21 +30,38 @@ final class ModelActionsView: ItemView {
     indent.translatesAutoresizingMaskIntoConstraints = false
     indent.widthAnchor.constraint(equalToConstant: Layout.expandedIndent).isActive = true
 
+    // Show in Finder button styled as text
+    showInFinderButton.isBordered = false
+    showInFinderButton.title = "Show in Finder"
+    showInFinderButton.font = Theme.Fonts.secondary
+    showInFinderButton.contentTintColor = Theme.Colors.modelIconTint
+    showInFinderButton.target = self
+    showInFinderButton.action = #selector(didClickShowInFinder)
+
+    // Spacer between buttons
+    let spacer = NSView()
+    spacer.translatesAutoresizingMaskIntoConstraints = false
+    spacer.widthAnchor.constraint(equalToConstant: 12).isActive = true
+
     // Delete button styled as text
     deleteButton.isBordered = false
     deleteButton.title = "Delete"
     deleteButton.font = Theme.Fonts.secondary
-    deleteButton.contentTintColor = Theme.Colors.textSecondary
+    deleteButton.contentTintColor = Theme.Colors.modelIconTint
     deleteButton.target = self
     deleteButton.action = #selector(didClickDelete)
 
-    let rootStack = NSStackView(views: [indent, deleteButton])
+    let rootStack = NSStackView(views: [indent, showInFinderButton, spacer, deleteButton])
     rootStack.orientation = .horizontal
     rootStack.alignment = .centerY
     rootStack.spacing = 0
 
     contentView.addSubview(rootStack)
-    rootStack.pinToSuperview(top: 0, leading: 0, trailing: 0, bottom: 4)
+    rootStack.pinToSuperview(top: 6, leading: 0, trailing: 0, bottom: 4)
+  }
+
+  @objc private func didClickShowInFinder() {
+    actionHandler.showInFinder(model: model)
   }
 
   @objc private func didClickDelete() {

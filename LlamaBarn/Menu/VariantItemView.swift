@@ -36,8 +36,8 @@ final class VariantItemView: ItemView {
 
   required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-  // Compact height for info-only rows
-  override var intrinsicContentSize: NSSize { NSSize(width: Layout.menuWidth, height: 22) }
+  // Compact height for tightly grouped variant rows
+  override var intrinsicContentSize: NSSize { NSSize(width: Layout.menuWidth, height: 16) }
 
   // Disable hover highlight since this is an info row, not an interactive item
   override var highlightEnabled: Bool { false }
@@ -65,7 +65,8 @@ final class VariantItemView: ItemView {
     stack.spacing = 0
 
     contentView.addSubview(stack)
-    stack.pinToSuperview(top: 0, leading: 0, trailing: 0, bottom: 0)
+    // Use negative top/bottom to counteract ItemView's verticalPadding for tighter rows
+    stack.pinToSuperview(top: -2, leading: 0, trailing: 0, bottom: -2)
   }
 
   private func configureViews() {

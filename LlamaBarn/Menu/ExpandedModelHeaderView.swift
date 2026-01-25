@@ -34,6 +34,6 @@ final class ExpandedModelHeaderView: ItemView {
     stack.spacing = 0
 
     contentView.addSubview(stack)
-    stack.pinToSuperview(top: 4, leading: 0, trailing: 0, bottom: 0)
+    stack.pinToSuperview(top: 4, leading: 0, trailing: 0, bottom: -2)
   }
 }
