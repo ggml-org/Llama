@@ -36,10 +36,8 @@ extension CatalogEntry {
     let fileSizeWithOverheadMb = fileSizeWithOverhead
     if fileSizeWithOverheadMb > budgetMb { return nil }
 
-    let defaultContext =
-      maximizeContext
-      ? ctxWindow
-      : (UserSettings.defaultContextWindow.rawValue * 1024)
+    // Default to 4k context unless maximizing or explicitly requested
+    let defaultContext = maximizeContext ? ctxWindow : minimumTokens
     let effectiveDesired = desiredTokens.flatMap { $0 > 0 ? $0 : nil } ?? defaultContext
 
     let desiredTokensDouble = Double(effectiveDesired)

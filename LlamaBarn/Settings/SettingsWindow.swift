@@ -34,7 +34,7 @@ final class SettingsWindowController {
 
     // Create the window
     let window = NSWindow(
-      contentRect: NSRect(x: 0, y: 0, width: 340, height: 280),
+      contentRect: NSRect(x: 0, y: 0, width: 340, height: 200),
       styleMask: [.titled, .closable],
       backing: .buffered,
       defer: false
@@ -55,7 +55,6 @@ final class SettingsWindowController {
 /// SwiftUI view for settings content.
 struct SettingsView: View {
   @State private var launchAtLogin = LaunchAtLogin.isEnabled
-  @State private var contextWindow = UserSettings.defaultContextWindow
   @State private var sleepIdleTime = UserSettings.sleepIdleTime
 
   var body: some View {
@@ -65,26 +64,6 @@ struct SettingsView: View {
         .onChange(of: launchAtLogin) { _, newValue in
           _ = LaunchAtLogin.setEnabled(newValue)
         }
-
-      Divider()
-
-      // Context length picker
-      VStack(alignment: .leading, spacing: 4) {
-        Picker("Context length", selection: $contextWindow) {
-          ForEach(UserSettings.ContextWindowSize.allCases, id: \.self) { size in
-            Text(size.displayName).tag(size)
-          }
-        }
-        .pickerStyle(.segmented)
-        .onChange(of: contextWindow) { _, newValue in
-          UserSettings.defaultContextWindow = newValue
-        }
-
-        Text(contextInfoText)
-          .font(.caption)
-          .foregroundStyle(.secondary)
-          .fixedSize(horizontal: false, vertical: true)
-      }
 
       Divider()
 
@@ -108,21 +87,6 @@ struct SettingsView: View {
     .formStyle(.grouped)
     .frame(width: 340)
     .fixedSize()
-  }
-
-  /// Builds the context length info text, including memory budget if available.
-  private var contextInfoText: String {
-    let sysMemMb = SystemMemory.memoryMb
-    guard sysMemMb > 0 else {
-      return
-        "Higher context lengths use more memory. The app may reduce the context length to stay within a safe memory budget."
-    }
-
-    let budgetMb = CatalogEntry.memoryBudget(systemMemoryMb: sysMemMb)
-    let budgetGbRounded = Int((budgetMb / 1024.0).rounded())
-
-    return
-      "Higher context lengths use more memory. The app may reduce the context length to stay within a safe memory budget: \(budgetGbRounded) GB on this Mac."
   }
 }
 

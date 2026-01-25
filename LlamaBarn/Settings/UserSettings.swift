@@ -2,22 +2,6 @@ import Foundation
 
 /// Centralized access to simple persisted preferences.
 enum UserSettings {
-  enum ContextWindowSize: Int, CaseIterable {
-    case fourK = 4
-    case thirtyTwoK = 32
-    case sixtyFourK = 64
-    case oneTwentyEightK = 128
-
-    var displayName: String {
-      switch self {
-      case .fourK: return "4k"
-      case .thirtyTwoK: return "32k"
-      case .sixtyFourK: return "64k"
-      case .oneTwentyEightK: return "128k"
-      }
-    }
-  }
-
   enum SleepIdleTime: Int, CaseIterable {
     case disabled = -1
     case fiveMin = 300
@@ -37,7 +21,6 @@ enum UserSettings {
   private enum Keys {
     static let hasSeenWelcome = "hasSeenWelcome"
     static let exposeToNetwork = "exposeToNetwork"
-    static let defaultContextWindow = "defaultContextWindow"
     static let sleepIdleTime = "sleepIdleTime"
   }
 
@@ -71,20 +54,6 @@ enum UserSettings {
     }
     // Not set or false → localhost only
     return nil
-  }
-
-  /// The default context length in thousands of tokens.
-  /// Defaults to 4k.
-  static var defaultContextWindow: ContextWindowSize {
-    get {
-      let rawValue = defaults.integer(forKey: Keys.defaultContextWindow)
-      return ContextWindowSize(rawValue: rawValue) ?? .fourK
-    }
-    set {
-      guard defaults.integer(forKey: Keys.defaultContextWindow) != newValue.rawValue else { return }
-      defaults.set(newValue.rawValue, forKey: Keys.defaultContextWindow)
-      NotificationCenter.default.post(name: .LBUserSettingsDidChange, object: nil)
-    }
   }
 
   /// How long to wait before unloading the model from memory when idle.
