@@ -4,13 +4,14 @@ import SwiftUI
 /// Uses SwiftUI for the content but AppKit for window management to ensure
 /// proper behavior as a menu bar app (no dock icon, proper activation).
 @MainActor
-final class SettingsWindowController {
+final class SettingsWindowController: NSObject, NSWindowDelegate {
   static let shared = SettingsWindowController()
 
   private var window: NSWindow?
   private var observer: NSObjectProtocol?
 
-  private init() {
+  private override init() {
+    super.init()
     // Listen for settings show requests
     observer = NotificationCenter.default.addObserver(
       forName: .LBShowSettings, object: nil, queue: .main
@@ -24,6 +25,7 @@ final class SettingsWindowController {
   func showSettings() {
     // If window exists, just bring it to front
     if let window, window.isVisible {
+      NSApp.setActivationPolicy(.regular)
       window.makeKeyAndOrderFront(nil)
       NSApp.activate(ignoringOtherApps: true)
       return
@@ -43,12 +45,18 @@ final class SettingsWindowController {
     window.contentView = NSHostingView(rootView: contentView)
     window.center()
     window.isReleasedWhenClosed = false
+    window.delegate = self
 
     self.window = window
 
     // Show window and activate app
+    NSApp.setActivationPolicy(.regular)
     window.makeKeyAndOrderFront(nil)
     NSApp.activate(ignoringOtherApps: true)
+  }
+
+  func windowWillClose(_ notification: Notification) {
+    NSApp.setActivationPolicy(.accessory)
   }
 }
 
