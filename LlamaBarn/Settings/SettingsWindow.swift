@@ -36,7 +36,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
 
     // Create the window
     let window = NSWindow(
-      contentRect: NSRect(x: 0, y: 0, width: 340, height: 280),
+      contentRect: NSRect(x: 0, y: 0, width: 380, height: 280),
       styleMask: [.titled, .closable],
       backing: .buffered,
       defer: false
@@ -68,72 +68,83 @@ struct SettingsView: View {
 
   var body: some View {
     Form {
-      // Launch at login toggle
-      Toggle("Launch at login", isOn: $launchAtLogin)
-        .onChange(of: launchAtLogin) { _, newValue in
-          _ = LaunchAtLogin.setEnabled(newValue)
-        }
-
-      Divider()
-
-      // Sleep idle time picker
-      VStack(alignment: .leading, spacing: 4) {
-        Picker("Unload when idle", selection: $sleepIdleTime) {
-          ForEach(UserSettings.SleepIdleTime.allCases, id: \.self) { time in
-            Text(time.displayName).tag(time)
+      // Launch at login section
+      Section {
+        Toggle("Launch at login", isOn: $launchAtLogin)
+          .onChange(of: launchAtLogin) { _, newValue in
+            _ = LaunchAtLogin.setEnabled(newValue)
           }
-        }
-        .pickerStyle(.segmented)
-        .onChange(of: sleepIdleTime) { _, newValue in
-          UserSettings.sleepIdleTime = newValue
-        }
-
-        Text("Automatically unloads the model from memory when not in use.")
-          .font(.caption)
-          .foregroundStyle(.secondary)
       }
 
-      Divider()
-
-      // Context tiers selection
-      VStack(alignment: .leading, spacing: 8) {
-        Text("Context variants")
-          .font(.headline)
-
-        // Grid of toggles for each tier option
-        LazyVGrid(
-          columns: [
-            GridItem(.flexible()),
-            GridItem(.flexible()),
-            GridItem(.flexible()),
-          ], spacing: 8
-        ) {
-          ForEach(UserSettings.ContextTierOption.allCases, id: \.self) { option in
-            Toggle(
-              option.label,
-              isOn: Binding(
-                get: { enabledTiers.contains(option.rawValue) },
-                set: { enabled in
-                  if enabled {
-                    enabledTiers.insert(option.rawValue)
-                  } else {
-                    enabledTiers.remove(option.rawValue)
-                  }
-                  UserSettings.enabledContextTiers = enabledTiers
-                }
-              )
-            )
-            .toggleStyle(.checkbox)
+      // Sleep idle time section
+      Section {
+        VStack(alignment: .leading, spacing: 8) {
+          LabeledContent("Unload when idle") {
+            Picker("Unload when idle", selection: $sleepIdleTime) {
+              ForEach(UserSettings.SleepIdleTime.allCases, id: \.self) { time in
+                Text(time.displayName).tag(time)
+              }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .controlSize(.small)
+            .fixedSize()
+            .onChange(of: sleepIdleTime) { _, newValue in
+              UserSettings.sleepIdleTime = newValue
+            }
           }
-        }
 
-        Text("Select which context lengths to show for installed models.")
-          .font(.caption)
-          .foregroundStyle(.secondary)
+          Text("Automatically unloads the model from memory when not in use.")
+            .font(.callout)
+            .foregroundStyle(.secondary)
+        }
+      }
+
+      // Context tiers section
+      Section {
+        VStack(alignment: .leading, spacing: 8) {
+          Text("Context variants")
+
+          HStack(spacing: 6) {
+            ForEach(UserSettings.ContextTierOption.allCases, id: \.self) { option in
+              let isSelected = enabledTiers.contains(option.rawValue)
+              Button {
+                if isSelected {
+                  enabledTiers.remove(option.rawValue)
+                } else {
+                  enabledTiers.insert(option.rawValue)
+                }
+                UserSettings.enabledContextTiers = enabledTiers
+              } label: {
+                Text(option.label)
+                  .font(.subheadline)
+                  .padding(.horizontal, 8)
+                  .padding(.vertical, 4)
+                  .background(
+                    isSelected ? Color.accentColor : Color.clear,
+                    in: Capsule()
+                  )
+                  .overlay(
+                    Capsule()
+                      .strokeBorder(
+                        isSelected ? Color.accentColor : Color.secondary.opacity(0.3),
+                        lineWidth: 1
+                      )
+                  )
+                  .foregroundStyle(isSelected ? .white : .primary)
+              }
+              .buttonStyle(.plain)
+            }
+          }
+
+          Text("Select which context lengths to show for installed models.")
+            .font(.callout)
+            .foregroundStyle(.secondary)
+        }
       }
     }
     .formStyle(.grouped)
-    .frame(width: 340)
+    .frame(width: 380)
     .fixedSize()
   }
 }
