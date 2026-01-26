@@ -42,8 +42,8 @@ final class ExpandedModelDetailsView: ItemView {
     spacer1.heightAnchor.constraint(equalToConstant: 4).isActive = true
     mainStack.addArrangedSubview(spacer1)
 
-    // Header row: "Context / memory usage"
-    headerLabel.stringValue = "Context / memory usage"
+    // Header row
+    headerLabel.stringValue = "Context lengths"
     headerLabel.textColor = Theme.Colors.textSecondary
     mainStack.addArrangedSubview(headerLabel)
 

@@ -101,7 +101,7 @@ struct SettingsView: View {
       // Context tiers section
       Section {
         VStack(alignment: .leading, spacing: 8) {
-          Text("Context variants")
+          Text("Context lengths")
 
           HStack(spacing: 6) {
             ForEach(UserSettings.ContextTierOption.allCases, id: \.self) { option in
@@ -135,7 +135,7 @@ struct SettingsView: View {
             }
           }
 
-          Text("Select which context lengths to show for installed models.")
+          Text("Longer context uses more memory but lets models handle larger conversations.")
             .font(.callout)
             .foregroundStyle(.secondary)
         }
