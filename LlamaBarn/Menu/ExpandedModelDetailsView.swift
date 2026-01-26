@@ -42,10 +42,28 @@ final class ExpandedModelDetailsView: ItemView {
     spacer1.heightAnchor.constraint(equalToConstant: 4).isActive = true
     mainStack.addArrangedSubview(spacer1)
 
-    // Header row
-    headerLabel.stringValue = "Context lengths"
+    // Header row with info button
+    let headerRow = NSStackView()
+    headerRow.orientation = .horizontal
+    headerRow.alignment = .centerY
+    headerRow.spacing = 4
+
+    headerLabel.stringValue = "Context length configurations"
     headerLabel.textColor = Theme.Colors.textSecondary
-    mainStack.addArrangedSubview(headerLabel)
+    headerRow.addArrangedSubview(headerLabel)
+
+    // Info button that shows tooltip on hover
+    let infoButton = NSButton()
+    infoButton.bezelStyle = .inline
+    infoButton.isBordered = false
+    infoButton.image = NSImage(systemSymbolName: "info.circle", accessibilityDescription: "Info")
+    infoButton.imagePosition = .imageOnly
+    infoButton.contentTintColor = Theme.Colors.textSecondary
+    infoButton.toolTip =
+      "Each configuration runs the same model with a different context length. Longer contexts use more memory."
+    headerRow.addArrangedSubview(infoButton)
+
+    mainStack.addArrangedSubview(headerRow)
 
     // Context tier variant rows
     for tier in ContextTier.enabledCases {
