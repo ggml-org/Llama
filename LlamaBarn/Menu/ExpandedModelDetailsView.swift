@@ -43,7 +43,7 @@ final class ExpandedModelDetailsView: ItemView {
     headerRow.spacing = 4
 
     headerLabel.stringValue = "Context length configurations"
-    headerLabel.textColor = Theme.Colors.textSecondary
+    headerLabel.textColor = Theme.Colors.modelIconTint
     headerRow.addArrangedSubview(headerLabel)
 
     // Info button that shows tooltip on hover
@@ -102,18 +102,23 @@ final class ExpandedModelDetailsView: ItemView {
 
     let infoLabel = Theme.secondaryLabel()
     let secondaryColor = Theme.Colors.textSecondary
-    let valueColor = isCompatible ? Theme.Colors.modelIconTint : Theme.Colors.textSecondary
+    let valueColor = isCompatible ? Theme.Colors.textPrimary : Theme.Colors.textSecondary
+    // For supported configs, use medium color for labels; for unsupported, use secondary
+    let labelColor = isCompatible ? Theme.Colors.modelIconTint : Theme.Colors.textSecondary
 
     // Build attributed string
     let result = NSMutableAttributedString()
     let secondaryAttrs = Theme.secondaryAttributes(color: secondaryColor)
+    let labelAttrs = Theme.secondaryAttributes(color: labelColor)
     let valueAttrs = Theme.secondaryAttributes(color: valueColor)
 
     // Use checkmark/X mark to indicate support status
     let statusIcon = isCompatible ? "✓  " : "✗  "
-    result.append(NSAttributedString(string: statusIcon, attributes: secondaryAttrs))
+    let statusColor = isCompatible ? NSColor.systemGreen : secondaryColor
+    let statusAttrs = Theme.secondaryAttributes(color: statusColor)
+    result.append(NSAttributedString(string: statusIcon, attributes: statusAttrs))
     result.append(NSAttributedString(string: tier.label, attributes: valueAttrs))
-    result.append(NSAttributedString(string: " ctx  ", attributes: secondaryAttrs))
+    result.append(NSAttributedString(string: " ctx  ", attributes: labelAttrs))
 
     if exceedsModelLimit {
       // Model doesn't support this context length
@@ -127,7 +132,7 @@ final class ExpandedModelDetailsView: ItemView {
       let ramStr = String(format: "%.1f GB", ramGb)
 
       result.append(NSAttributedString(string: ramStr, attributes: valueAttrs))
-      result.append(NSAttributedString(string: " mem", attributes: secondaryAttrs))
+      result.append(NSAttributedString(string: " mem", attributes: labelAttrs))
 
       infoLabel.attributedStringValue = result
       row.addArrangedSubview(infoLabel)
@@ -163,10 +168,10 @@ final class ExpandedModelDetailsView: ItemView {
 
   private func buildSizeLabel() {
     let result = NSMutableAttributedString()
-    let secondaryAttrs = Theme.secondaryAttributes(color: Theme.Colors.textSecondary)
-    let valueAttrs = Theme.secondaryAttributes(color: Theme.Colors.modelIconTint)
+    let labelAttrs = Theme.secondaryAttributes(color: Theme.Colors.modelIconTint)
+    let valueAttrs = Theme.secondaryAttributes(color: Theme.Colors.textPrimary)
 
-    result.append(NSAttributedString(string: "File size  ", attributes: secondaryAttrs))
+    result.append(NSAttributedString(string: "File size  ", attributes: labelAttrs))
     result.append(NSAttributedString(string: model.totalSize, attributes: valueAttrs))
 
     sizeLabel.attributedStringValue = result
