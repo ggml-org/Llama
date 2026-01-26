@@ -99,6 +99,8 @@ final class ExpandedModelDetailsView: ItemView {
     row.orientation = .horizontal
     row.alignment = .centerY
     row.spacing = 0
+    // Fixed row height prevents menu resizing when expanding different models
+    row.heightAnchor.constraint(equalToConstant: 16).isActive = true
 
     let infoLabel = Theme.secondaryLabel()
     let secondaryColor = Theme.Colors.textSecondary
@@ -112,11 +114,20 @@ final class ExpandedModelDetailsView: ItemView {
     let labelAttrs = Theme.secondaryAttributes(color: labelColor)
     let valueAttrs = Theme.secondaryAttributes(color: valueColor)
 
-    // Use checkmark/X mark to indicate support status
-    let statusIcon = isCompatible ? "✓  " : "✗  "
+    // Status icon using SF Symbols for consistent sizing
+    let statusIcon = NSImageView()
+    let statusSymbol = isCompatible ? "checkmark" : "xmark"
     let statusColor = isCompatible ? Theme.Colors.success : secondaryColor
-    let statusAttrs = Theme.secondaryAttributes(color: statusColor)
-    result.append(NSAttributedString(string: statusIcon, attributes: statusAttrs))
+    Theme.configure(statusIcon, symbol: statusSymbol, color: statusColor, pointSize: 10)
+    // Fixed width ensures consistent alignment regardless of icon
+    statusIcon.widthAnchor.constraint(equalToConstant: 12).isActive = true
+    row.addArrangedSubview(statusIcon)
+
+    // Spacing after icon
+    let iconSpacer = NSView()
+    iconSpacer.translatesAutoresizingMaskIntoConstraints = false
+    iconSpacer.widthAnchor.constraint(equalToConstant: 4).isActive = true
+    row.addArrangedSubview(iconSpacer)
     result.append(NSAttributedString(string: tier.label, attributes: valueAttrs))
     result.append(NSAttributedString(string: " ctx  ", attributes: labelAttrs))
 
