@@ -293,39 +293,12 @@ final class MenuController: NSObject, NSMenuDelegate {
       items.append(NSMenuItem.viewItem(with: view))
 
       if isExpanded {
-        // Header row
-        let headerView = ExpandedModelHeaderView()
-        items.append(NSMenuItem.viewItem(with: headerView))
-
-        // Context tier variants (only show enabled tiers from user settings)
-        for tier in ContextTier.enabledCases {
-          let loadedId = server.loadedVariantId(for: model)
-          let isLoaded: Bool = {
-            guard let loadedId else { return false }
-            if tier == .k4 {
-              return loadedId == model.id || loadedId == "\(model.id)\(tier.suffix)"
-            }
-            return loadedId == "\(model.id)\(tier.suffix)"
-          }()
-
-          let variantView = VariantItemView(
-            model: model,
-            tier: tier,
-            isLoaded: isLoaded,
-            copyAction: { [weak self] text in
-              self?.actionHandler.copyText(text)
-            }
-          )
-          items.append(NSMenuItem.viewItem(with: variantView))
-        }
-
-        // Size on disk row
-        let sizeView = ModelSizeView(model: model, actionHandler: actionHandler)
-        items.append(NSMenuItem.viewItem(with: sizeView))
-
-        // Delete action
-        let actionsView = ModelActionsView(model: model, actionHandler: actionHandler)
-        items.append(NSMenuItem.viewItem(with: actionsView))
+        // Single container for all expanded details
+        let detailsView = ExpandedModelDetailsView(
+          model: model,
+          actionHandler: actionHandler
+        )
+        items.append(NSMenuItem.viewItem(with: detailsView))
       }
     }
     return items
