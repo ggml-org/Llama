@@ -81,6 +81,7 @@ final class ExpandedModelDetailsView: ItemView {
 
   private func buildVariantRow(for tier: ContextTier) -> NSView {
     let isCompatible = model.isCompatible(ctxWindowTokens: Double(tier.rawValue))
+    let exceedsModelLimit = tier.rawValue > model.ctxWindow
 
     let row = NSStackView()
     row.orientation = .horizontal
@@ -91,40 +92,48 @@ final class ExpandedModelDetailsView: ItemView {
     let secondaryColor = Theme.Colors.textSecondary
     let valueColor = isCompatible ? Theme.Colors.modelIconTint : Theme.Colors.textSecondary
 
-    if isCompatible {
+    // Build attributed string
+    let result = NSMutableAttributedString()
+    let secondaryAttrs = Theme.secondaryAttributes(color: secondaryColor)
+    let valueAttrs = Theme.secondaryAttributes(color: valueColor)
+
+    result.append(NSAttributedString(string: "•  ", attributes: secondaryAttrs))
+    result.append(NSAttributedString(string: tier.label, attributes: valueAttrs))
+    result.append(NSAttributedString(string: " ctx  ", attributes: secondaryAttrs))
+
+    if exceedsModelLimit {
+      // Model doesn't support this context length
+      result.append(NSAttributedString(string: "—", attributes: secondaryAttrs))
+      infoLabel.attributedStringValue = result
+      row.addArrangedSubview(infoLabel)
+    } else {
+      // Show memory usage
       let ramMb = model.runtimeMemoryUsageMb(ctxWindowTokens: Double(tier.rawValue))
       let ramGb = Double(ramMb) / 1024.0
       let ramStr = String(format: "%.1f GB", ramGb)
 
-      // Build attributed string: "• 4k ctx  2.5 GB mem"
-      let result = NSMutableAttributedString()
-      let secondaryAttrs = Theme.secondaryAttributes(color: secondaryColor)
-      let valueAttrs = Theme.secondaryAttributes(color: valueColor)
-
-      result.append(NSAttributedString(string: "•  ", attributes: secondaryAttrs))
-      result.append(NSAttributedString(string: tier.label, attributes: valueAttrs))
-      result.append(NSAttributedString(string: " ctx  ", attributes: secondaryAttrs))
       result.append(NSAttributedString(string: ramStr, attributes: valueAttrs))
-      result.append(NSAttributedString(string: " mem  ", attributes: secondaryAttrs))
+      result.append(NSAttributedString(string: " mem", attributes: secondaryAttrs))
+
+      if !isCompatible {
+        // Not enough memory — show indicator
+        result.append(NSAttributedString(string: "  ✗", attributes: secondaryAttrs))
+      }
 
       infoLabel.attributedStringValue = result
-
-      // Copy button
-      let copyButton = HoverButton()
-      copyButton.title = "(copy model ID)"
-      copyButton.font = Theme.Fonts.secondary
-      copyButton.contentTintColor = Theme.Colors.textSecondary
-      copyButton.target = self
-      copyButton.action = #selector(didClickCopy(_:))
-      copyButton.tag = tier.rawValue
-
       row.addArrangedSubview(infoLabel)
-      row.addArrangedSubview(copyButton)
-    } else {
-      // Incompatible tier
-      infoLabel.stringValue = "•  \(tier.label) ctx  not enough memory"
-      infoLabel.textColor = secondaryColor
-      row.addArrangedSubview(infoLabel)
+
+      // Copy button only for compatible tiers
+      if isCompatible {
+        let copyButton = HoverButton()
+        copyButton.title = "  (copy model ID)"
+        copyButton.font = Theme.Fonts.secondary
+        copyButton.contentTintColor = Theme.Colors.textSecondary
+        copyButton.target = self
+        copyButton.action = #selector(didClickCopy(_:))
+        copyButton.tag = tier.rawValue
+        row.addArrangedSubview(copyButton)
+      }
     }
 
     return row

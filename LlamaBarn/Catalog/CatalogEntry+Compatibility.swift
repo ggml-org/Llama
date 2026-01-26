@@ -115,7 +115,13 @@ extension CatalogEntry {
     }
 
     if ctxWindowTokens > 0 && ctxWindowTokens > Double(ctxWindow) {
-      return CompatibilityInfo(isCompatible: false, incompatibilitySummary: nil)
+      // Model's native context window is smaller than requested
+      let maxTier = ContextTier.allCases.last { $0.rawValue <= ctxWindow }
+      let maxLabel = maxTier?.label ?? "\(ctxWindow / 1024)k"
+      return CompatibilityInfo(
+        isCompatible: false,
+        incompatibilitySummary: "model max is \(maxLabel)"
+      )
     }
 
     let sysMem = SystemMemory.memoryMb
