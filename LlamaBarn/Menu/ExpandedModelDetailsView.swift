@@ -32,6 +32,16 @@ final class ExpandedModelDetailsView: ItemView {
     mainStack.alignment = .leading
     mainStack.spacing = 2
 
+    // File size row
+    buildSizeLabel()
+    mainStack.addArrangedSubview(sizeLabel)
+
+    // Spacer before context tiers
+    let spacer1 = NSView()
+    spacer1.translatesAutoresizingMaskIntoConstraints = false
+    spacer1.heightAnchor.constraint(equalToConstant: 4).isActive = true
+    mainStack.addArrangedSubview(spacer1)
+
     // Header row: "Context / memory usage"
     headerLabel.stringValue = "Context / memory usage"
     headerLabel.textColor = Theme.Colors.textSecondary
@@ -42,16 +52,6 @@ final class ExpandedModelDetailsView: ItemView {
       let row = buildVariantRow(for: tier)
       mainStack.addArrangedSubview(row)
     }
-
-    // Spacer before file size
-    let spacer1 = NSView()
-    spacer1.translatesAutoresizingMaskIntoConstraints = false
-    spacer1.heightAnchor.constraint(equalToConstant: 4).isActive = true
-    mainStack.addArrangedSubview(spacer1)
-
-    // File size row
-    buildSizeLabel()
-    mainStack.addArrangedSubview(sizeLabel)
 
     // Spacer before actions
     let spacer2 = NSView()
