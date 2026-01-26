@@ -36,12 +36,6 @@ final class ExpandedModelDetailsView: ItemView {
     buildSizeLabel()
     mainStack.addArrangedSubview(sizeLabel)
 
-    // Spacer before context tiers
-    let spacer1 = NSView()
-    spacer1.translatesAutoresizingMaskIntoConstraints = false
-    spacer1.heightAnchor.constraint(equalToConstant: 4).isActive = true
-    mainStack.addArrangedSubview(spacer1)
-
     // Header row with info button
     let headerRow = NSStackView()
     headerRow.orientation = .horizontal
