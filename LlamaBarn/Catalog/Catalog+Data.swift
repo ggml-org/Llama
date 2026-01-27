@@ -772,7 +772,7 @@ extension Catalog {
       name: "GLM 4.7",
       series: "z",
       description:
-        "Zhipu AI's agentic reasoning and coding models. Built for software engineering, browser automation, and multi-turn tool use with strong benchmark results.",
+        "Zhipu AI's agentic reasoning and coding models. Built for software engineering, browser automation, and multi-turn tool use.",
       serverArgs: nil,
       sizes: [
         ModelSize(
