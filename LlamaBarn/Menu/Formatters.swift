@@ -94,14 +94,19 @@ extension Format {
   // MARK: - Metadata Formatting
 
   /// Creates a bullet separator for metadata lines (e.g., "2.5 GB · 128k · 4 GB").
-  static func metadataSeparator() -> NSAttributedString {
-    NSAttributedString(string: " · ", attributes: Theme.tertiaryAttributes)
+  /// Optionally accepts a paragraph style to prevent letter spacing compression.
+  static func metadataSeparator(paragraphStyle: NSParagraphStyle? = nil) -> NSAttributedString {
+    var attrs = Theme.tertiaryAttributes
+    if let paragraphStyle {
+      attrs[.paragraphStyle] = paragraphStyle
+    }
+    return NSAttributedString(string: " · ", attributes: attrs)
   }
 
   // MARK: - Model Metadata (composite)
 
   /// Formats model metadata text.
-  /// Format: "3.1 GB · 4k · 8k · 16k" (file size followed by context tiers)
+  /// Format: "3.1 GB  ∣  4k · 8k · 16k" (file size followed by context tiers)
   /// If incompatibility is provided: "Requires a Mac with 32 GB+ of memory"
   /// If loadedTier is provided, that tier label is shown in blue.
   static func modelMetadata(
@@ -112,15 +117,21 @@ extension Format {
   ) -> NSAttributedString {
     let result = NSMutableAttributedString()
 
+    // Paragraph style that prevents letter spacing compression before truncation
+    let paragraphStyle = NSMutableParagraphStyle()
+    paragraphStyle.allowsDefaultTighteningForTruncation = false
+
     let attributes: [NSAttributedString.Key: Any] = [
       .font: Theme.Fonts.secondary,
       .foregroundColor: color,
+      .paragraphStyle: paragraphStyle,
     ]
 
     if let incompatibility = incompatibility {
       let warningAttr: [NSAttributedString.Key: Any] = [
         .font: Theme.Fonts.secondary,
         .foregroundColor: Theme.Colors.textSecondary,
+        .paragraphStyle: paragraphStyle,
       ]
       result.append(NSAttributedString(string: incompatibility, attributes: warningAttr))
     } else {
@@ -134,12 +145,13 @@ extension Format {
           attributes: [
             .font: Theme.Fonts.secondary,
             .foregroundColor: Theme.Colors.textSecondary,
+            .paragraphStyle: paragraphStyle,
           ]))
 
       // Context Tiers (only show enabled tiers from user settings)
       for (idx, tier) in ContextTier.enabledCases.sorted().enumerated() {
         if idx > 0 {
-          result.append(Format.metadataSeparator())
+          result.append(Format.metadataSeparator(paragraphStyle: paragraphStyle))
         }
 
         let isCompatible = model.isCompatible(ctxWindowTokens: Double(tier.rawValue))
@@ -155,8 +167,6 @@ extension Format {
         result.append(NSAttributedString(string: tier.label, attributes: tierAttributes))
       }
     }
-
-    // Vision support removed - now shown in model name
 
     return result
   }

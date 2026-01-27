@@ -21,7 +21,16 @@ final class ModelItemView: ItemView, NSGestureRecognizerDelegate {
 
   // Labels
   private let titleLabel = Theme.primaryLabel()
-  private let subtitleLabel = Theme.secondaryLabel()
+  private let subtitleLabel: NSTextField = {
+    let label = Theme.secondaryLabel()
+    // Single line with ellipsis truncation when hover buttons overlap
+    label.maximumNumberOfLines = 1
+    label.lineBreakMode = .byTruncatingTail
+    label.cell?.truncatesLastVisibleLine = true
+    // Prevent letter spacing compression before truncation
+    label.allowsDefaultTighteningForTruncation = false
+    return label
+  }()
   private let progressLabel: NSTextField = {
     let label = Theme.secondaryLabel()
     label.font = Theme.Fonts.primary
@@ -33,6 +42,10 @@ final class ModelItemView: ItemView, NSGestureRecognizerDelegate {
   private let iconView = IconView()
   private let cancelImageView = NSImageView()
   private let unloadButton = NSButton()
+
+  // Hover action buttons (shown on hover for installed models)
+  private let deleteButton = NSButton()
+  private let hoverButtonsStack = NSStackView()
 
   init(
     model: CatalogEntry, server: LlamaServer, modelManager: ModelManager,
@@ -57,10 +70,22 @@ final class ModelItemView: ItemView, NSGestureRecognizerDelegate {
     unloadButton.target = self
     unloadButton.action = #selector(didClickUnload)
 
+    // Configure hover action buttons
+    Theme.configure(deleteButton, symbol: "trash", tooltip: "Delete model")
+
+    deleteButton.target = self
+    deleteButton.action = #selector(didClickDelete)
+
+    // Configure hover buttons stack
+    hoverButtonsStack.orientation = .horizontal
+    hoverButtonsStack.spacing = 4
+    hoverButtonsStack.addArrangedSubview(deleteButton)
+
     // Start hidden
     cancelImageView.isHidden = true
     unloadButton.isHidden = true
     progressLabel.isHidden = true
+    hoverButtonsStack.isHidden = true
 
     setupLayout()
     setupGestures()
@@ -91,7 +116,7 @@ final class ModelItemView: ItemView, NSGestureRecognizerDelegate {
 
     // Accessory stack
     let accessoryStack = NSStackView(views: [
-      progressLabel, cancelImageView, unloadButton,
+      progressLabel, cancelImageView, hoverButtonsStack, unloadButton,
     ])
     accessoryStack.orientation = .horizontal
     accessoryStack.alignment = .centerY
@@ -109,11 +134,14 @@ final class ModelItemView: ItemView, NSGestureRecognizerDelegate {
     // Constraints
     Layout.constrainToIconSize(cancelImageView)
     Layout.constrainToIconSize(unloadButton)
+    Layout.constrainToIconSize(deleteButton)
     progressLabel.widthAnchor.constraint(lessThanOrEqualToConstant: Layout.progressWidth).isActive =
       true
 
     titleLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
     titleLabel.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
+    // Allow subtitle to compress and truncate when hover buttons appear
+    subtitleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     progressLabel.setContentHuggingPriority(.required, for: .horizontal)
     progressLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
     cancelImageView.setContentHuggingPriority(.required, for: .horizontal)
@@ -143,12 +171,16 @@ final class ModelItemView: ItemView, NSGestureRecognizerDelegate {
     actionHandler.performPrimaryAction(for: model)
   }
 
-  // Prevent row toggle when clicking the unload button
+  @objc private func didClickDelete() {
+    actionHandler.delete(model: model)
+  }
+
+  // Prevent row toggle when clicking action buttons
   func gestureRecognizer(
     _ gestureRecognizer: NSGestureRecognizer, shouldAttemptToRecognizeWith event: NSEvent
   ) -> Bool {
     let loc = event.locationInWindow
-    let actionButtons = [unloadButton]
+    let actionButtons = [unloadButton, deleteButton]
     return !actionButtons.contains { view in
       !view.isHidden && view.bounds.contains(view.convert(loc, from: nil))
     }
@@ -233,11 +265,19 @@ final class ModelItemView: ItemView, NSGestureRecognizerDelegate {
     return true
   }
 
-  override func highlightDidChange(_ highlighted: Bool) {}
+  override func highlightDidChange(_ highlighted: Bool) {
+    // Show hover buttons only for installed models that aren't active/downloading
+    let isInstalled = modelManager.isInstalled(model)
+    let isActive = server.isActive(model: model)
+    let isDownloading = modelManager.isDownloading(model)
+    let showHoverButtons = highlighted && isInstalled && !isActive && !isDownloading
+    hoverButtonsStack.isHidden = !showHoverButtons
+  }
 
   override func viewDidChangeEffectiveAppearance() {
     super.viewDidChangeEffectiveAppearance()
     cancelImageView.contentTintColor = .systemRed
     unloadButton.contentTintColor = .tertiaryLabelColor
+    deleteButton.contentTintColor = .tertiaryLabelColor
   }
 }

@@ -10,8 +10,6 @@ final class ExpandedModelDetailsView: ItemView {
 
   // Row views
   private let headerLabel = Theme.secondaryLabel()
-  private let sizeLabel = Theme.secondaryLabel()
-  private let actionsRow = NSStackView()
 
   init(model: CatalogEntry, actionHandler: ModelActionHandler) {
     self.model = model
@@ -31,10 +29,6 @@ final class ExpandedModelDetailsView: ItemView {
     mainStack.orientation = .vertical
     mainStack.alignment = .leading
     mainStack.spacing = 2
-
-    // File size row
-    buildSizeLabel()
-    mainStack.addArrangedSubview(sizeLabel)
 
     // Header row with info button
     let headerRow = NSStackView()
@@ -64,16 +58,6 @@ final class ExpandedModelDetailsView: ItemView {
       let row = buildVariantRow(for: tier)
       mainStack.addArrangedSubview(row)
     }
-
-    // Spacer before actions
-    let spacer2 = NSView()
-    spacer2.translatesAutoresizingMaskIntoConstraints = false
-    spacer2.heightAnchor.constraint(equalToConstant: 4).isActive = true
-    mainStack.addArrangedSubview(spacer2)
-
-    // Actions row
-    buildActionsRow()
-    mainStack.addArrangedSubview(actionsRow)
 
     // Add indent wrapper to align with model text
     let indent = NSView()
@@ -175,56 +159,4 @@ final class ExpandedModelDetailsView: ItemView {
     }
   }
 
-  // MARK: - Size Row
-
-  private func buildSizeLabel() {
-    let result = NSMutableAttributedString()
-    let labelAttrs = Theme.secondaryAttributes(color: Theme.Colors.modelIconTint)
-    let valueAttrs = Theme.secondaryAttributes(color: Theme.Colors.textPrimary)
-
-    result.append(NSAttributedString(string: "File size  ", attributes: labelAttrs))
-    result.append(NSAttributedString(string: model.totalSize, attributes: valueAttrs))
-
-    sizeLabel.attributedStringValue = result
-  }
-
-  // MARK: - Actions Row
-
-  private func buildActionsRow() {
-    actionsRow.orientation = .horizontal
-    actionsRow.alignment = .centerY
-    actionsRow.spacing = 0
-
-    // Show in Finder
-    let showInFinderButton = HoverButton()
-    showInFinderButton.title = "Show in Finder"
-    showInFinderButton.font = Theme.Fonts.secondary
-    showInFinderButton.contentTintColor = Theme.Colors.modelIconTint
-    showInFinderButton.target = self
-    showInFinderButton.action = #selector(didClickShowInFinder)
-
-    let sep = Theme.secondaryLabel()
-    sep.stringValue = " · "
-    sep.textColor = Theme.Colors.textSecondary
-
-    // Delete
-    let deleteButton = HoverButton()
-    deleteButton.title = "Delete"
-    deleteButton.font = Theme.Fonts.secondary
-    deleteButton.contentTintColor = Theme.Colors.modelIconTint
-    deleteButton.target = self
-    deleteButton.action = #selector(didClickDelete)
-
-    actionsRow.addArrangedSubview(showInFinderButton)
-    actionsRow.addArrangedSubview(sep)
-    actionsRow.addArrangedSubview(deleteButton)
-  }
-
-  @objc private func didClickShowInFinder() {
-    actionHandler.showInFinder(model: model)
-  }
-
-  @objc private func didClickDelete() {
-    actionHandler.delete(model: model)
-  }
 }
