@@ -158,26 +158,38 @@ extension CatalogEntry {
   }
 
   /// Returns all context tiers that this model can support given device memory constraints.
-  /// Uses fixed tiers: 4K, 32K, and max (if >32K).
-  /// Only returns tiers that are actually compatible with the device.
+  /// Shows all standard tiers (4K through 128K) that are compatible, plus 256K if supported.
   var supportedContextTiers: [ContextTier] {
-    // Start with base tiers (4K, 32K) that are compatible
-    var tiers = ContextTier.baseTiers.filter { tier in
+    // Filter standard tiers to those compatible with this device
+    var tiers = ContextTier.standardTiers.filter { tier in
       isCompatible(ctxWindowTokens: Double(tier.rawValue))
     }
 
-    // Find the max tier this model can run at (must be >32K to be shown separately)
-    let maxTier = ContextTier.allCases
-      .filter { $0.rawValue > ContextTier.k32.rawValue }
-      .filter { isCompatible(ctxWindowTokens: Double($0.rawValue)) }
-      .max()
-
-    // Add max tier if it exists and isn't already in the list
-    if let maxTier, !tiers.contains(maxTier) {
-      tiers.append(maxTier)
+    // Add 256K tier if compatible and not already included
+    if isCompatible(ctxWindowTokens: Double(ContextTier.k256.rawValue)),
+      !tiers.contains(.k256)
+    {
+      tiers.append(.k256)
     }
 
     return tiers.sorted()
+  }
+
+  /// The effective context tier for this model.
+  /// Returns user's selection if set and still compatible, otherwise the highest compatible tier.
+  var effectiveCtxTier: ContextTier? {
+    let supported = supportedContextTiers
+    guard !supported.isEmpty else { return nil }
+
+    // Check if user has a saved preference that's still valid
+    if let selected = UserSettings.selectedCtxTier(for: id),
+      supported.contains(selected)
+    {
+      return selected
+    }
+
+    // Default to highest compatible tier
+    return supported.last
   }
 
   private struct CompatibilityInfo {

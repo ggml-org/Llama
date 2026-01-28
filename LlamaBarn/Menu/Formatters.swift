@@ -106,14 +106,14 @@ extension Format {
   // MARK: - Model Metadata (composite)
 
   /// Formats model metadata text.
-  /// Format: "3.1 GB  ∣  4k · 32k · 128k" (file size followed by supported context tiers)
+  /// Format: "3.1 GB  ∣  128k" (file size + effective context tier)
   /// If incompatibility is provided: "Requires a Mac with 32 GB+ of memory"
-  /// If loadedTier is provided, that tier label is shown in blue.
+  /// If isRunning is true, the tier label is shown in blue.
   static func modelMetadata(
     for model: CatalogEntry,
     color: NSColor = Theme.Colors.textPrimary,
     incompatibility: String? = nil,
-    loadedTier: ContextTier? = nil
+    isRunning: Bool = false
   ) -> NSAttributedString {
     let result = NSMutableAttributedString()
 
@@ -138,7 +138,7 @@ extension Format {
       // File size
       result.append(NSAttributedString(string: model.totalSize, attributes: attributes))
 
-      // Pipe separator between file size and context tiers
+      // Pipe separator between file size and context tier
       result.append(
         NSAttributedString(
           string: "  ∣  ",
@@ -148,19 +148,12 @@ extension Format {
             .paragraphStyle: paragraphStyle,
           ]))
 
-      // Context Tiers - only show tiers this model supports on this device
-      let supportedTiers = model.supportedContextTiers
-      for (idx, tier) in supportedTiers.enumerated() {
-        if idx > 0 {
-          result.append(Format.metadataSeparator(paragraphStyle: paragraphStyle))
-        }
-
+      // Show effective context tier (user selection or max compatible)
+      if let tier = model.effectiveCtxTier {
         var tierAttributes = attributes
-        if tier == loadedTier {
-          // Running tier: show in blue to match the active model icon
+        if isRunning {
           tierAttributes[.foregroundColor] = NSColor.controlAccentColor
         }
-
         result.append(NSAttributedString(string: tier.label, attributes: tierAttributes))
       }
     }

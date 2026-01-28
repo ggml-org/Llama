@@ -22,6 +22,7 @@ enum UserSettings {
     static let hasSeenWelcome = "hasSeenWelcome"
     static let exposeToNetwork = "exposeToNetwork"
     static let sleepIdleTime = "sleepIdleTime"
+    static let selectedCtxTiers = "selectedCtxTiers"
   }
 
   private static let defaults = UserDefaults.standard
@@ -69,5 +70,29 @@ enum UserSettings {
       defaults.set(newValue.rawValue, forKey: Keys.sleepIdleTime)
       NotificationCenter.default.post(name: .LBUserSettingsDidChange, object: nil)
     }
+  }
+
+  // MARK: - Context Tier Preferences
+
+  /// Returns the user-selected context tier for a model, or nil if not set.
+  /// When nil, the model should use its highest compatible tier.
+  static func selectedCtxTier(for modelId: String) -> ContextTier? {
+    guard let dict = defaults.dictionary(forKey: Keys.selectedCtxTiers),
+      let rawValue = dict[modelId] as? Int
+    else { return nil }
+    return ContextTier(rawValue: rawValue)
+  }
+
+  /// Sets the user-selected context tier for a model.
+  /// Pass nil to clear the preference and use the default (highest compatible).
+  static func setSelectedCtxTier(_ tier: ContextTier?, for modelId: String) {
+    var dict = defaults.dictionary(forKey: Keys.selectedCtxTiers) ?? [:]
+    if let tier {
+      dict[modelId] = tier.rawValue
+    } else {
+      dict.removeValue(forKey: modelId)
+    }
+    defaults.set(dict, forKey: Keys.selectedCtxTiers)
+    NotificationCenter.default.post(name: .LBUserSettingsDidChange, object: nil)
   }
 }

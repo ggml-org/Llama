@@ -1,24 +1,35 @@
 import AppKit
 import Foundation
 
-/// Container view for all expanded model details.
-/// Consolidates header, context variants, file size, and actions into a single view
-/// with shared padding and consistent alignment.
+/// Container view for expanded model details.
+/// Shows selectable context tiers with memory usage.
+/// Selecting a tier updates user preferences and reloads the server if running.
 final class ExpandedModelDetailsView: ItemView {
   private let model: CatalogEntry
   private let actionHandler: ModelActionHandler
+  private unowned let server: LlamaServer
 
-  // Row views
+  // Header label
   private let headerLabel = Theme.secondaryLabel()
 
-  // Info block (expandable)
+  // Info label (replaces button when expanded)
+  private var infoLabel: NSTextField?
   private var infoButton: NSButton?
-  private var infoBlock: NSView?
-  private var infoExpanded = false
+  private var infoExpanded: Bool
+  private let onInfoToggle: ((Bool) -> Void)?
 
-  init(model: CatalogEntry, actionHandler: ModelActionHandler) {
+  init(
+    model: CatalogEntry,
+    actionHandler: ModelActionHandler,
+    server: LlamaServer,
+    isInfoExpanded: Bool = false,
+    onInfoToggle: ((Bool) -> Void)? = nil
+  ) {
     self.model = model
     self.actionHandler = actionHandler
+    self.server = server
+    self.infoExpanded = isInfoExpanded
+    self.onInfoToggle = onInfoToggle
     super.init(frame: .zero)
     setupLayout()
   }
@@ -29,12 +40,6 @@ final class ExpandedModelDetailsView: ItemView {
   override var highlightEnabled: Bool { false }
 
   private func setupLayout() {
-    // Outer vertical stack (holds indented content + full-width info block)
-    let outerStack = NSStackView()
-    outerStack.orientation = .vertical
-    outerStack.alignment = .leading
-    outerStack.spacing = 0
-
     // Main vertical stack for indented rows
     let mainStack = NSStackView()
     mainStack.orientation = .vertical
@@ -46,8 +51,9 @@ final class ExpandedModelDetailsView: ItemView {
     headerRow.orientation = .horizontal
     headerRow.alignment = .centerY
     headerRow.spacing = 4
+    headerRow.detachesHiddenViews = true  // Hidden views don't take up space
 
-    headerLabel.stringValue = "Context options"
+    headerLabel.stringValue = "Context length"
     headerLabel.textColor = Theme.Colors.modelIconTint
     headerRow.addArrangedSubview(headerLabel)
 
@@ -60,14 +66,31 @@ final class ExpandedModelDetailsView: ItemView {
     btn.contentTintColor = Theme.Colors.textSecondary
     btn.target = self
     btn.action = #selector(didClickInfo(_:))
-    headerRow.addArrangedSubview(btn)
+    btn.isHidden = infoExpanded  // Hide if already expanded
     self.infoButton = btn
+    headerRow.addArrangedSubview(btn)
+
+    // Info label (hidden by default, shows inline with header)
+    let info = Theme.secondaryLabel()
+    info.stringValue = "Context length — how much text the model can see at once"
+    info.textColor = Theme.Colors.modelIconTint
+    info.lineBreakMode = .byWordWrapping
+    info.isHidden = !infoExpanded  // Show if already expanded
+    // Constrain width to prevent unbounded height calculation
+    info.preferredMaxLayoutWidth = Layout.contentWidth - Layout.expandedIndent
+    self.infoLabel = info
+    headerRow.addArrangedSubview(info)
+
+    // Apply initial state
+    headerLabel.isHidden = infoExpanded
 
     mainStack.addArrangedSubview(headerRow)
 
-    // Context tier variant rows - only show tiers this model supports
+    // Context tier rows - show all supported tiers as selectable options
+    let effectiveTier = model.effectiveCtxTier
     for tier in model.supportedContextTiers {
-      let row = buildVariantRow(for: tier)
+      let isSelected = tier == effectiveTier
+      let row = buildTierRow(for: tier, isSelected: isSelected)
       mainStack.addArrangedSubview(row)
     }
 
@@ -81,24 +104,16 @@ final class ExpandedModelDetailsView: ItemView {
     indentedRow.alignment = .top
     indentedRow.spacing = 0
 
-    outerStack.addArrangedSubview(indentedRow)
-
-    // Full-width info block (outside the indent)
-    let infoBlock = buildInfoBlock()
-    infoBlock.isHidden = true
-    outerStack.addArrangedSubview(infoBlock)
-    self.infoBlock = infoBlock
-
-    contentView.addSubview(outerStack)
-    outerStack.pinToSuperview(top: 2, leading: 0, trailing: 0, bottom: 2)
+    contentView.addSubview(indentedRow)
+    indentedRow.pinToSuperview(top: 2, leading: 0, trailing: 0, bottom: 2)
   }
 
-  // MARK: - Variant Row
+  // MARK: - Tier Row
 
-  /// Builds a row for a supported context tier.
-  /// Only called for tiers that are compatible with this device.
-  private func buildVariantRow(for tier: ContextTier) -> NSView {
-    let row = NSStackView()
+  /// Builds a selectable row for a context tier.
+  private func buildTierRow(for tier: ContextTier, isSelected: Bool) -> NSView {
+    // Use a custom view subclass to store the tier value
+    let row = TierRowView(tier: tier)
     row.orientation = .horizontal
     row.alignment = .centerY
     row.spacing = 0
@@ -106,17 +121,24 @@ final class ExpandedModelDetailsView: ItemView {
     row.heightAnchor.constraint(equalToConstant: 16).isActive = true
 
     let infoLabel = Theme.secondaryLabel()
-    let valueColor = Theme.Colors.textPrimary
     let labelColor = Theme.Colors.modelIconTint
+    let valueColor = Theme.Colors.textPrimary
 
     // Build attributed string
     let result = NSMutableAttributedString()
     let labelAttrs = Theme.secondaryAttributes(color: labelColor)
     let valueAttrs = Theme.secondaryAttributes(color: valueColor)
 
-    // Status icon (checkmark for all shown tiers since they're all compatible)
+    // Selection indicator (small filled circle inside ring for selected, empty circle for others)
     let statusIcon = NSImageView()
-    Theme.configure(statusIcon, symbol: "checkmark", color: Theme.Colors.success, pointSize: 10)
+    if isSelected {
+      Theme.configure(
+        statusIcon, symbol: "smallcircle.filled.circle", color: Theme.Colors.textPrimary,
+        pointSize: 10)
+    } else {
+      Theme.configure(
+        statusIcon, symbol: "circle", color: Theme.Colors.textSecondary, pointSize: 10)
+    }
     statusIcon.widthAnchor.constraint(equalToConstant: 12).isActive = true
     row.addArrangedSubview(statusIcon)
 
@@ -128,7 +150,7 @@ final class ExpandedModelDetailsView: ItemView {
 
     // Tier label and memory usage
     result.append(NSAttributedString(string: tier.label, attributes: valueAttrs))
-    result.append(NSAttributedString(string: " ctx  ", attributes: labelAttrs))
+    result.append(NSAttributedString(string: " ctx on ", attributes: labelAttrs))
 
     let ramMb = model.runtimeMemoryUsageMb(ctxWindowTokens: Double(tier.rawValue))
     let ramGb = Double(ramMb) / 1024.0
@@ -140,119 +162,54 @@ final class ExpandedModelDetailsView: ItemView {
     infoLabel.attributedStringValue = result
     row.addArrangedSubview(infoLabel)
 
-    // Copy button
-    let copyButton = HoverButton()
-    copyButton.title = "  Copy ID"
-    copyButton.font = Theme.Fonts.secondary
-    copyButton.contentTintColor = Theme.Colors.modelIconTint
-    copyButton.target = self
-    copyButton.action = #selector(didClickCopy(_:))
-    copyButton.tag = tier.rawValue
-    row.addArrangedSubview(copyButton)
+    // Make the row clickable to select this tier
+    let clickRecognizer = NSClickGestureRecognizer(
+      target: self, action: #selector(didClickTierRow(_:)))
+    row.addGestureRecognizer(clickRecognizer)
 
     return row
   }
 
-  @objc private func didClickCopy(_ sender: NSButton) {
-    guard let tier = ContextTier(rawValue: sender.tag) else { return }
-    let idToCopy = "\(model.id)\(tier.suffix)"
-    actionHandler.copyText(idToCopy)
+  @objc private func didClickTierRow(_ sender: NSClickGestureRecognizer) {
+    guard let row = sender.view as? TierRowView else { return }
+    let tier = row.tier
 
-    sender.title = "  Copied"
-    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak sender] in
-      sender?.title = "  Copy ID"
+    // Skip if already selected
+    guard tier != model.effectiveCtxTier else { return }
+
+    // Save the new preference
+    UserSettings.setSelectedCtxTier(tier, for: model.id)
+
+    // Regenerate models.ini and reload server
+    ModelManager.shared.updateModelsFile()
+
+    // If this model is running, restart the server to apply the new context size
+    if server.isActive(model: model) {
+      server.reload()
     }
   }
 
   @objc private func didClickInfo(_ sender: NSButton) {
     infoExpanded.toggle()
-    infoBlock?.isHidden = !infoExpanded
-
-    // Update button tint to indicate active state
-    infoButton?.contentTintColor =
-      infoExpanded
-      ? Theme.Colors.textPrimary
-      : Theme.Colors.textSecondary
+    headerLabel.isHidden = infoExpanded
+    infoLabel?.isHidden = !infoExpanded
+    infoButton?.isHidden = infoExpanded
+    onInfoToggle?(infoExpanded)
   }
 
-  // MARK: - Info Block
+}
 
-  /// Builds a full-width outlined info block explaining context options.
-  private func buildInfoBlock() -> NSView {
-    let paragraphs = [
-      "The same model can run at multiple context lengths. Context is how much text the model can \"see\" at once.",
-      "Pick 4K for chat, 32K for agents. Longer context uses more memory.",
-    ]
+// MARK: - TierRowView
 
-    // Build attributed string with custom paragraph spacing
-    let paraStyle = NSMutableParagraphStyle()
-    paraStyle.paragraphSpacing = 6
+/// Custom stack view that stores a context tier value.
+/// Used to pass tier info through gesture recognizer callbacks.
+private final class TierRowView: NSStackView {
+  let tier: ContextTier
 
-    let attrs: [NSAttributedString.Key: Any] = [
-      .font: Theme.Fonts.secondary,
-      .foregroundColor: Theme.Colors.modelIconTint,
-      .paragraphStyle: paraStyle,
-    ]
-
-    let result = NSMutableAttributedString()
-    for (idx, para) in paragraphs.enumerated() {
-      let text = idx < paragraphs.count - 1 ? para + "\n" : para
-      result.append(NSAttributedString(string: text, attributes: attrs))
-    }
-
-    let label = NSTextField(labelWithAttributedString: result)
-    label.isEditable = false
-    label.isSelectable = false
-    label.drawsBackground = false
-    label.isBezeled = false
-    label.lineBreakMode = .byWordWrapping
-    // Content width minus indent and padding inside the box
-    label.preferredMaxLayoutWidth = Layout.contentWidth - Layout.expandedIndent - 20
-    label.translatesAutoresizingMaskIntoConstraints = false
-
-    // Outlined container
-    let container = NSView()
-    container.wantsLayer = true
-    container.layer?.cornerRadius = Layout.cornerRadius
-    container.layer?.borderWidth = 1
-    container.translatesAutoresizingMaskIntoConstraints = false
-    container.addSubview(label)
-
-    // Set border color respecting appearance
-    container.layer?.setBorderColor(Theme.Colors.separator, in: container)
-
-    NSLayoutConstraint.activate([
-      label.topAnchor.constraint(equalTo: container.topAnchor, constant: 8),
-      label.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 10),
-      label.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -10),
-      label.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -8),
-      container.widthAnchor.constraint(
-        equalToConstant: Layout.contentWidth - Layout.expandedIndent),
-    ])
-
-    // Wrapper with indent and top margin
-    let indent = NSView()
-    indent.translatesAutoresizingMaskIntoConstraints = false
-    indent.widthAnchor.constraint(equalToConstant: Layout.expandedIndent).isActive = true
-
-    let row = NSStackView(views: [indent, container])
-    row.orientation = .horizontal
-    row.alignment = .top
-    row.spacing = 0
-
-    let wrapper = NSView()
-    wrapper.translatesAutoresizingMaskIntoConstraints = false
-    wrapper.addSubview(row)
-    row.translatesAutoresizingMaskIntoConstraints = false
-
-    NSLayoutConstraint.activate([
-      row.topAnchor.constraint(equalTo: wrapper.topAnchor, constant: 6),
-      row.leadingAnchor.constraint(equalTo: wrapper.leadingAnchor),
-      row.trailingAnchor.constraint(equalTo: wrapper.trailingAnchor),
-      row.bottomAnchor.constraint(equalTo: wrapper.bottomAnchor),
-    ])
-
-    return wrapper
+  init(tier: ContextTier) {
+    self.tier = tier
+    super.init(frame: .zero)
   }
 
+  required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 }

@@ -190,16 +190,19 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
   private func generateModelsFileContent() -> String {
     var content = ""
 
-    func appendEntry(id: String, ctxSize: Int, for model: CatalogEntry) {
-      content += "[\(id)]\n"
+    for model in downloadedModels {
+      // Use the effective tier (user selection or max compatible)
+      guard let tier = model.effectiveCtxTier else { continue }
+
+      content += "[\(model.id)]\n"
       content += "model = \(model.modelFilePath)\n"
-      content += "ctx-size = \(ctxSize)\n"
+      content += "ctx-size = \(tier.rawValue)\n"
 
       if let mmproj = model.mmprojFilePath {
         content += "mmproj = \(mmproj)\n"
       }
 
-      // Enable larger batch size for better performance on high-memory devices (≥32 GB RAM)
+      // Enable larger batch size for better performance on high-memory devices (>=32 GB RAM)
       let systemMemoryGb = Double(SystemMemory.memoryMb) / 1024.0
       if systemMemoryGb >= 32.0 {
         content += "ubatch-size = 2048\n"
@@ -232,21 +235,6 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
       }
 
       content += "\n"
-    }
-
-    for model in downloadedModels {
-      let tiers = model.supportedContextTiers
-
-      // Skip models with no supported tiers.
-      // This happens when the user has disabled all context tiers that would fit in memory.
-      // Such models shouldn't appear in the /v1/models endpoint.
-      if tiers.isEmpty {
-        continue
-      }
-
-      for tier in tiers {
-        appendEntry(id: "\(model.id)\(tier.suffix)", ctxSize: tier.rawValue, for: model)
-      }
     }
     return content
   }

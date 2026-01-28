@@ -285,21 +285,20 @@ class LlamaServer {
 
   /// Checks if the specified model is currently active
   func isActive(model: CatalogEntry) -> Bool {
-    return loadedVariantId(for: model) != nil
+    return modelStatuses[model.id] == "loaded"
   }
 
   /// Checks if the specified model is currently loading
   func isLoading(model: CatalogEntry) -> Bool {
-    return modelStatuses.contains { key, status in
-      status == "loading" && (key == model.id || key.hasPrefix(model.id + ":"))
-    }
+    return modelStatuses[model.id] == "loading"
   }
 
   /// Returns the ID of the currently loaded variant for the given model, if any.
   func loadedVariantId(for model: CatalogEntry) -> String? {
-    modelStatuses.first { key, status in
-      status == "loaded" && (key == model.id || key.hasPrefix(model.id + ":"))
-    }?.key
+    if modelStatuses[model.id] == "loaded" {
+      return model.id
+    }
+    return nil
   }
 
   /// Switch the active model in the UI. In Router Mode, this doesn't restart the server,

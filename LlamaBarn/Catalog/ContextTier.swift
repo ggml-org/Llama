@@ -33,7 +33,6 @@ enum ContextTier: Int, CaseIterable, Identifiable, Comparable {
     lhs.rawValue < rhs.rawValue
   }
 
-  /// The fixed base tiers that are always considered (when compatible).
-  /// 4K for chat/scripts, 32K for basic agents.
-  static let baseTiers: [ContextTier] = [.k4, .k32]
+  /// The standard tiers shown in the UI (when compatible).
+  static let standardTiers: [ContextTier] = [.k4, .k8, .k16, .k32, .k64, .k128]
 }

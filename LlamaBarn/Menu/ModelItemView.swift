@@ -216,28 +216,15 @@ final class ModelItemView: ItemView, NSGestureRecognizerDelegate {
       quantization: model.quantizationLabel
     )
 
-    // Determine which context tier is currently loaded (if any)
-    let loadedTier: ContextTier? = {
-      guard let loadedId = server.loadedVariantId(for: model) else { return nil }
-      // Check each tier's suffix against the loaded ID
-      for tier in ContextTier.allCases {
-        if loadedId.hasSuffix(tier.suffix) {
-          return tier
-        }
-      }
-      // No suffix means default (4k)
-      if loadedId == model.id {
-        return .k4
-      }
-      return nil
-    }()
+    // Determine if this model is currently running
+    let isRunning = server.isActive(model: model)
 
     let incompatibility = !isCompatible ? model.incompatibilitySummary() : nil
     subtitleLabel.attributedStringValue = Format.modelMetadata(
       for: model,
       color: textColor,
       incompatibility: incompatibility,
-      loadedTier: loadedTier
+      isRunning: isRunning
     )
 
     if let progress {

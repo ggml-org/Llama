@@ -13,6 +13,7 @@ final class MenuController: NSObject, NSMenuDelegate {
   // Section State
   private var selectedFamily: String?
   private var expandedModelIds: Set<String> = []
+  private var infoExpandedModelIds: Set<String> = []  // Models with info text expanded
 
   private var welcomePopover: WelcomePopover?
 
@@ -90,6 +91,7 @@ final class MenuController: NSObject, NSMenuDelegate {
     // Reset section collapse state
     selectedFamily = nil
     expandedModelIds.removeAll()
+    infoExpandedModelIds.removeAll()
   }
 
   // MARK: - Menu Construction
@@ -292,9 +294,19 @@ final class MenuController: NSObject, NSMenuDelegate {
 
       if isExpanded {
         // Single container for all expanded details
+        let isInfoExpanded = infoExpandedModelIds.contains(model.id)
         let detailsView = ExpandedModelDetailsView(
           model: model,
-          actionHandler: actionHandler
+          actionHandler: actionHandler,
+          server: server,
+          isInfoExpanded: isInfoExpanded,
+          onInfoToggle: { [weak self] expanded in
+            if expanded {
+              self?.infoExpandedModelIds.insert(model.id)
+            } else {
+              self?.infoExpandedModelIds.remove(model.id)
+            }
+          }
         )
         items.append(NSMenuItem.viewItem(with: detailsView))
       }
@@ -305,6 +317,8 @@ final class MenuController: NSObject, NSMenuDelegate {
   private func toggleExpansion(for modelId: String) {
     if expandedModelIds.contains(modelId) {
       expandedModelIds.remove(modelId)
+      // Also collapse info when model collapses
+      infoExpandedModelIds.remove(modelId)
     } else {
       expandedModelIds.insert(modelId)
     }
