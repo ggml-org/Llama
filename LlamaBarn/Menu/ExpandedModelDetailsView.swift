@@ -72,7 +72,8 @@ final class ExpandedModelDetailsView: ItemView {
 
     // Info label (hidden by default, shows inline with header)
     let info = Theme.secondaryLabel()
-    info.stringValue = "Context length — how much text the model can see at once"
+    info.stringValue =
+      "Context length — how far back the model can see. Larger values use more memory."
     info.textColor = Theme.Colors.modelIconTint
     info.lineBreakMode = .byWordWrapping
     info.isHidden = !infoExpanded  // Show if already expanded
