@@ -153,7 +153,9 @@ struct SettingsView: View {
       // Optional HF token section
       Section {
         VStack(alignment: .leading, spacing: 8) {
-          LabeledContent("HF Token") {
+          HStack {
+            Text("HF Token")
+            Spacer()
             SecureField("hf_...", text: $hfToken)
               .textFieldStyle(.plain)
               .padding(4)
@@ -165,6 +167,7 @@ struct SettingsView: View {
                     : Color.red.opacity(0.15)
               )
               .cornerRadius(6)
+              .frame(width: 140)
               .onChange(of: hfToken) { _, newValue in
                 UserSettings.hfToken = newValue
               }
