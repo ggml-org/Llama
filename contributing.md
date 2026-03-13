@@ -15,3 +15,9 @@ We use Discussions to gather community feedback and gauge interest without clutt
 Don't create PRs unless explicitly requested. Open an issue first.
 
 Exception: Simple bug fixes (one file, obvious correctness, no architectural decisions) can be submitted directly.
+
+## Engineering Principles
+
+- **Keep it simple** — every addition must justify its weight
+- **Don't over-engineer** — solve the problem at hand, not hypothetical future ones
+- **Don't abstract prematurely** — don't abstract until patterns are proven stable
