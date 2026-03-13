@@ -25,7 +25,10 @@ final class FamilyItemView: ItemView {
     let titleLabel = Theme.secondaryLabel()
     titleLabel.textColor = Theme.Colors.textPrimary
     titleLabel.attributedStringValue = Format.familyItem(name: family, sizes: sizes)
+    titleLabel.maximumNumberOfLines = 1
     titleLabel.lineBreakMode = .byTruncatingTail
+    titleLabel.cell?.truncatesLastVisibleLine = true
+    titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
     // Build title row (title + optional link)
     let titleRow: NSView

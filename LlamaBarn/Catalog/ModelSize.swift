@@ -9,6 +9,10 @@ struct ModelSize {
   let ctxBytesPer1kTokens: Int
   let serverArgs: [String]?  // optional defaults for all builds
   let mmproj: URL?  // optional vision projection file for multimodal models
+  /// Override for the local filename of the mmproj file.
+  /// Use when multiple models share the same remote mmproj filename (e.g. `mmproj-F16.gguf`)
+  /// to prevent collisions in the flat cache directory.
+  let mmprojLocalFilename: String?
   let build: ModelBuild
   let quantizedBuilds: [ModelBuild]
 
@@ -20,6 +24,7 @@ struct ModelSize {
     ctxBytesPer1kTokens: Int,
     serverArgs: [String]? = nil,
     mmproj: URL? = nil,
+    mmprojLocalFilename: String? = nil,
     build: ModelBuild,
     quantizedBuilds: [ModelBuild] = []
   ) {
@@ -30,6 +35,7 @@ struct ModelSize {
     self.ctxBytesPer1kTokens = ctxBytesPer1kTokens
     self.serverArgs = serverArgs
     self.mmproj = mmproj
+    self.mmprojLocalFilename = mmprojLocalFilename
     self.build = build
     self.quantizedBuilds = quantizedBuilds
   }

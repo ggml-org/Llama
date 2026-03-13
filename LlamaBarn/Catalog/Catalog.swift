@@ -47,6 +47,7 @@ enum Catalog {
       downloadUrl: build.downloadUrl,
       additionalParts: build.additionalParts,
       mmprojUrl: size.mmproj,
+      mmprojLocalFilename: size.mmprojLocalFilename,
       serverArgs: effectiveArgs,
       icon: family.iconName,
       quantization: build.quantization,

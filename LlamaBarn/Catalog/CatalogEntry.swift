@@ -21,6 +21,9 @@ struct CatalogEntry: Identifiable {
   /// The main model file in `downloadUrl` is passed to `--model`; llama-server discovers these in the same directory.
   let additionalParts: [URL]?
   let mmprojUrl: URL?
+  /// Override for the local filename of the mmproj file.
+  /// When set, the mmproj will be saved/referenced with this name instead of the URL's last path component.
+  let mmprojLocalFilename: String?
   let serverArgs: [String]  // Additional command line arguments for llama-server
   let icon: String  // Asset name for the model's brand logo
   let quantization: String  // Quantization method (e.g., "Q4_K_M", "Q8_0")
@@ -38,6 +41,7 @@ struct CatalogEntry: Identifiable {
     downloadUrl: URL,
     additionalParts: [URL]? = nil,
     mmprojUrl: URL? = nil,
+    mmprojLocalFilename: String? = nil,
     serverArgs: [String],
     icon: String,
     quantization: String,
@@ -54,6 +58,7 @@ struct CatalogEntry: Identifiable {
     self.downloadUrl = downloadUrl
     self.additionalParts = additionalParts
     self.mmprojUrl = mmprojUrl
+    self.mmprojLocalFilename = mmprojLocalFilename
     self.serverArgs = serverArgs
     self.icon = icon
     self.quantization = quantization
@@ -120,7 +125,17 @@ struct CatalogEntry: Identifiable {
   /// The local file system path where the mmproj file will be stored, if applicable
   var mmprojFilePath: String? {
     guard let mmprojUrl = mmprojUrl else { return nil }
-    return Self.modelStorageDirectory.appendingPathComponent(mmprojUrl.lastPathComponent).path
+    let filename = mmprojLocalFilename ?? mmprojUrl.lastPathComponent
+    return Self.modelStorageDirectory.appendingPathComponent(filename).path
+  }
+
+  /// Returns the local filename that should be used for a given remote download URL.
+  /// Handles mmproj filename overrides to prevent collisions in the flat cache directory.
+  func localFilename(for remoteUrl: URL) -> String {
+    if let mmprojUrl = mmprojUrl, remoteUrl == mmprojUrl, let override = mmprojLocalFilename {
+      return override
+    }
+    return remoteUrl.lastPathComponent
   }
 
   /// All local file paths this model requires (main file + additional parts like shards or mmproj files)

@@ -204,7 +204,7 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
       content += "ctx-size = \(tier.rawValue)\n"
 
       if let mmprojUrl = model.mmprojUrl {
-        content += "mmproj = \(mmprojUrl.lastPathComponent)\n"
+        content += "mmproj = \(model.localFilename(for: mmprojUrl))\n"
       }
 
       // Enable larger batch size for better performance on high-memory devices (>=32 GB RAM)
@@ -262,6 +262,13 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
               if !fileSet.contains(part.lastPathComponent) { return false }
             }
           }
+
+          // Vision models require their mmproj file to be present
+          if let mmprojUrl = model.mmprojUrl {
+            let mmprojFile = model.localFilename(for: mmprojUrl)
+            if !fileSet.contains(mmprojFile) { return false }
+          }
+
           return true
         }
       } else {
@@ -359,9 +366,13 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
 
     let fileManager = FileManager.default
     let baseDir = URL(fileURLWithPath: model.modelFilePath).deletingLastPathComponent()
-    let filename =
-      downloadTask.originalRequest?.url?.lastPathComponent
-      ?? URL(fileURLWithPath: model.modelFilePath).lastPathComponent
+    let remoteUrl = downloadTask.originalRequest?.url
+    let filename: String
+    if let remoteUrl = remoteUrl {
+      filename = model.localFilename(for: remoteUrl)
+    } else {
+      filename = URL(fileURLWithPath: model.modelFilePath).lastPathComponent
+    }
     let destinationURL = baseDir.appendingPathComponent(filename)
 
     // This callback runs on a background queue, so we can do blocking file operations safely.
@@ -681,10 +692,8 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
     }
 
     // Multimodal projection file
-    if let mmprojUrl = model.mmprojUrl {
-      let baseDir = URL(fileURLWithPath: model.modelFilePath).deletingLastPathComponent()
-      let path = baseDir.appendingPathComponent(mmprojUrl.lastPathComponent).path
-      if !FileManager.default.fileExists(atPath: path) {
+    if let mmprojPath = model.mmprojFilePath, let mmprojUrl = model.mmprojUrl {
+      if !FileManager.default.fileExists(atPath: mmprojPath) {
         files.append(mmprojUrl)
       }
     }
