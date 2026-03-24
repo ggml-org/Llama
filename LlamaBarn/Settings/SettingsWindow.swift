@@ -36,7 +36,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
 
     // Create the window
     let window = NSWindow(
-      contentRect: NSRect(x: 0, y: 0, width: 380, height: 200),
+      contentRect: NSRect(x: 0, y: 0, width: 440, height: 200),
       styleMask: [.titled, .closable],
       backing: .buffered,
       defer: false
@@ -66,6 +66,7 @@ struct SettingsView: View {
   @State private var sleepIdleTime = UserSettings.sleepIdleTime
   @State private var modelStorageDir = UserSettings.modelStorageDirectory
   @State private var hfToken = UserSettings.hfToken ?? ""
+  @State private var showingHFTokenSheet = false
 
   var body: some View {
     Form {
@@ -156,21 +157,17 @@ struct SettingsView: View {
           HStack {
             Text("HF Token")
             Spacer()
-            SecureField("hf_...", text: $hfToken)
-              .textFieldStyle(.plain)
-              .padding(4)
-              .background(
-                hfToken.isEmpty
-                  ? Color.gray.opacity(0.08)
-                  : UserSettings.isValidHFToken(hfToken)
-                    ? Color.green.opacity(0.15)
-                    : Color.red.opacity(0.15)
-              )
-              .cornerRadius(6)
-              .frame(width: 140)
-              .onChange(of: hfToken) { _, newValue in
-                UserSettings.hfToken = newValue
+            Button {
+              showingHFTokenSheet = true
+            } label: {
+              if hfToken.isEmpty {
+                Text("Set")
+              } else {
+                Text(truncatedToken(hfToken))
               }
+            }
+            .font(.callout)
+            .controlSize(.small)
           }
 
           Text("Optional token that lets you download gated or private models from HF.")
@@ -178,9 +175,15 @@ struct SettingsView: View {
             .foregroundStyle(.secondary)
         }
       }
+      .sheet(isPresented: $showingHFTokenSheet) {
+        HFTokenSheet(currentToken: hfToken) { newToken in
+          hfToken = newToken
+          UserSettings.hfToken = newToken.isEmpty ? nil : newToken
+        }
+      }
     }
     .formStyle(.grouped)
-    .frame(width: 380)
+    .frame(width: 440)
     .fixedSize()
   }
 
@@ -204,6 +207,12 @@ struct SettingsView: View {
     }
   }
 
+  /// Truncated HF token for display -- e.g. "hf_...xyz1"
+  private func truncatedToken(_ token: String) -> String {
+    guard token.count > 7 else { return token }
+    return "\(token.prefix(3))...\(token.suffix(4))"
+  }
+
   /// Abbreviates path by replacing home directory with ~
   private func abbreviatedPath(_ url: URL) -> String {
     let path = url.path
@@ -212,6 +221,82 @@ struct SettingsView: View {
       return "~" + path.dropFirst(home.count)
     }
     return path
+  }
+}
+
+/// Sheet for editing the Hugging Face token.
+struct HFTokenSheet: View {
+  let currentToken: String
+  let onSave: (String) -> Void
+
+  @Environment(\.dismiss) private var dismiss
+  @State private var tokenText: String = ""
+
+  private var trimmed: String {
+    tokenText.trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 16) {
+      VStack(alignment: .leading, spacing: 4) {
+        Text("Hugging Face Token")
+          .font(.headline)
+
+        Text("Paste your access token from Hugging Face.")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+
+        HStack(spacing: 4) {
+          Text("Don't have a token?")
+            .foregroundStyle(.secondary)
+          Link(
+            "Create one \u{2192}",
+            destination: URL(string: "https://huggingface.co/settings/tokens")!
+          )
+        }
+        .font(.caption)
+      }
+
+      TextEditor(text: $tokenText)
+        .font(.system(size: 11, design: .monospaced))
+        .frame(height: 50)
+        .scrollContentBackground(.hidden)
+        .padding(.vertical, 4)
+        .background(Color(nsColor: .textBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .overlay(
+          RoundedRectangle(cornerRadius: 6)
+            .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+        )
+
+      HStack {
+        // Validation hint
+        if !trimmed.isEmpty && !UserSettings.isValidHFToken(trimmed) {
+          Text("Invalid token format")
+            .font(.caption)
+            .foregroundStyle(.red)
+        }
+
+        Spacer()
+
+        Button("Cancel") {
+          dismiss()
+        }
+        .keyboardShortcut(.cancelAction)
+
+        Button("Save") {
+          onSave(trimmed)
+          dismiss()
+        }
+        .keyboardShortcut(.defaultAction)
+        .disabled(!trimmed.isEmpty && !UserSettings.isValidHFToken(trimmed))
+      }
+    }
+    .padding(20)
+    .frame(width: 400)
+    .onAppear {
+      tokenText = currentToken
+    }
   }
 }
 
