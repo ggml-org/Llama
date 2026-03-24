@@ -72,9 +72,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     NSApp.setActivationPolicy(.accessory)
 
     // Set up automatic updates using Sparkle framework
+    // Skip starting the updater for debug builds to avoid false update prompts
+    #if DEBUG
+      let startUpdater = false
+    #else
+      let startUpdater = true
+    #endif
     updaterController = SPUStandardUpdaterController(
-      // Begin automatic update checking immediately
-      startingUpdater: true,
+      startingUpdater: startUpdater,
       // Capture errors and events for logging/troubleshooting
       updaterDelegate: self,
       // Use our custom UI handling for gentle reminders
