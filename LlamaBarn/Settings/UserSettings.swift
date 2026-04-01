@@ -174,8 +174,8 @@ enum UserSettings {
 
   /// Validates that a string looks like a Hugging Face access token.
   static func isValidHFToken(_ token: String) -> Bool {
-    return token.count == 37
-      && token.hasPrefix("hf_")
+    return token.hasPrefix("hf_")
+      && token.count > 3
       && token.dropFirst(3).allSatisfy { $0.isLetter || $0.isNumber }
   }
 }
