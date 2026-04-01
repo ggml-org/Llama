@@ -36,15 +36,6 @@ enum HFCache {
     return "models--\(org)--\(repo)"
   }
 
-  /// Parses org and repo from a HF download URL.
-  static func orgAndRepo(from url: URL) -> (org: String, repo: String)? {
-    let components = url.pathComponents
-    guard components.count >= 4,
-      components[3] == "resolve"
-    else { return nil }
-    return (org: components[1], repo: components[2])
-  }
-
   /// Path to a blob file in the HF cache.
   static func blobPath(cacheDir: URL, repoDir: String, sha256: String) -> URL {
     cacheDir
@@ -74,76 +65,65 @@ enum HFCache {
 
   // MARK: - API Calls
 
-  /// Fetches the latest commit hash for a HF repo's main branch.
-  /// Calls `GET https://huggingface.co/api/models/{org}/{repo}/revision/main`.
-  static func fetchCommitHash(org: String, repo: String, token: String?) async throws -> String {
-    let urlStr = "https://huggingface.co/api/models/\(org)/\(repo)/revision/main"
-    guard let url = URL(string: urlStr) else {
-      throw HFCacheError.invalidUrl(urlStr)
-    }
-
-    var request = URLRequest(url: url)
-    request.httpMethod = "GET"
-    if let token {
-      request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-    }
-
-    let (data, response) = try await URLSession.shared.data(for: request)
-
-    guard let httpResponse = response as? HTTPURLResponse,
-      (200...299).contains(httpResponse.statusCode)
-    else {
-      let status = (response as? HTTPURLResponse)?.statusCode ?? -1
-      throw HFCacheError.apiError("commit hash fetch failed (HTTP \(status))")
-    }
-
-    // Parse JSON for "sha" field
-    guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-      let sha = json["sha"] as? String
-    else {
-      throw HFCacheError.apiError("missing 'sha' in response")
-    }
-
-    return sha
+  /// Metadata returned by a HEAD request to a HF file URL.
+  struct FileMetadata {
+    /// Content hash (SHA256) from X-Linked-Etag or ETag header.
+    /// Nil if neither header contains a valid SHA256.
+    let blobHash: String?
+    /// Repo commit hash from the X-Repo-Commit header.
+    /// Nil if the header is missing.
+    let commitHash: String?
   }
 
-  /// Fetches the SHA256 content hash for a file via HEAD request.
-  /// For LFS files (all GGUFs), this is in the `X-Linked-Etag` header.
-  /// Returns nil if the header is not present.
-  static func fetchBlobSHA256(for url: URL, token: String?) async throws -> String? {
+  /// Fetches blob hash and commit hash for a file via a single HEAD request.
+  ///
+  /// HF serves `X-Linked-Etag` (blob SHA256) and `X-Repo-Commit` (commit hash) in
+  /// the response to the resolve URL. We use a same-host redirect delegate to prevent
+  /// following redirects to the CDN, which would lose these headers.
+  static func fetchFileMetadata(for url: URL, token: String?) async throws -> FileMetadata {
     var request = URLRequest(url: url)
     request.httpMethod = "HEAD"
     if let token {
       request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
     }
 
-    let (_, response) = try await URLSession.shared.data(for: request)
+    // Use a session that blocks cross-host redirects so we get HF's headers,
+    // not the CDN's (which doesn't have X-Linked-Etag / X-Repo-Commit).
+    let delegate = SameHostRedirectDelegate()
+    let session = URLSession(configuration: .default, delegate: delegate, delegateQueue: nil)
+    defer { session.finishTasksAndInvalidate() }
+
+    let (_, response) = try await session.data(for: request)
 
     guard let httpResponse = response as? HTTPURLResponse,
-      (200...299).contains(httpResponse.statusCode)
+      (200...399).contains(httpResponse.statusCode)
     else {
       let status = (response as? HTTPURLResponse)?.statusCode ?? -1
-      throw HFCacheError.apiError("blob hash fetch failed (HTTP \(status))")
+      throw HFCacheError.apiError("metadata fetch failed (HTTP \(status))")
     }
 
-    // X-Linked-Etag contains the SHA256 for LFS files, with surrounding quotes
-    if let etag = httpResponse.value(forHTTPHeaderField: "X-Linked-Etag") {
-      return etag.trimmingCharacters(in: CharacterSet(charactersIn: "\""))
-    }
-
-    // Fallback: try ETag (also SHA256 for LFS files, may have "W/" prefix)
-    if let etag = httpResponse.value(forHTTPHeaderField: "ETag") {
-      let cleaned =
-        etag
-        .replacingOccurrences(of: "W/", with: "")
-        .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
-      // Only use if it looks like a SHA256 (64 hex chars)
-      if cleaned.count == 64, cleaned.allSatisfy({ $0.isHexDigit }) {
-        return cleaned
+    // Extract blob hash from X-Linked-Etag (preferred) or ETag (fallback)
+    let blobHash: String? = {
+      if let etag = httpResponse.value(forHTTPHeaderField: "X-Linked-Etag") {
+        return etag.trimmingCharacters(in: CharacterSet(charactersIn: "\""))
       }
-    }
+      if let etag = httpResponse.value(forHTTPHeaderField: "ETag") {
+        let cleaned =
+          etag
+          .replacingOccurrences(of: "W/", with: "")
+          .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+        // Only use if it looks like a SHA256 (64 hex chars)
+        if cleaned.count == 64, cleaned.allSatisfy({ $0.isHexDigit }) {
+          return cleaned
+        }
+      }
+      return nil
+    }()
 
-    return nil
+    // Extract commit hash from X-Repo-Commit
+    let commitHash = httpResponse.value(forHTTPHeaderField: "X-Repo-Commit")
+
+    return FileMetadata(blobHash: blobHash, commitHash: commitHash)
   }
 
   // MARK: - File Operations
@@ -383,18 +363,39 @@ enum HFCache {
   }
 }
 
+// MARK: - Same-Host Redirect Delegate
+
+/// URLSession delegate that blocks cross-host redirects.
+/// HF redirects file URLs to a CDN for the actual download. The CDN response
+/// won't have HF-specific headers (X-Linked-Etag, X-Repo-Commit). By blocking
+/// the redirect, the HEAD request returns HF's 302 response with those headers intact.
+private class SameHostRedirectDelegate: NSObject, URLSessionTaskDelegate {
+  func urlSession(
+    _ session: URLSession,
+    task: URLSessionTask,
+    willPerformHTTPRedirection response: HTTPURLResponse,
+    newRequest request: URLRequest,
+    completionHandler: @escaping (URLRequest?) -> Void
+  ) {
+    // Allow same-host redirects (e.g., HTTP → HTTPS), block cross-host (HF → CDN)
+    if task.originalRequest?.url?.host == request.url?.host {
+      completionHandler(request)
+    } else {
+      completionHandler(nil)
+    }
+  }
+}
+
 // MARK: - Errors
 
 enum HFCacheError: Error, LocalizedError {
   case invalidUrl(String)
   case apiError(String)
-  case hashComputationFailed
 
   var errorDescription: String? {
     switch self {
     case .invalidUrl(let url): return "Invalid HF URL: \(url)"
     case .apiError(let msg): return "HF API error: \(msg)"
-    case .hashComputationFailed: return "Failed to compute file hash"
     }
   }
 }

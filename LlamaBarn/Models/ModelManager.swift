@@ -132,31 +132,35 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
     postDownloadsDidChange()
   }
 
-  /// Fetches HF commit hash and blob SHA256 hashes for a model.
-  /// Returns nil if any required API call fails (caller should fall back to legacy).
+  /// Fetches HF file metadata (commit hash, blob hashes) for a model via HEAD requests.
+  /// Each HEAD request returns both X-Repo-Commit and X-Linked-Etag, so one request
+  /// per file gives us everything we need. Returns nil on failure (caller falls back to legacy).
   private nonisolated func fetchHFContext(for model: CatalogEntry) async -> HFDownloadCtx? {
-    guard let info = HFCache.orgAndRepo(from: model.downloadUrl),
-      let repoDir = HFCache.repoDirName(from: model.downloadUrl)
-    else { return nil }
+    guard let repoDir = HFCache.repoDirName(from: model.downloadUrl) else { return nil }
 
     let token = await MainActor.run { UserSettings.hfToken }
 
-    do {
-      let commit = try await HFCache.fetchCommitHash(
-        org: info.org, repo: info.repo, token: token)
+    var commit: String?
+    var blobHashes: [URL: String] = [:]
 
-      // Fetch blob hashes for all files
-      var blobHashes: [URL: String] = [:]
-      for url in model.allDownloadUrls {
-        if let hash = try? await HFCache.fetchBlobSHA256(for: url, token: token) {
-          blobHashes[url] = hash
-        }
+    // Fetch metadata for all files — each HEAD gives us both commit hash and blob hash
+    for url in model.allDownloadUrls {
+      guard let metadata = try? await HFCache.fetchFileMetadata(for: url, token: token) else {
+        continue
       }
-
-      return HFDownloadCtx(repoDir: repoDir, commit: commit, blobHashes: blobHashes)
-    } catch {
-      return nil
+      if let hash = metadata.blobHash {
+        blobHashes[url] = hash
+      }
+      // All files in a repo share the same commit hash — take the first one we get
+      if commit == nil, let c = metadata.commitHash {
+        commit = c
+      }
     }
+
+    // Commit hash is required for the snapshot directory
+    guard let commit else { return nil }
+
+    return HFDownloadCtx(repoDir: repoDir, commit: commit, blobHashes: blobHashes)
   }
 
   /// Gets the current status of a model.
