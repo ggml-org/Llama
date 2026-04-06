@@ -39,6 +39,7 @@
 				libggml.0.dylib,
 				libllama.0.dylib,
 				libmtmd.0.dylib,
+				"llama-fit-params",
 				"llama-server",
 			);
 			target = 1568919B2E2685F700F71BD4 /* LlamaBarn */;
@@ -57,6 +58,7 @@
 				libggml.0.dylib = (CodeSignOnCopy, );
 				libllama.0.dylib = (CodeSignOnCopy, );
 				libmtmd.0.dylib = (CodeSignOnCopy, );
+				"llama-fit-params" = (CodeSignOnCopy, );
 				"llama-server" = (CodeSignOnCopy, );
 			};
 			buildPhase = 1501F0B92E26D4C700040CD6 /* CopyFiles */;
@@ -69,6 +71,7 @@
 				libggml.0.dylib,
 				libllama.0.dylib,
 				libmtmd.0.dylib,
+				"llama-fit-params",
 				"llama-server",
 			);
 		};
