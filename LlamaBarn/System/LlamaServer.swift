@@ -46,7 +46,7 @@ class LlamaServer {
   private var activeProcess: Process?
   private var healthCheckTask: Task<Void, Error>?
   private let logger = Logger(subsystem: Logging.subsystem, category: "LlamaServer")
-  private let api = LlamaServerAPI()
+  private var api = LlamaServerAPI()
 
   enum ServerState: Equatable {
     case idle
@@ -133,8 +133,10 @@ class LlamaServer {
 
   /// Launches llama-server in Router Mode
   func start() {
-    let port = Self.defaultPort
+    let port = UserSettings.effectivePort ?? Self.defaultPort
     stop()
+
+    api = LlamaServerAPI(port: port)
 
     // Validate paths
     do {

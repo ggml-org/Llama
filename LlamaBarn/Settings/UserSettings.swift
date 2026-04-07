@@ -26,6 +26,7 @@ enum UserSettings {
     static let modelStorageDirectory = "modelStorageDirectory"  // legacy, kept for backward compat
     static let hfCacheDirectory = "hfCacheDirectory"
     static let hfToken = "hfToken"
+    static let webUiPort = "webUiPort"
   }
 
   private static let defaults = UserDefaults.standard
@@ -177,5 +178,42 @@ enum UserSettings {
     return token.hasPrefix("hf_")
       && token.count > 3
       && token.dropFirst(3).allSatisfy { $0.isLetter || $0.isNumber }
+  }
+
+  /// Port override from `--port` command-line argument, parsed once at launch.
+  /// When set, takes precedence over `webUiPort` and the Settings UI is disabled.
+  static let cliPort: Int? = {
+    let args = ProcessInfo.processInfo.arguments
+    guard let idx = args.firstIndex(of: "--web-ui-port"),
+          idx + 1 < args.count,
+          let port = Int(args[idx + 1]),
+          port >= 1 && port <= 65535
+    else { return nil }
+    return port
+  }()
+
+  /// The port that should actually be used — CLI override wins, then user setting.
+  static var effectivePort: Int? {
+    cliPort ?? webUiPort
+  }
+
+  /// Optional custom port for llama-server. If nil, uses defaultPort (2276).
+  /// Must be in range 1-65535.
+  static var webUiPort: Int? {
+    get {
+      let value = defaults.integer(forKey: Keys.webUiPort)
+      // 0 is returned if key is missing, which is not a valid port
+      return value == 0 ? nil : value
+    }
+    set {
+      guard let newValue = newValue else {
+        defaults.removeObject(forKey: Keys.webUiPort)
+        return
+      }
+      // Validate port range
+      guard newValue >= 1 && newValue <= 65535 else { return }
+      defaults.set(newValue, forKey: Keys.webUiPort)
+      NotificationCenter.default.post(name: .LBUserSettingsDidChange, object: nil)
+    }
   }
 }
