@@ -268,8 +268,17 @@ enum HFCache {
 
   // MARK: - Scanning
 
+  /// Result of scanning the HF cache for catalog models.
+  struct CatalogScanResult {
+    /// Model ID → resolved file paths for each matched catalog entry
+    let resolved: [String: ResolvedPaths]
+    /// Set of "repoDir/filename" pairs that matched catalog entries.
+    /// Used by scanForSideloaded() to skip files that belong to known catalog models.
+    let matchedFiles: Set<String>
+  }
+
   /// Scans the HF cache for models matching catalog entries.
-  /// Returns a dict mapping model ID → ResolvedPaths.
+  /// Returns resolved paths and the set of matched files (for sideloaded exclusion).
   ///
   /// For each catalog entry, we:
   /// 1. Derive the expected repo dir name from the download URL
@@ -277,9 +286,10 @@ enum HFCache {
   /// 3. Check all required files exist (main + shards + mmproj)
   static func scanForModels(
     cacheDir: URL, catalog: [CatalogEntry]
-  ) -> [String: ResolvedPaths] {
+  ) -> CatalogScanResult {
     let fm = FileManager.default
     var result: [String: ResolvedPaths] = [:]
+    var matchedFiles: Set<String> = []
 
     // Group catalog entries by repo dir for efficient scanning
     var entriesByRepo: [String: [CatalogEntry]] = [:]
@@ -290,7 +300,7 @@ enum HFCache {
 
     // Enumerate repo directories in the cache
     guard let repoDirs = try? fm.contentsOfDirectory(atPath: cacheDir.path) else {
-      return result
+      return CatalogScanResult(resolved: result, matchedFiles: matchedFiles)
     }
 
     for repoDir in repoDirs {
@@ -357,11 +367,206 @@ enum HFCache {
             mmprojFile: mmprojPath,
             isLegacy: false
           )
+
+          // Track matched files so scanForSideloaded() can skip them
+          matchedFiles.insert("\(repoDir)/\(mainFile)")
+          for partPath in partPaths {
+            let partFilename = URL(fileURLWithPath: partPath).lastPathComponent
+            matchedFiles.insert("\(repoDir)/\(partFilename)")
+          }
+          if let mmprojUrl = entry.mmprojUrl {
+            matchedFiles.insert("\(repoDir)/\(mmprojUrl.lastPathComponent)")
+          }
         }
       }
     }
 
-    return result
+    return CatalogScanResult(resolved: result, matchedFiles: matchedFiles)
+  }
+
+  // MARK: - Sideloaded Discovery
+
+  /// Scans the HF cache for GGUF files that don't match any catalog entry.
+  /// Returns discovered sideloaded models as CatalogEntry + ResolvedPaths pairs.
+  ///
+  /// For each unmatched GGUF, metadata is parsed from the repo directory name
+  /// and filename using the same approach as llama.cpp's WebUI model selector.
+  /// Split GGUFs (e.g. -00001-of-00003.gguf) are grouped as single entries.
+  static func scanForSideloaded(
+    cacheDir: URL,
+    knownFiles: Set<String>
+  ) -> [(entry: CatalogEntry, paths: ResolvedPaths)] {
+    let fm = FileManager.default
+    var results: [(entry: CatalogEntry, paths: ResolvedPaths)] = []
+
+    guard let repoDirs = try? fm.contentsOfDirectory(atPath: cacheDir.path) else {
+      return results
+    }
+
+    for repoDir in repoDirs {
+      guard repoDir.hasPrefix("models--") else { continue }
+
+      let snapshotsDir =
+        cacheDir
+        .appendingPathComponent(repoDir)
+        .appendingPathComponent("snapshots")
+
+      guard let commits = try? fm.contentsOfDirectory(atPath: snapshotsDir.path) else {
+        continue
+      }
+
+      // Track which model IDs we've already found in this repo
+      // (same model may appear in multiple snapshots)
+      var seenIds: Set<String> = []
+
+      // Check all snapshot commits, not just the first — a repo may have
+      // multiple commits with different files, matching the catalog scan behavior
+      for commit in commits {
+        let snapshotDir = snapshotsDir.appendingPathComponent(commit)
+
+        guard let files = try? fm.contentsOfDirectory(atPath: snapshotDir.path) else {
+          continue
+        }
+
+        // Collect GGUF files not claimed by the catalog scan.
+        // Skip mmproj files (vision projection) — they're not runnable models.
+        let ggufFiles = files.filter { filename in
+          let lower = filename.lowercased()
+          return lower.hasSuffix(".gguf")
+            && !lower.hasPrefix("mmproj")
+            && !knownFiles.contains("\(repoDir)/\(filename)")
+        }
+
+        guard !ggufFiles.isEmpty else { continue }
+
+        // Group split shards: "model-00001-of-00003.gguf" etc.
+        // Key: shard base name → [all shard filenames sorted]
+        var shardGroups: [String: [String]] = [:]
+        var standaloneFiles: [String] = []
+
+        for filename in ggufFiles {
+          if HFRepoParser.isSplitShard(filename) {
+            if let baseName = HFRepoParser.splitShardBaseName(filename) {
+              shardGroups[baseName, default: []].append(filename)
+            }
+          } else {
+            standaloneFiles.append(filename)
+          }
+        }
+
+        // Process standalone GGUF files (one entry per file)
+        for filename in standaloneFiles {
+          if let result = buildSideloadedEntry(
+            repoDir: repoDir, filename: filename, shardFiles: nil,
+            snapshotDir: snapshotDir, fm: fm
+          ), seenIds.insert(result.entry.id).inserted {
+            results.append(result)
+          }
+        }
+
+        // Process split shard groups (one entry per group, using first shard)
+        for (_, shardFilenames) in shardGroups {
+          let sorted = shardFilenames.sorted()
+          // Only include groups where the first shard exists
+          guard let firstShard = sorted.first,
+            HFRepoParser.isFirstShard(firstShard)
+          else { continue }
+
+          if let result = buildSideloadedEntry(
+            repoDir: repoDir, filename: firstShard, shardFiles: sorted,
+            snapshotDir: snapshotDir, fm: fm
+          ), seenIds.insert(result.entry.id).inserted {
+            results.append(result)
+          }
+        }
+      }
+    }
+
+    return results
+  }
+
+  /// Builds a sideloaded CatalogEntry + ResolvedPaths from a discovered GGUF file.
+  private static func buildSideloadedEntry(
+    repoDir: String,
+    filename: String,
+    shardFiles: [String]?,
+    snapshotDir: URL,
+    fm: FileManager
+  ) -> (entry: CatalogEntry, paths: ResolvedPaths)? {
+    // Parse metadata from repo dir name
+    guard let parsed = HFRepoParser.parse(repoDir: repoDir) else { return nil }
+
+    // Parse quantization from filename (for standalone files)
+    // For split shards, try the base name or the first shard filename
+    let quant = HFRepoParser.parseQuant(filename: filename) ?? "unknown"
+
+    // Calculate file size (sum all shards if split)
+    let filePaths: [String]
+    if let shardFiles {
+      filePaths = shardFiles.map { snapshotDir.appendingPathComponent($0).path }
+    } else {
+      filePaths = [snapshotDir.appendingPathComponent(filename).path]
+    }
+
+    let totalFileSize: Int64 = filePaths.reduce(0) { sum, path in
+      let attrs = try? fm.attributesOfItem(atPath: path)
+      return sum + ((attrs?[.size] as? NSNumber)?.int64Value ?? 0)
+    }
+
+    // Generate stable ID: "sideloaded:{org}/{repo}:{filename_without_ext}"
+    let filenameBase: String
+    if let dotIdx = filename.lastIndex(of: ".") {
+      filenameBase = String(filename[..<dotIdx])
+    } else {
+      filenameBase = filename
+    }
+    // Extract repo name from "models--org--repo"
+    let repoParts = repoDir.components(separatedBy: "--")
+    let repoName = repoParts.count >= 3 ? repoParts[2...].joined(separator: "--") : repoDir
+    let modelId = "sideloaded:\(parsed.org)/\(repoName):\(filenameBase)"
+
+    // Build the display size label — use params if available, otherwise show quant only
+    let sizeLabel = parsed.params ?? quant
+
+    let entry = CatalogEntry(
+      id: modelId,
+      family: parsed.name,
+      parameterCount: 0,
+      size: sizeLabel,
+      ctxWindow: 131_072,  // 128k upper bound — clamped by memory budget
+      fileSize: totalFileSize,
+      ctxBytesPer1kTokens: 0,  // Updated async by llama-fit-params
+      downloadUrl: URL(string: "file:///")!,
+      serverArgs: [],  // Newer GGUFs embed sampling params; llama-server auto-applies them
+      icon: "sideloaded",
+      quantization: quant,
+      isFullPrecision: false,
+      isSideloaded: true,
+      org: parsed.org,
+      tags: parsed.tags
+    )
+
+    // Build resolved paths
+    let mainFilePath = snapshotDir.appendingPathComponent(filename).path
+    let additionalParts: [String]
+    if let shardFiles, shardFiles.count > 1 {
+      // Additional shards = everything except the first shard
+      additionalParts = shardFiles.dropFirst().map {
+        snapshotDir.appendingPathComponent($0).path
+      }
+    } else {
+      additionalParts = []
+    }
+
+    let paths = ResolvedPaths(
+      modelFile: mainFilePath,
+      additionalParts: additionalParts,
+      mmprojFile: nil,
+      isLegacy: false,
+      hfRepoDirName: repoDir
+    )
+
+    return (entry: entry, paths: paths)
   }
 }
 

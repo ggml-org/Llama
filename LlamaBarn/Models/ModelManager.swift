@@ -213,8 +213,10 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
                 try FileManager.default.removeItem(atPath: path)
               }
             }
-          } else if let repoDir = model.hfRepoDir {
-            // HF cache: delete blobs via symlinks, clean up empty dirs
+          } else if let repoDir = paths.hfRepoDirName ?? model.hfRepoDir {
+            // HF cache: delete blobs via symlinks, clean up empty dirs.
+            // For sideloaded models, hfRepoDirName is stored in ResolvedPaths
+            // since they don't have a download URL to derive it from.
             try HFCache.deleteModelFiles(
               cacheDir: UserSettings.hfCacheDirectory,
               repoDir: repoDir,
@@ -331,7 +333,11 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
     return content
   }
 
-  /// Scans both the legacy directory and HF cache for installed models.
+  /// Active fit-params enrichment task. Cancelled on refresh to avoid stale updates.
+  private var fitParamsTask: Task<Void, Never>?
+
+  /// Scans both the legacy directory and HF cache for installed models,
+  /// including sideloaded models that don't match any catalog entry.
   func refreshDownloadedModels() {
     let legacyDir = CatalogEntry.legacyStorageDir
     let hfCacheDir = UserSettings.hfCacheDirectory
@@ -384,23 +390,44 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
       }
 
       // 2. Scan HF cache directory — overwrites legacy entries (HF cache is canonical)
-      let hfResults = HFCache.scanForModels(cacheDir: hfCacheDir, catalog: allCatalogModels)
-      for (modelId, paths) in hfResults {
+      let hfScan = HFCache.scanForModels(cacheDir: hfCacheDir, catalog: allCatalogModels)
+      for (modelId, paths) in hfScan.resolved {
         allResolved[modelId] = paths
       }
 
-      // 3. Build downloaded models list from resolved paths
+      // 3. Discover sideloaded models (GGUFs not matching any catalog entry)
+      let sideloaded = HFCache.scanForSideloaded(
+        cacheDir: hfCacheDir, knownFiles: hfScan.matchedFiles
+      )
+
+      // Apply cached fit-params to sideloaded models, track those still pending
+      var sideloadedEntries: [CatalogEntry] = []
+      var needsFitParams: [(id: String, path: String)] = []
+      for var (entry, paths) in sideloaded {
+        if let cached = FitParamsCache.get(modelId: entry.id) {
+          entry.ctxBytesPer1kTokens = cached.ctxBytesPer1kTokens
+        } else {
+          needsFitParams.append((id: entry.id, path: paths.modelFile))
+        }
+        allResolved[entry.id] = paths
+        sideloadedEntries.append(entry)
+      }
+
+      // 4. Build downloaded models list from resolved paths
       let finalResolved = allResolved
-      let downloaded = allCatalogModels.filter { finalResolved[$0.id] != nil }
+      let catalogDownloaded = allCatalogModels.filter { finalResolved[$0.id] != nil }
+      let allDownloaded = catalogDownloaded + sideloadedEntries
 
       await MainActor.run {
-        Self.updateDownloadedModels(downloaded, resolved: finalResolved)
+        Self.updateDownloadedModels(allDownloaded, resolved: finalResolved, pending: needsFitParams)
       }
     }
   }
 
   private static func updateDownloadedModels(
-    _ models: [CatalogEntry], resolved: [String: ResolvedPaths]
+    _ models: [CatalogEntry],
+    resolved: [String: ResolvedPaths],
+    pending: [(id: String, path: String)] = []
   ) {
     let manager = ModelManager.shared
     manager.downloadedModels = models.sorted(by: CatalogEntry.displayOrder(_:_:))
@@ -412,6 +439,48 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
     }
 
     NotificationCenter.default.post(name: .LBModelDownloadedListDidChange, object: manager)
+
+    // Kick off async fit-params computation for sideloaded models without cached results
+    if !pending.isEmpty {
+      manager.enrichSideloadedModels(pending)
+    }
+  }
+
+  /// Runs llama-fit-params for sideloaded models that don't have cached results.
+  /// Updates each model's ctxBytesPer1kTokens as results come in, refreshing the UI.
+  /// Runs sequentially (one model at a time) to avoid GPU contention.
+  private func enrichSideloadedModels(_ models: [(id: String, path: String)]) {
+    // Cancel any previous enrichment task (e.g. from a previous refresh).
+    // The withTaskCancellationHandler in FitParamsRunner.run() ensures the
+    // subprocess is terminated when the task is cancelled.
+    fitParamsTask?.cancel()
+
+    fitParamsTask = Task.detached { [weak self] in
+      for (modelId, modelPath) in models {
+        guard !Task.isCancelled else { return }
+
+        guard let params = await FitParamsRunner.run(modelPath: modelPath) else { continue }
+        guard !Task.isCancelled else { return }
+
+        // Cache the result to disk
+        FitParamsCache.set(params, for: modelId)
+
+        // Update the in-memory model entry and refresh the UI
+        await MainActor.run {
+          guard let self else { return }
+          if let idx = self.downloadedModels.firstIndex(where: { $0.id == modelId }) {
+            self.downloadedModels[idx].ctxBytesPer1kTokens = params.ctxBytesPer1kTokens
+          }
+
+          // Regenerate models.ini now that we have accurate memory info
+          if self.updateModelsFile() {
+            LlamaServer.shared.reload()
+          }
+
+          NotificationCenter.default.post(name: .LBModelDownloadedListDidChange, object: self)
+        }
+      }
+    }
   }
 
   /// Cancels an ongoing download.

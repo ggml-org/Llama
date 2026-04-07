@@ -12,6 +12,24 @@ struct ResolvedPaths {
   /// Whether this model is in the legacy flat directory (~/.llamabarn/)
   /// as opposed to the HF cache (~/.cache/huggingface/hub/)
   let isLegacy: Bool
+  /// HF cache repo directory name (e.g. "models--bartowski--Llama-3.2-1B-Instruct-GGUF").
+  /// Set for sideloaded models discovered in the cache; nil for catalog models
+  /// (which derive it from their download URL). Used for deletion.
+  let hfRepoDirName: String?
+
+  init(
+    modelFile: String,
+    additionalParts: [String],
+    mmprojFile: String?,
+    isLegacy: Bool,
+    hfRepoDirName: String? = nil
+  ) {
+    self.modelFile = modelFile
+    self.additionalParts = additionalParts
+    self.mmprojFile = mmprojFile
+    self.isLegacy = isLegacy
+    self.hfRepoDirName = hfRepoDirName
+  }
 
   /// All file paths this model occupies on disk
   var allPaths: [String] {

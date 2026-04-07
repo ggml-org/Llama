@@ -108,6 +108,7 @@ extension Format {
   /// Formats model metadata text.
   /// Format: "3.1 GB  ∣  128k" (file size + effective context tier)
   /// If incompatibility is provided: "Requires a Mac with 32 GB+ of memory"
+  /// For sideloaded models awaiting fit-params: "3.1 GB  ∣  estimating..."
   static func modelMetadata(
     for model: CatalogEntry,
     color: NSColor = Theme.Colors.textPrimary,
@@ -125,29 +126,25 @@ extension Format {
       .paragraphStyle: paragraphStyle,
     ]
 
+    let secondaryAttributes: [NSAttributedString.Key: Any] = [
+      .font: Theme.Fonts.secondary,
+      .foregroundColor: Theme.Colors.textSecondary,
+      .paragraphStyle: paragraphStyle,
+    ]
+
     if let incompatibility = incompatibility {
-      let warningAttr: [NSAttributedString.Key: Any] = [
-        .font: Theme.Fonts.secondary,
-        .foregroundColor: Theme.Colors.textSecondary,
-        .paragraphStyle: paragraphStyle,
-      ]
-      result.append(NSAttributedString(string: incompatibility, attributes: warningAttr))
+      result.append(NSAttributedString(string: incompatibility, attributes: secondaryAttributes))
     } else {
       // File size
       result.append(NSAttributedString(string: model.totalSize, attributes: attributes))
 
-      // Pipe separator between file size and context tier
-      result.append(
-        NSAttributedString(
-          string: "  ∣  ",
-          attributes: [
-            .font: Theme.Fonts.secondary,
-            .foregroundColor: Theme.Colors.textSecondary,
-            .paragraphStyle: paragraphStyle,
-          ]))
+      // Pipe separator
+      result.append(NSAttributedString(string: "  ∣  ", attributes: secondaryAttributes))
 
-      // Show effective context tier (user selection or max compatible)
-      if let tier = model.effectiveCtxTier {
+      // Context tier or "estimating..." for sideloaded models pending fit-params
+      if model.isSideloaded && model.ctxBytesPer1kTokens == 0 {
+        result.append(NSAttributedString(string: "estimating...", attributes: secondaryAttributes))
+      } else if let tier = model.effectiveCtxTier {
         result.append(NSAttributedString(string: tier.label, attributes: attributes))
       }
     }
@@ -205,6 +202,7 @@ extension Format {
   }
 
   /// Formats model name as "Family Size" with configurable colors.
+  /// For sideloaded models, prepends "org /" and appends tags after size.
   /// Used by both installed and catalog model item views.
   static func modelName(
     family: String,
@@ -212,15 +210,36 @@ extension Format {
     familyColor: NSColor,
     sizeColor: NSColor = Theme.Colors.textPrimary,
     hasVision: Bool = false,
-    quantization: String? = nil
+    quantization: String? = nil,
+    org: String? = nil,
+    tags: [String] = []
   ) -> NSAttributedString {
     let result = NSMutableAttributedString()
+
+    // Sideloaded models: show org prefix in secondary color (e.g. "bartowski /")
+    if let org {
+      result.append(
+        NSAttributedString(
+          string: "\(org) / ",
+          attributes: Theme.primaryAttributes(color: Theme.Colors.textSecondary)))
+    }
+
     result.append(
       NSAttributedString(
         string: family, attributes: Theme.primaryAttributes(color: familyColor)))
     result.append(
       NSAttributedString(
         string: " \(size)", attributes: Theme.primaryAttributes(color: sizeColor)))
+
+    // Sideloaded models: show tags after size in secondary color (e.g. "Instruct")
+    if !tags.isEmpty {
+      let tagStr = " " + tags.joined(separator: " ")
+      result.append(
+        NSAttributedString(
+          string: tagStr,
+          attributes: Theme.primaryAttributes(color: Theme.Colors.textSecondary)))
+    }
+
     if hasVision {
       result.append(NSAttributedString(string: " "))
       result.append(

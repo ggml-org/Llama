@@ -1,6 +1,7 @@
 import Foundation
 
-/// Represents a complete AI model configuration with metadata and file locations
+/// Represents a complete AI model configuration with metadata and file locations.
+/// Used for both curated catalog models and sideloaded models discovered in the HF cache.
 struct CatalogEntry: Identifiable {
   let id: String  // Unique identifier for the model
   let family: String  // Model family name (e.g., "Qwen3", "Gemma 3n")
@@ -10,7 +11,8 @@ struct CatalogEntry: Identifiable {
   let fileSize: Int64  // File size in bytes for progress tracking and display
   /// Estimated KV-cache footprint for a 1k-token context, in bytes.
   /// This helps us preflight memory requirements before launching llama-server.
-  let ctxBytesPer1kTokens: Int
+  /// For sideloaded models, starts at 0 and is updated async by llama-fit-params.
+  var ctxBytesPer1kTokens: Int
   /// Overhead multiplier for the model file size (e.g., 1.3 = 30% overhead).
   /// Applied during memory calculations to account for loading overhead.
   let overheadMultiplier: Double
@@ -29,6 +31,20 @@ struct CatalogEntry: Identifiable {
   let quantization: String  // Quantization method (e.g., "Q4_K_M", "Q8_0")
   let isFullPrecision: Bool
 
+  // MARK: - Sideloaded Model Properties
+
+  /// True for models discovered in the HF cache that don't match any catalog entry.
+  /// Sideloaded models have less metadata and get memory estimates via llama-fit-params.
+  let isSideloaded: Bool
+
+  /// HF org for sideloaded models (e.g. "bartowski"). Nil for catalog models.
+  /// Always shown for sideloaded models to avoid ambiguity.
+  let org: String?
+
+  /// Additional tags parsed from the repo name (e.g. ["Instruct", "it"]).
+  /// Excludes GGUF/GGML. Empty for catalog models.
+  let tags: [String]
+
   init(
     id: String,
     family: String,
@@ -45,7 +61,10 @@ struct CatalogEntry: Identifiable {
     serverArgs: [String],
     icon: String,
     quantization: String,
-    isFullPrecision: Bool
+    isFullPrecision: Bool,
+    isSideloaded: Bool = false,
+    org: String? = nil,
+    tags: [String] = []
   ) {
     self.id = id
     self.family = family
@@ -63,6 +82,9 @@ struct CatalogEntry: Identifiable {
     self.icon = icon
     self.quantization = quantization
     self.isFullPrecision = isFullPrecision
+    self.isSideloaded = isSideloaded
+    self.org = org
+    self.tags = tags
   }
 
   /// Display name combining family and size
@@ -180,8 +202,11 @@ struct CatalogEntry: Identifiable {
   }
 
   /// Groups models by family, then by model size (e.g., 2B, 4B), then full-precision before quantized variants.
+  /// Sideloaded models sort after catalog models so curated entries appear first.
   /// Used for both installed and available models lists to keep related models together.
   static func displayOrder(_ lhs: CatalogEntry, _ rhs: CatalogEntry) -> Bool {
+    // Catalog models before sideloaded
+    if lhs.isSideloaded != rhs.isSideloaded { return !lhs.isSideloaded }
     if lhs.family != rhs.family { return lhs.family < rhs.family }
     if lhs.parameterCount != rhs.parameterCount { return lhs.parameterCount < rhs.parameterCount }
     if lhs.isFullPrecision != rhs.isFullPrecision { return lhs.isFullPrecision }

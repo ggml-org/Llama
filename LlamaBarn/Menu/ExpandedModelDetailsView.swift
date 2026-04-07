@@ -87,12 +87,21 @@ final class ExpandedModelDetailsView: ItemView {
 
     mainStack.addArrangedSubview(headerRow)
 
-    // Context tier rows - show all supported tiers as selectable options
-    let effectiveTier = model.effectiveCtxTier
-    for tier in model.supportedContextTiers {
-      let isSelected = tier == effectiveTier
-      let row = buildTierRow(for: tier, isSelected: isSelected)
-      mainStack.addArrangedSubview(row)
+    // For sideloaded models awaiting fit-params, show a placeholder message
+    // instead of tier rows (we don't have accurate memory estimates yet)
+    if model.isSideloaded && model.ctxBytesPer1kTokens == 0 {
+      let estimatingLabel = Theme.secondaryLabel()
+      estimatingLabel.stringValue = "Estimating memory requirements..."
+      estimatingLabel.textColor = Theme.Colors.textSecondary
+      mainStack.addArrangedSubview(estimatingLabel)
+    } else {
+      // Context tier rows - show all supported tiers as selectable options
+      let effectiveTier = model.effectiveCtxTier
+      for tier in model.supportedContextTiers {
+        let isSelected = tier == effectiveTier
+        let row = buildTierRow(for: tier, isSelected: isSelected)
+        mainStack.addArrangedSubview(row)
+      }
     }
 
     // Add indent wrapper to align with model text

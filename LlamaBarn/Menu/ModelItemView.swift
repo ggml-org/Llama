@@ -62,7 +62,13 @@ final class ModelItemView: ItemView, NSGestureRecognizerDelegate {
     self.onExpand = onExpand
     super.init(frame: .zero)
 
-    iconView.imageView.image = NSImage(named: model.icon)
+    // Sideloaded models use an SF Symbol; catalog models use a named asset
+    if model.isSideloaded {
+      iconView.imageView.image = NSImage(
+        systemSymbolName: "cube.fill", accessibilityDescription: "Model")
+    } else {
+      iconView.imageView.image = NSImage(named: model.icon)
+    }
 
     // Configure action buttons
     Theme.configure(cancelImageView, symbol: "xmark", color: .systemRed)
@@ -230,7 +236,9 @@ final class ModelItemView: ItemView, NSGestureRecognizerDelegate {
       familyColor: textColor,
       sizeColor: textColor,
       hasVision: model.hasVisionSupport,
-      quantization: model.quantizationLabel
+      quantization: model.quantizationLabel,
+      org: model.org,
+      tags: model.tags
     )
 
     let incompatibility = !isCompatible ? model.incompatibilitySummary() : nil
