@@ -364,7 +364,7 @@ final class MenuController: NSObject, NSMenuDelegate {
   private func addCatalogSection(to menu: NSMenu) {
     var items: [NSMenuItem] = []
 
-    for family in Catalog.families {
+    for family in Catalog.activeFamilies {
       let validModels = family.selectableModels()
 
       let availableModels = validModels.filter {

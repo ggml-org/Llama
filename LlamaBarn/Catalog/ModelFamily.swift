@@ -7,6 +7,9 @@ struct ModelFamily {
   let serverArgs: [String]?  // optional defaults for all models/builds
   let overheadMultiplier: Double  // overhead multiplier for file size
   let sizes: [ModelSize]
+  /// Deprecated families are hidden from the catalog browse view but still
+  /// match installed models so they keep their curated icon, name, and metadata.
+  let deprecated: Bool
 
   init(
     name: String,
@@ -14,6 +17,7 @@ struct ModelFamily {
     description: String? = nil,
     serverArgs: [String]? = nil,
     overheadMultiplier: Double = 1.05,
+    deprecated: Bool = false,
     sizes: [ModelSize]
   ) {
     self.name = name
@@ -21,6 +25,7 @@ struct ModelFamily {
     self.description = description
     self.serverArgs = serverArgs
     self.overheadMultiplier = overheadMultiplier
+    self.deprecated = deprecated
     self.sizes = sizes.sorted { $0.parameterCount < $1.parameterCount }
   }
 

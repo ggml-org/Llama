@@ -5,6 +5,11 @@ enum Catalog {
 
   // MARK: - Public Accessors
 
+  /// Non-deprecated families, used for the catalog browse view.
+  static var activeFamilies: [ModelFamily] {
+    families.filter { !$0.deprecated }
+  }
+
   /// Returns all catalog entries by traversing the hierarchy
   static func allModels() -> [CatalogEntry] {
     families.flatMap { $0.allModels }
@@ -15,7 +20,12 @@ enum Catalog {
     allModels().first { $0.id == id }
   }
 
-  // MARK: - Private Helpers
+  // MARK: - Helpers
+
+  /// Helper to create dates concisely for model release dates
+  static func date(_ year: Int, _ month: Int, _ day: Int) -> Date {
+    Calendar.current.date(from: DateComponents(year: year, month: month, day: day))!
+  }
 
   /// Builds a CatalogEntry from hierarchy components
   static func entry(family: ModelFamily, size: ModelSize, build: ModelBuild)
