@@ -17,11 +17,11 @@ extension Catalog {
         ctxBytesPer1kTokens: 335_544_320,
         mmproj: URL(
           string:
-            "https://huggingface.co/ggml-org/gemma-4-31B-it-GGUF/resolve/main/mmproj-gemma-4-31B-it-f16.gguf"
+            "https://huggingface.co/ggml-org/gemma-4-31B-it-GGUF/resolve/main/mmproj-gemma-4-31B-it-bf16.gguf"
         )!,
         build: ModelBuild(
           quantization: "Q8_0",
-          fileSize: 32_635_669_984,
+          fileSize: 32_635_674_400,
           downloadUrl: URL(
             string:
               "https://huggingface.co/ggml-org/gemma-4-31B-it-GGUF/resolve/main/gemma-4-31B-it-Q8_0.gguf"
@@ -30,7 +30,7 @@ extension Catalog {
         quantizedBuilds: [
           ModelBuild(
             quantization: "Q4_K_M",
-            fileSize: 18_687_057_376,
+            fileSize: 18_687_061_792,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/ggml-org/gemma-4-31B-it-GGUF/resolve/main/gemma-4-31B-it-Q4_K_M.gguf"
@@ -46,11 +46,11 @@ extension Catalog {
         ctxBytesPer1kTokens: 83_886_080,
         mmproj: URL(
           string:
-            "https://huggingface.co/ggml-org/gemma-4-26B-A4B-it-GGUF/resolve/main/mmproj-gemma-4-26B-A4B-it-f16.gguf"
+            "https://huggingface.co/ggml-org/gemma-4-26B-A4B-it-GGUF/resolve/main/mmproj-gemma-4-26B-A4B-it-bf16.gguf"
         )!,
         build: ModelBuild(
           quantization: "Q8_0",
-          fileSize: 26_859_854_048,
+          fileSize: 26_859_858_464,
           downloadUrl: URL(
             string:
               "https://huggingface.co/ggml-org/gemma-4-26B-A4B-it-GGUF/resolve/main/gemma-4-26B-A4B-it-Q8_0.gguf"
@@ -59,7 +59,7 @@ extension Catalog {
         quantizedBuilds: [
           ModelBuild(
             quantization: "Q4_K_M",
-            fileSize: 16_796_010_720,
+            fileSize: 16_796_015_136,
             downloadUrl: URL(
               string:
                 "https://huggingface.co/ggml-org/gemma-4-26B-A4B-it-GGUF/resolve/main/gemma-4-26B-A4B-it-Q4_K_M.gguf"
@@ -75,23 +75,23 @@ extension Catalog {
         ctxBytesPer1kTokens: 29_360_128,
         mmproj: URL(
           string:
-            "https://huggingface.co/ggml-org/gemma-4-E4B-it-GGUF/resolve/main/mmproj-gemma-4-e4b-it-f16.gguf"
+            "https://huggingface.co/ggml-org/gemma-4-E4B-it-GGUF/resolve/main/mmproj-gemma-4-E4B-it-bf16.gguf"
         )!,
         build: ModelBuild(
           quantization: "Q8_0",
-          fileSize: 8_031_235_776,
+          fileSize: 8_031_240_160,
           downloadUrl: URL(
             string:
-              "https://huggingface.co/ggml-org/gemma-4-E4B-it-GGUF/resolve/main/gemma-4-e4b-it-Q8_0.gguf"
+              "https://huggingface.co/ggml-org/gemma-4-E4B-it-GGUF/resolve/main/gemma-4-E4B-it-Q8_0.gguf"
           )!
         ),
         quantizedBuilds: [
           ModelBuild(
             quantization: "Q4_K_M",
-            fileSize: 5_335_285_440,
+            fileSize: 5_335_289_824,
             downloadUrl: URL(
               string:
-                "https://huggingface.co/ggml-org/gemma-4-E4B-it-GGUF/resolve/main/gemma-4-e4b-it-Q4_K_M.gguf"
+                "https://huggingface.co/ggml-org/gemma-4-E4B-it-GGUF/resolve/main/gemma-4-E4B-it-Q4_K_M.gguf"
             )!
           )
         ]
@@ -104,14 +104,14 @@ extension Catalog {
         ctxBytesPer1kTokens: 10_485_760,
         mmproj: URL(
           string:
-            "https://huggingface.co/ggml-org/gemma-4-E2B-it-GGUF/resolve/main/mmproj-gemma-4-e2b-it-f16.gguf"
+            "https://huggingface.co/ggml-org/gemma-4-E2B-it-GGUF/resolve/main/mmproj-gemma-4-E2B-it-bf16.gguf"
         )!,
         build: ModelBuild(
           quantization: "Q8_0",
-          fileSize: 4_967_490_208,
+          fileSize: 4_967_494_592,
           downloadUrl: URL(
             string:
-              "https://huggingface.co/ggml-org/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-e2b-it-Q8_0.gguf"
+              "https://huggingface.co/ggml-org/gemma-4-E2B-it-GGUF/resolve/main/gemma-4-E2B-it-Q8_0.gguf"
           )!
         )
       ),
