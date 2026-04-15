@@ -72,10 +72,16 @@ struct SettingsView: View {
     Form {
       // Launch at login section
       Section {
-        Toggle("Launch at login", isOn: $launchAtLogin)
-          .onChange(of: launchAtLogin) { _, newValue in
-            _ = LaunchAtLogin.setEnabled(newValue)
-          }
+        VStack(alignment: .leading, spacing: 8) {
+          Toggle("Launch at login", isOn: $launchAtLogin)
+            .onChange(of: launchAtLogin) { _, newValue in
+              _ = LaunchAtLogin.setEnabled(newValue)
+            }
+
+          Text("Sits idle in the menu bar, using minimal memory until you start a model.")
+            .font(.callout)
+            .foregroundStyle(.secondary)
+        }
       }
 
       // Sleep idle time section
