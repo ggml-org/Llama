@@ -12,7 +12,11 @@ LlamaBarn is a macOS menu bar app for running local LLMs.
 
 ## Install
 
-Install with `brew install --cask llamabarn` or download from [Releases](https://github.com/ggml-org/LlamaBarn/releases).
+```sh
+brew install --cask llamabarn
+```
+
+Or download from [Releases](https://github.com/ggml-org/LlamaBarn/releases).
 
 ## How it works
 
