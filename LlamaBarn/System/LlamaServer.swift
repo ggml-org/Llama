@@ -149,7 +149,7 @@ class LlamaServer {
 
     state = .loading
 
-    let presetsPath = CatalogEntry.legacyStorageDir.appendingPathComponent("models.ini").path
+    let presetsPath = UserSettings.appSupportDir.appendingPathComponent("models.ini").path
 
     let llamaServerPath = libFolderPath + "/llama-server"
 
@@ -187,7 +187,9 @@ class LlamaServer {
       ])
     }
 
-    let workingDirectory = CatalogEntry.legacyStorageDir.path
+    // All paths in models.ini are absolute, so CWD is mostly cosmetic —
+    // but point it at Application Support so stray relative writes (if any) don't leak into $HOME.
+    let workingDirectory = UserSettings.appSupportDir.path
 
     let process = Process()
     process.executableURL = URL(fileURLWithPath: llamaServerPath)

@@ -99,16 +99,28 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
     postDownloadsDidChange()
 
     // Fetch HF metadata before starting download tasks.
-    // This determines where files will be stored (HF cache vs legacy flat).
+    // HF cache is the only download destination; if metadata fetch fails, we abort —
+    // there's no legacy flat fallback anymore.
     Task {
       let ctx = await self.fetchHFContext(for: model)
       await MainActor.run {
-        if let ctx {
-          self.downloadContexts[modelId] = ctx
-          self.logger.info("HF context ready for \(model.displayName): \(ctx.repoDir)")
-        } else {
-          self.logger.info("No HF context for \(model.displayName), using legacy download")
+        guard let ctx else {
+          self.logger.error("HF metadata fetch failed for \(model.displayName); aborting download")
+          self.cancelActiveDownload(modelId: modelId)
+          self.postDownloadsDidChange()
+          NotificationCenter.default.post(
+            name: .LBModelDownloadDidFail,
+            object: self,
+            userInfo: [
+              "model": model,
+              "error":
+                "Couldn't reach Hugging Face to start the download. This is usually a temporary rate limit or outage — try again in a few minutes, or set a Hugging Face token in Settings to lift the limit.",
+            ]
+          )
+          return
         }
+        self.downloadContexts[modelId] = ctx
+        self.logger.info("HF context ready for \(model.displayName): \(ctx.repoDir)")
         self.startDownloadTasks(model: model, files: filesToDownload)
       }
     }
@@ -247,7 +259,7 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
   @discardableResult
   func updateModelsFile() -> Bool {
     let content = generateModelsFileContent()
-    let destinationURL = CatalogEntry.legacyStorageDir.appendingPathComponent("models.ini")
+    let destinationURL = UserSettings.appSupportDir.appendingPathComponent("models.ini")
 
     // Skip write if content is identical
     if let existingData = try? Data(contentsOf: destinationURL),
@@ -274,19 +286,11 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
       // Use the effective tier (user selection or max compatible)
       guard let tier = model.effectiveCtxTier else { continue }
 
-      let paths = resolvedPaths[model.id]
-
-      // For HF cache models: use absolute snapshot path (symlink with human-readable filename).
-      // For legacy models: use relative filename (llama-server CWD is ~/.llamabarn/).
-      let modelPath: String
-      let mmprojPath: String?
-      if let paths, !paths.isLegacy {
-        modelPath = paths.modelFile
-        mmprojPath = paths.mmprojFile
-      } else {
-        modelPath = model.downloadUrl.lastPathComponent
-        mmprojPath = model.mmprojUrl.map { model.localFilename(for: $0) }
-      }
+      // Absolute paths for all entries — HF cache or legacy flat.
+      // ResolvedPaths already holds absolute paths for both cases (see refreshDownloadedModels).
+      guard let paths = resolvedPaths[model.id] else { continue }
+      let modelPath = paths.modelFile
+      let mmprojPath = paths.mmprojFile
 
       content += "[\(model.id)]\n"
       content += "model = \(modelPath)\n"
@@ -588,21 +592,9 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
       return
     }
 
-    let fileManager = FileManager.default
     let remoteUrl = downloadTask.originalRequest?.url
-    let filename: String
-    if let remoteUrl = remoteUrl {
-      // For HF cache, always use the original remote filename (no localFilename override)
-      // For legacy, use localFilename which handles mmprojLocalFilename overrides
-      let ctx = DispatchQueue.main.sync { self.downloadContexts[modelId] }
-      if ctx != nil {
-        filename = remoteUrl.lastPathComponent
-      } else {
-        filename = model.localFilename(for: remoteUrl)
-      }
-    } else {
-      filename = model.downloadUrl.lastPathComponent
-    }
+    // HF cache is the only download destination — always use the original remote filename.
+    let filename = remoteUrl?.lastPathComponent ?? model.downloadUrl.lastPathComponent
 
     // This callback runs on a background queue, so we can do blocking file operations safely.
     // URLSession's temp file is deleted when this callback returns, so we must move it before returning.
@@ -629,39 +621,38 @@ class ModelManager: NSObject, URLSessionDownloadDelegate {
         return
       }
 
-      // Determine destination based on whether we have HF context
-      let ctx = DispatchQueue.main.sync { self.downloadContexts[modelId] }
-
-      if let ctx {
-        // HF cache layout: write blob + snapshot symlink
-        let cacheDir = DispatchQueue.main.sync { UserSettings.hfCacheDirectory }
-
-        // Get pre-fetched blob hash, or compute SHA256 as fallback
-        let blobHash: String
-        if let hash = ctx.blobHashes[remoteUrl ?? model.downloadUrl] {
-          blobHash = hash
-        } else {
-          blobHash = try HFCache.computeSHA256(of: location)
-        }
-
-        try HFCache.writeBlobAndLink(
-          cacheDir: cacheDir,
-          repoDir: ctx.repoDir,
-          commit: ctx.commit,
-          blobHash: blobHash,
-          filename: filename,
-          from: location
+      // HF context is required — fetchHFContext failing aborts the download in downloadModel(),
+      // so by the time we reach here, ctx must be present.
+      guard let ctx = DispatchQueue.main.sync(execute: { self.downloadContexts[modelId] }) else {
+        handleDownloadFailure(
+          modelId: modelId,
+          model: model,
+          tempLocation: location,
+          destinationURL: nil,
+          reason: "Missing Hugging Face metadata for \(model.displayName)."
         )
-      } else {
-        // Legacy flat download: move to ~/.llamabarn/{filename}
-        let baseDir = URL(fileURLWithPath: model.legacyModelFilePath).deletingLastPathComponent()
-        let destinationURL = baseDir.appendingPathComponent(filename)
-
-        if fileManager.fileExists(atPath: destinationURL.path) {
-          try fileManager.removeItem(at: destinationURL)
-        }
-        try fileManager.moveItem(at: location, to: destinationURL)
+        return
       }
+
+      // HF cache layout: write blob + snapshot symlink.
+      let cacheDir = DispatchQueue.main.sync { UserSettings.hfCacheDirectory }
+
+      // Get pre-fetched blob hash, or compute SHA256 as fallback.
+      let blobHash: String
+      if let hash = ctx.blobHashes[remoteUrl ?? model.downloadUrl] {
+        blobHash = hash
+      } else {
+        blobHash = try HFCache.computeSHA256(of: location)
+      }
+
+      try HFCache.writeBlobAndLink(
+        cacheDir: cacheDir,
+        repoDir: ctx.repoDir,
+        commit: ctx.commit,
+        blobHash: blobHash,
+        filename: filename,
+        from: location
+      )
 
       // Update state on main queue (activeDownloads dict must be accessed from main queue)
       DispatchQueue.main.async { [weak self] in

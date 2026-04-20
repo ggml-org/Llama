@@ -23,7 +23,6 @@ enum UserSettings {
     static let exposeToNetwork = "exposeToNetwork"
     static let sleepIdleTime = "sleepIdleTime"
     static let selectedCtxTiers = "selectedCtxTiers"
-    static let modelStorageDirectory = "modelStorageDirectory"  // legacy, kept for backward compat
     static let hfCacheDirectory = "hfCacheDirectory"
     static let hfToken = "hfToken"
   }
@@ -102,11 +101,21 @@ enum UserSettings {
   // MARK: - Legacy Model Directory
 
   /// The legacy flat directory for models (~/.llamabarn).
-  /// Always scanned on startup for backward compat with pre-HF-cache installs.
-  /// Also holds models.ini for llama-server.
-  static let legacyModelDir: URL = {
-    let dir = FileManager.default.homeDirectoryForCurrentUser
-      .appendingPathComponent(".llamabarn", isDirectory: true)
+  /// Scanned on startup for backward compat with pre-HF-cache installs.
+  /// NOT auto-created — new installs don't get this folder planted in $HOME.
+  /// The scan path in ModelManager no-ops when the directory is missing.
+  static let legacyModelDir: URL =
+    FileManager.default.homeDirectoryForCurrentUser
+    .appendingPathComponent(".llamabarn", isDirectory: true)
+
+  // MARK: - Application Support Directory
+
+  /// App's Application Support directory (~/Library/Application Support/LlamaBarn/).
+  /// Holds models.ini and serves as llama-server's working directory.
+  /// Auto-created on first access.
+  static let appSupportDir: URL = {
+    let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+      .appendingPathComponent("LlamaBarn", isDirectory: true)
     if !FileManager.default.fileExists(atPath: dir.path) {
       try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
     }

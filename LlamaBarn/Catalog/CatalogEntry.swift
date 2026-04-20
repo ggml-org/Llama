@@ -198,7 +198,8 @@ struct CatalogEntry: Identifiable {
   }
 
   /// The legacy flat directory for models (~/.llamabarn/).
-  /// Used for backward compat scanning and as llama-server working directory.
+  /// Scan-only — not auto-created, not used as llama-server's CWD.
+  /// Present for back-compat with pre-HF-cache installs.
   static var legacyStorageDir: URL {
     UserSettings.legacyModelDir
   }
