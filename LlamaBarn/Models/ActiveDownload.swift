@@ -1,43 +1,38 @@
 import Foundation
 
 /// Tracks the progress of a multi-file model download.
+///
+/// Bytes-in-flight are tracked externally (ModelManager owns the per-task
+/// `PartialWriter` state since we stream into `.partial` files ourselves now,
+/// rather than relying on URLSession's `countOfBytesReceived`). The caller
+/// passes current sums into `refreshProgress`.
 struct ActiveDownload {
   let model: CatalogEntry
   var progress: Progress
-  var tasks: [Int: URLSessionDownloadTask]
+  var tasks: [Int: URLSessionDataTask]
+  /// Bytes belonging to files that have already completed (hash-verified and promoted into HF cache).
   var completedFilesBytes: Int64 = 0
 
-  mutating func addTask(_ task: URLSessionDownloadTask) {
+  mutating func addTask(_ task: URLSessionDataTask) {
     tasks[task.taskIdentifier] = task
-    refreshProgress()
   }
 
   mutating func removeTask(with identifier: Int) {
     tasks.removeValue(forKey: identifier)
-    refreshProgress()
   }
 
-  mutating func markTaskFinished(_ task: URLSessionDownloadTask, fileSize: Int64) {
+  mutating func markTaskFinished(_ task: URLSessionDataTask, fileSize: Int64) {
     tasks.removeValue(forKey: task.taskIdentifier)
     completedFilesBytes += fileSize
-    refreshProgress()
   }
 
-  mutating func refreshProgress() {
-    // Calculate both active and expected bytes in a single pass.
-    // Called on every didWriteData callback (even with throttling, this is still 10x/sec per download),
-    // so avoiding redundant iterations over tasks.values is important for responsiveness.
-    var activeBytes: Int64 = 0
-    var expectedActiveBytes: Int64 = 0
-
-    for task in tasks.values {
-      let received = task.countOfBytesReceived
-      activeBytes += received
-      let expected = task.countOfBytesExpectedToReceive
-      expectedActiveBytes += expected > 0 ? expected : received
-    }
-
+  /// Refreshes `progress` from caller-supplied byte sums across active tasks.
+  /// `activeBytes` is the total bytes currently on disk across all in-flight `.partial` files;
+  /// `expectedActiveBytes` is the sum of each task's known total size (0 before the response arrives).
+  mutating func refreshProgress(activeBytes: Int64, expectedActiveBytes: Int64) {
     let totalCompleted = completedFilesBytes + activeBytes
+    // Don't shrink totalUnitCount — it's initialized from catalog-declared sizes and a
+    // response's Content-Length may be missing until the first byte arrives.
     let totalExpected = max(progress.totalUnitCount, completedFilesBytes + expectedActiveBytes)
     progress.totalUnitCount = max(totalExpected, 1)
     progress.completedUnitCount = totalCompleted

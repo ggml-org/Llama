@@ -63,6 +63,28 @@ enum HFCache {
       .appendingPathComponent("main")
   }
 
+  /// Directory that holds in-progress `.partial` files for a model.
+  /// Lives under the HF cache so promoting `.partial` → `blobs/<hash>` stays on the
+  /// same filesystem (moveItem is atomic). See RFC 016 §File layout.
+  static func partialDir(cacheDir: URL, modelId: String) -> URL {
+    cacheDir
+      .appendingPathComponent(".llamabarn-partial")
+      .appendingPathComponent(modelId)
+  }
+
+  /// Path to an in-progress `.partial` file for a single remote file.
+  static func partialPath(cacheDir: URL, modelId: String, filename: String) -> URL {
+    partialDir(cacheDir: cacheDir, modelId: modelId)
+      .appendingPathComponent("\(filename).partial")
+  }
+
+  /// Removes the model's partial directory (and any files under it).
+  /// Silently ignores missing dirs — used by cancel/delete/cleanup paths.
+  static func removePartials(cacheDir: URL, modelId: String) {
+    let dir = partialDir(cacheDir: cacheDir, modelId: modelId)
+    try? FileManager.default.removeItem(at: dir)
+  }
+
   // MARK: - API Calls
 
   /// Metadata returned by a HEAD request to a HF file URL.
@@ -182,29 +204,48 @@ enum HFCache {
     logger.info("Wrote HF cache: \(repoDir)/blobs/\(blobHash) + snapshot symlink for \(filename)")
   }
 
-  /// Computes SHA256 of a file using streaming 1MB chunks.
-  /// Used as fallback when the HEAD request doesn't provide the hash.
-  static func computeSHA256(of fileURL: URL) throws -> String {
+  /// Incremental SHA256 hasher. Used by the resumable download path:
+  /// we stream bytes into the hasher as they're written to the `.partial` file
+  /// (and re-hash any existing prefix once at resume time) so the final digest
+  /// is ready at completion without a second full-file pass.
+  final class SHA256Hasher {
+    private var ctx = CC_SHA256_CTX()
+    init() { CC_SHA256_Init(&ctx) }
+
+    func update(_ data: Data) {
+      guard !data.isEmpty else { return }
+      data.withUnsafeBytes { ptr in
+        _ = CC_SHA256_Update(&ctx, ptr.baseAddress, CC_LONG(ptr.count))
+      }
+    }
+
+    func finalize() -> String {
+      var digest = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
+      CC_SHA256_Final(&digest, &ctx)
+      return digest.map { String(format: "%02x", $0) }.joined()
+    }
+  }
+
+  /// Feeds the entire contents of `fileURL` into `hasher` in 1 MB chunks.
+  /// Used on resume to reconstruct the running hash over the existing `.partial` prefix.
+  static func feedHasher(_ hasher: SHA256Hasher, from fileURL: URL) throws {
     let handle = try FileHandle(forReadingFrom: fileURL)
     defer { try? handle.close() }
-
-    var ctx = CC_SHA256_CTX()
-    CC_SHA256_Init(&ctx)
-
     let chunkSize = 1_048_576  // 1 MB
     while autoreleasepool(invoking: {
       let data = handle.readData(ofLength: chunkSize)
       guard !data.isEmpty else { return false }
-      _ = data.withUnsafeBytes { ptr in
-        CC_SHA256_Update(&ctx, ptr.baseAddress, CC_LONG(ptr.count))
-      }
+      hasher.update(data)
       return true
     }) {}
+  }
 
-    var digest = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
-    CC_SHA256_Final(&digest, &ctx)
-
-    return digest.map { String(format: "%02x", $0) }.joined()
+  /// Computes SHA256 of a file using streaming 1MB chunks.
+  /// Used as fallback when the HEAD request doesn't provide the hash.
+  static func computeSHA256(of fileURL: URL) throws -> String {
+    let hasher = SHA256Hasher()
+    try feedHasher(hasher, from: fileURL)
+    return hasher.finalize()
   }
 
   // MARK: - Deletion
