@@ -10,4 +10,8 @@ extension Notification.Name {
   static let LBShowSettings = Notification.Name("LBShowSettings")
   static let LBModelDownloadDidFail = Notification.Name("LBModelDownloadDidFail")
   static let LBModelStatusDidChange = Notification.Name("LBModelStatusDidChange")
+  // Posted when some background flow wants the menu bar to surface a short
+  // speech-bubble hint (e.g. deeplink install started). userInfo["message"]
+  // carries the text.
+  static let LBShowMenuHint = Notification.Name("LBShowMenuHint")
 }

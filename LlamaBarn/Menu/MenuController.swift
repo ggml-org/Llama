@@ -15,7 +15,7 @@ final class MenuController: NSObject, NSMenuDelegate {
   private var expandedModelIds: Set<String> = []
   private var infoExpandedModelIds: Set<String> = []  // Models with info text expanded
 
-  private var welcomePopover: WelcomePopover?
+  private var hintPopover: HintPopover?
 
   // Store observer tokens for proper cleanup
   private var observers: [NSObjectProtocol] = []
@@ -50,11 +50,17 @@ final class MenuController: NSObject, NSMenuDelegate {
     // Show after a short delay to ensure the status item is visible
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
       guard let self else { return }
-      let popover = WelcomePopover()
-      popover.show(from: self.statusItem)
-      self.welcomePopover = popover
+      self.showHint("Hello, I'm LlamaBarn")
       UserSettings.hasSeenWelcome = true
     }
+  }
+
+  /// Shows a short speech-bubble message anchored to the menu bar icon.
+  /// Replaces any currently visible hint.
+  func showHint(_ message: String) {
+    let popover = HintPopover(message: message)
+    popover.show(from: statusItem)
+    hintPopover = popover
   }
 
   private func configureStatusItem() {
@@ -163,6 +169,17 @@ final class MenuController: NSObject, NSMenuDelegate {
 
     // User settings changed - rebuild menu
     observe(.LBUserSettingsDidChange, rebuildMenu: true)
+
+    // A background flow (e.g. DeeplinkHandler) wants to surface a hint bubble.
+    let hintObserver = NotificationCenter.default.addObserver(
+      forName: .LBShowMenuHint, object: nil, queue: .main
+    ) { [weak self] note in
+      MainActor.assumeIsolated {
+        guard let msg = note.userInfo?["message"] as? String else { return }
+        self?.showHint(msg)
+      }
+    }
+    observers.append(hintObserver)
 
     // Download failed - show alert
     let failObserver = NotificationCenter.default.addObserver(

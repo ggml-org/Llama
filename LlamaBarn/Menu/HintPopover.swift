@@ -1,13 +1,28 @@
 import AppKit
 
-/// Displays a welcome message on first launch, pointing to the menu bar icon.
-final class WelcomePopover: NSViewController, NSPopoverDelegate {
+/// A small speech-bubble-style popover anchored to the status bar icon.
+///
+/// Used for lightweight, dismissible feedback -- e.g. the first-launch
+/// "Hello, I'm LlamaBarn" greeting, and deeplink install acknowledgements
+/// like "Downloading <model>…". The popover auto-dismisses when the menu
+/// opens (user clicked the icon) or when the user clicks outside it.
+final class HintPopover: NSViewController, NSPopoverDelegate {
+  private let message: String
   private let popover = NSPopover()
   private var observer: NSObjectProtocol?
   private var clickMonitor: Any?
 
+  init(message: String) {
+    self.message = message
+    super.init(nibName: nil, bundle: nil)
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) not supported")
+  }
+
   override func loadView() {
-    let label = NSTextField(labelWithString: "Hello, I'm LlamaBarn")
+    let label = NSTextField(labelWithString: message)
     label.font = .systemFont(ofSize: 13)
     label.textColor = .controlTextColor
     label.isBezeled = false
@@ -24,10 +39,7 @@ final class WelcomePopover: NSViewController, NSPopoverDelegate {
         height: label.frame.height + 24
       ))
 
-    label.frame.origin = NSPoint(
-      x: 16,
-      y: 12
-    )
+    label.frame.origin = NSPoint(x: 16, y: 12)
     contentView.addSubview(label)
 
     view = contentView
@@ -49,7 +61,8 @@ final class WelcomePopover: NSViewController, NSPopoverDelegate {
       preferredEdge: .minY
     )
 
-    // Dismiss when the menu opens
+    // Dismiss as soon as the user opens the menu -- the menu itself is the
+    // place where install progress is surfaced, so the bubble has done its job.
     observer = NotificationCenter.default.addObserver(
       forName: NSMenu.didBeginTrackingNotification,
       object: statusItem.menu,
@@ -58,7 +71,7 @@ final class WelcomePopover: NSViewController, NSPopoverDelegate {
       self?.popover.close()
     }
 
-    // Monitor clicks outside to dismiss
+    // Also dismiss on any click outside the bubble itself.
     clickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) {
       [weak self] event in
       guard let self else { return }

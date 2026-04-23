@@ -63,11 +63,12 @@ final class DeeplinkHandler {
       return
     }
 
-    // Already installed? Nothing to do.
-    if manager.downloadedModels.contains(where: { $0.id == resolved.modelId })
-      || manager.downloadedModels.contains(where: { $0.downloadUrl == resolved.mainUrl })
-    {
+    // Already installed? Surface a hint so repeating the deeplink doesn't feel like a no-op.
+    if let existing = manager.downloadedModels.first(where: {
+      $0.id == resolved.modelId || $0.downloadUrl == resolved.mainUrl
+    }) {
       logger.info("Deeplink \(resolved.modelId, privacy: .public) is already installed")
+      postHint("\(existing.displayName) is already installed")
       return
     }
 
@@ -86,11 +87,21 @@ final class DeeplinkHandler {
 
     do {
       try manager.downloadModel(entry)
+      // Acknowledge the deeplink with a speech bubble near the menu bar icon --
+      // resolve can take a few seconds, so this is often the user's first sign
+      // that the click landed. The bubble dismisses the moment they open the
+      // menu, where progress is surfaced.
+      postHint("Downloading \(entry.displayName)…")
     } catch {
       presentAlert(
         title: "Couldn’t start the download.",
         body: (error as? LocalizedError)?.recoverySuggestion ?? error.localizedDescription)
     }
+  }
+
+  private func postHint(_ message: String) {
+    NotificationCenter.default.post(
+      name: .LBShowMenuHint, object: nil, userInfo: ["message": message])
   }
 
   private func presentAlert(title: String, body: String?) {
