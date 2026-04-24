@@ -11,17 +11,26 @@ import os.log
 /// to `decodeIfPresent` or a custom `init(from:)` with defaults — that would
 /// silently keep stale entries across upgrades.
 struct FitParams: Codable {
-  /// KV-cache footprint for a 1k-token context, in bytes.
+  /// Slope of the affine memory model, in bytes per 1k tokens.
+  ///   mem(ctx) = residentBytes + ctxBytesPer1kTokens · ctx / 1000
   /// Maps directly to CatalogEntry.ctxBytesPer1kTokens.
   let ctxBytesPer1kTokens: Int
-  /// Measured resident memory used by model weights + compute buffers, in bytes
-  /// (summed across all devices in the final fit-params breakdown).
-  /// 0 if unknown (e.g. fit-params failed). Maps to CatalogEntry.fitResidentBytes.
+  /// Intercept of the affine memory model, in bytes. Total footprint at ctx=0 —
+  /// includes model weights, compute buffers, and any ctx-independent KV state
+  /// (e.g. the per-layer local cache that SWA models like Gemma keep regardless
+  /// of ctx). Maps to CatalogEntry.fitResidentBytes.
+  /// 0 if unknown (e.g. fit-params failed).
   let residentBytes: Int
+  /// Schema version. Bumping invalidates on-disk caches via the Codable
+  /// keyNotFound mechanism documented at the top of this file.
+  /// v2: switched from single-probe debug-table parse to two-probe -fitp affine
+  ///     fit. Semantics of both above fields changed — v1 caches are discarded.
+  let schemaVersion: Int
 
   init(ctxBytesPer1kTokens: Int, residentBytes: Int = 0) {
     self.ctxBytesPer1kTokens = ctxBytesPer1kTokens
     self.residentBytes = residentBytes
+    self.schemaVersion = 2
   }
 }
 
@@ -31,8 +40,19 @@ enum FitParamsRunner {
 
   private static let logger = Logger(subsystem: Logging.subsystem, category: "FitParamsRunner")
 
-  /// Runs llama-fit-params on a model file and returns parsed memory params.
-  /// Takes ~1s per model. Returns nil on failure (binary not found, parse error, etc).
+  /// Probes a model at two context sizes and fits an affine memory model
+  ///   mem(ctx) = a + b·ctx
+  /// where `a` becomes residentBytes and `b·1000` becomes ctxBytesPer1kTokens.
+  ///
+  /// Why two probes, not one: memory is not purely linear in ctx. SWA models
+  /// (Gemma family) keep a fixed-size per-layer local KV cache regardless of
+  /// ctx, which shows up as a non-zero intercept (~174 MiB on Gemma 3 4B).
+  /// Dividing a single 128k probe by 128 folds that intercept into the slope
+  /// and mis-predicts small-ctx usage by multiple hundreds of MiB. A two-point
+  /// affine fit recovers both terms correctly and degenerates cleanly to
+  /// near-linear for dense models (where a ≈ 0).
+  ///
+  /// Takes ~2s per model (two probes). Returns nil on failure.
   /// Supports cancellation — terminates the subprocess if the Task is cancelled.
   static func run(modelPath: String) async -> FitParams? {
     let binaryPath = Bundle.main.bundlePath + "/Contents/MacOS/llama-cpp/llama-fit-params"
@@ -42,12 +62,59 @@ enum FitParamsRunner {
       return nil
     }
 
-    // Run with 128k context and debug verbosity to get the memory breakdown.
-    // Running at 128k and dividing by 128 is more accurate than running at 1k
-    // due to quantization effects at small context sizes.
+    let ctxLo: UInt32 = 4096
+    let ctxHi: UInt32 = 131072
+
+    guard let loMib = await probeTotalMib(binary: binaryPath, modelPath: modelPath, ctx: ctxLo)
+    else { return nil }
+    guard let hiMib = await probeTotalMib(binary: binaryPath, modelPath: modelPath, ctx: ctxHi)
+    else { return nil }
+
+    // Affine fit: solve a + b·ctx_lo = lo, a + b·ctx_hi = hi.
+    let dc = Double(ctxHi - ctxLo)
+    let bPerToken = Double(hiMib - loMib) / dc  // MiB per token
+    let aMib = Double(loMib) - bPerToken * Double(ctxLo)  // MiB at ctx=0
+
+    // A negative slope means total memory went down as ctx grew — that's not
+    // a real outcome, it signals a broken probe. Failing here routes the
+    // caller to the file-size fallback, instead of silently producing a
+    // "memory is ctx-independent" estimate that would accept any ctx and
+    // risk OOM at runtime.
+    guard bPerToken >= 0 else {
+      logger.error(
+        "Fit params: non-monotonic total (\(loMib) MiB at \(ctxLo) vs \(hiMib) MiB at \(ctxHi))"
+      )
+      return nil
+    }
+
+    // Clamp the intercept only — small negatives can appear from MiB rounding
+    // at the probe points, or from a compute-buffer step that only shows up
+    // at the high ctx. Overestimating the intercept is the safe direction.
+    let aBytes = Int(max(aMib, 0) * 1_048_576.0)
+    let bBytesPer1k = Int(bPerToken * 1000.0 * 1_048_576.0)
+
+    logger.info(
+      "Fit params (affine): total(\(ctxLo))=\(loMib) MiB, total(\(ctxHi))=\(hiMib) MiB → a=\(aBytes) bytes, b=\(bBytesPer1k) bytes/1k"
+    )
+
+    return FitParams(ctxBytesPer1kTokens: bBytesPer1k, residentBytes: aBytes)
+  }
+
+  /// Runs `llama-fit-params -c <ctx> -fitp on` and returns the total MiB
+  /// footprint across all devices (sum of model + context + compute columns).
+  ///
+  /// `-fitp on` writes one line per device to stdout, e.g.:
+  ///   MTL0 2402 2734 517
+  ///   Host 680 0 538
+  /// We sum every numeric column across every row — on Apple Silicon unified
+  /// memory every row draws from the same physical RAM, so all rows count
+  /// toward the same budget.
+  private static func probeTotalMib(
+    binary: String, modelPath: String, ctx: UInt32
+  ) async -> Int? {
     let process = Process()
-    process.executableURL = URL(fileURLWithPath: binaryPath)
-    process.arguments = ["-m", modelPath, "-lv", "4", "-c", "131072"]
+    process.executableURL = URL(fileURLWithPath: binary)
+    process.arguments = ["-m", modelPath, "-c", String(ctx), "-fitp", "on"]
 
     let stdoutPipe = Pipe()
     let stderrPipe = Pipe()
@@ -61,12 +128,9 @@ enum FitParamsRunner {
       return nil
     }
 
-    // Use withTaskCancellationHandler to terminate the process if the task is cancelled.
-    // Without this, cancelled tasks would leave zombie llama-fit-params processes running.
     return await withTaskCancellationHandler {
-      // Read stdout and stderr concurrently to avoid pipe buffer deadlocks.
-      // If we read them sequentially, the process can block writing to stderr
-      // while we're blocked reading stdout (or vice versa), causing a hang.
+      // Read both pipes concurrently to avoid buffer-fill deadlocks. stderr
+      // receives heavy log spam from the model load; we discard it.
       async let stdoutRead = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
       async let stderrRead = stderrPipe.fileHandleForReading.readDataToEndOfFile()
 
@@ -75,120 +139,43 @@ enum FitParamsRunner {
 
       guard process.terminationStatus == 0 else {
         let errOutput = String(decoding: stderr, as: UTF8.self)
-        // terminationStatus 15 = SIGTERM from cancellation, don't log as error
+        // status 15 = SIGTERM from our cancellation handler, don't log
         if process.terminationStatus != 15 {
           logger.error(
-            "llama-fit-params exited with status \(process.terminationStatus): \(errOutput.prefix(500))"
+            "llama-fit-params (ctx=\(ctx)) exited with status \(process.terminationStatus): \(errOutput.prefix(500))"
           )
         }
         return nil
       }
 
-      // Use String(decoding:as:) for lossy UTF-8 decoding — replaces invalid bytes
-      // with U+FFFD instead of returning nil. llama-fit-params stderr can contain
-      // raw tokenizer metadata with invalid UTF-8, which would cause strict decoding
-      // to discard the entire output including valid breakdown lines.
-      let output =
-        String(decoding: stdout, as: UTF8.self)
-        + String(decoding: stderr, as: UTF8.self)
+      let output = String(decoding: stdout, as: UTF8.self)
 
-      return parseOutput(output)
+      // Each device row is `<name> <model> <context> <compute>` — a non-numeric
+      // device name followed by three ints. We require that first-token-is-text
+      // shape explicitly so a stray all-numeric line (if stderr ever leaks into
+      // stdout, or the format changes) can't masquerade as a row.
+      var totalMib = 0
+      var rowCount = 0
+      for line in output.split(separator: "\n") {
+        let tokens = line.split(separator: " ", omittingEmptySubsequences: true)
+        guard tokens.count == 4, Int(tokens[0]) == nil,
+          let m = Int(tokens[1]), let c = Int(tokens[2]), let cp = Int(tokens[3])
+        else { continue }
+        totalMib += m + c + cp
+        rowCount += 1
+      }
+
+      guard rowCount > 0 else {
+        logger.error("Failed to parse -fitp output for ctx=\(ctx): \(output.prefix(500))")
+        return nil
+      }
+
+      return totalMib
     } onCancel: {
-      // Terminate the subprocess when the parent task is cancelled
       if process.isRunning {
         process.terminate()
       }
     }
-  }
-
-  /// Parses the llama_memory_breakdown_print output.
-  ///
-  /// fit-params prints one breakdown per search iteration; we only care about the last.
-  /// Each breakdown has one row per device (MTL0, Host, and sometimes CPU_REPACK for
-  /// MoE models whose experts spill off GPU). On Apple Silicon unified memory all
-  /// devices share one physical RAM pool, so every row counts toward the budget.
-  ///
-  /// Row format (the numbers we care about are "self = model + context + compute"):
-  /// ```
-  /// |   - MTL0 (Apple M1)    |  5461 = 5460 + (3961 =  1794 +    1650 +     517) + ... |
-  /// |   - Host               |                 2587 =   680 +    1084 +     823         |
-  /// |   - CPU_REPACK         |                 3617 =  3617 +       0 +       0         |
-  /// ```
-  ///
-  /// Weight memory = sum over devices of (model + compute). Compute buffers are
-  /// resident during inference, so they belong with weights, not context.
-  /// Per-1k-token cost = sum over devices of context / 128 (we run at 128k).
-  private static func parseOutput(_ output: String) -> FitParams? {
-    let lines = output.components(separatedBy: "\n")
-    let breakdownLines = lines.filter { $0.contains("llama_memory_breakdown_print") }
-
-    // Split into per-iteration groups, each starting with a "memory breakdown" header.
-    var groups: [[String]] = []
-    for line in breakdownLines {
-      if line.contains("memory breakdown") {
-        groups.append([])
-      } else if !groups.isEmpty {
-        groups[groups.count - 1].append(line)
-      }
-    }
-
-    guard let lastGroup = groups.last, !lastGroup.isEmpty else {
-      logger.error("Failed to find any memory breakdown in llama-fit-params output")
-      return nil
-    }
-
-    // "self = model + context + compute" — four numbers inside the optional parens.
-    let pattern = try! NSRegularExpression(
-      pattern: #"(\d+)\s*=\s*(\d+)\s*\+\s*(\d+)\s*\+\s*(\d+)"#
-    )
-
-    var totalModelMib = 0
-    var totalCtxMib = 0
-    var totalComputeMib = 0
-
-    // Each non-header line in the last group is a device row. Sum all of them —
-    // don't filter by device name, since CPU_REPACK and future devices count too.
-    // The MTL0 row wraps its breakdown in parens (to disambiguate from the leading
-    // "total = free + self" sum), but the regex's `\d+ \+ \d+ \+ \d+` shape
-    // only matches the inner "self = model + context + compute" form anyway —
-    // the outer `5460 + (` breaks the digit-only pattern. So firstMatch is enough.
-    for line in lastGroup {
-      let range = NSRange(line.startIndex..., in: line)
-      guard let match = pattern.firstMatch(in: line, range: range) else {
-        continue  // not a device row (blank / divider)
-      }
-
-      if let modelRange = Range(match.range(at: 2), in: line),
-        let ctxRange = Range(match.range(at: 3), in: line),
-        let computeRange = Range(match.range(at: 4), in: line),
-        let model = Int(line[modelRange]),
-        let ctx = Int(line[ctxRange]),
-        let compute = Int(line[computeRange])
-      {
-        totalModelMib += model
-        totalCtxMib += ctx
-        totalComputeMib += compute
-      }
-    }
-
-    // Context is the primary signal; a breakdown with zero context is malformed.
-    guard totalCtxMib > 0 else {
-      logger.error("Failed to parse memory breakdown from llama-fit-params output")
-      return nil
-    }
-
-    // Per-1k-token cost: fit-params was invoked at 128k, so divide total context by 128.
-    let ctxMibPer1k = Double(totalCtxMib) / 128.0
-    let ctxBytesPer1kTokens = Int(ctxMibPer1k * 1_048_576.0)
-
-    // Weight memory: model + compute buffers (both resident during inference).
-    let residentBytes = (totalModelMib + totalComputeMib) * 1_048_576
-
-    logger.info(
-      "Fit params: model=\(totalModelMib) MiB + compute=\(totalComputeMib) MiB, ctx=\(totalCtxMib) MiB at 128k → \(ctxBytesPer1kTokens) bytes/1k tokens, \(residentBytes) resident bytes"
-    )
-
-    return FitParams(ctxBytesPer1kTokens: ctxBytesPer1kTokens, residentBytes: residentBytes)
   }
 }
 
