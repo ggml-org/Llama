@@ -37,10 +37,15 @@ final class IconView: NSView {
     addSubview(imageView)
     addSubview(spinner)
     NSLayoutConstraint.activate([
+      // Container is fixed at iconViewSize so it can't be squeezed when long titles
+      // or hover buttons compete for row width. Intrinsic size alone isn't enough —
+      // NSStackView will compress views with default priorities mid-animation.
+      widthAnchor.constraint(equalToConstant: Layout.iconViewSize),
+      heightAnchor.constraint(equalToConstant: Layout.iconViewSize),
       imageView.centerXAnchor.constraint(equalTo: centerXAnchor),
       imageView.centerYAnchor.constraint(equalTo: centerYAnchor),
-      imageView.widthAnchor.constraint(lessThanOrEqualToConstant: Layout.uiIconSize),
-      imageView.heightAnchor.constraint(lessThanOrEqualToConstant: Layout.uiIconSize),
+      imageView.widthAnchor.constraint(equalToConstant: Layout.uiIconSize),
+      imageView.heightAnchor.constraint(equalToConstant: Layout.uiIconSize),
       spinner.centerXAnchor.constraint(equalTo: centerXAnchor),
       spinner.centerYAnchor.constraint(equalTo: centerYAnchor),
     ])
