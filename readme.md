@@ -1,12 +1,12 @@
-# LlamaBarn
+# Llama
 
-LlamaBarn is a macOS menu bar app for running local LLMs.
+Llama is a macOS menu bar app for running local LLMs.
 
 [Watch a 2-minute intro](https://www.youtube.com/watch?v=7AieF7rZUTc) 📽️
 
 <br>
 
-![LlamaBarn](https://github.com/user-attachments/assets/df78f9ee-bb1d-4883-bf08-44371b0cd58a)
+![Llama](https://github.com/user-attachments/assets/df78f9ee-bb1d-4883-bf08-44371b0cd58a)
 
 <br>
 
@@ -20,7 +20,7 @@ Or download from [Releases](https://github.com/ggml-org/LlamaBarn/releases).
 
 ## How it works
 
-LlamaBarn runs a local server at `http://localhost:2276/v1`.
+Llama runs a local server at `http://localhost:2276/v1`.
 
 - **Install models** — from the built-in catalog
 - **Connect any app** — chat UIs, editors, CLI tools, scripts
@@ -37,7 +37,7 @@ LlamaBarn runs a local server at `http://localhost:2276/v1`.
 
 ## Works with
 
-LlamaBarn works with any OpenAI-compatible client.
+Llama works with any OpenAI-compatible client.
 
 - **Chat UIs** — Chatbox, Open WebUI, BoltAI ([instructions](https://github.com/ggml-org/LlamaBarn/discussions/40))
 - **Editors** — VS Code, Zed, Xcode ([instructions](https://github.com/ggml-org/LlamaBarn/discussions/43))
@@ -45,7 +45,7 @@ LlamaBarn works with any OpenAI-compatible client.
 - **CLI tools** — OpenCode ([instructions](https://github.com/ggml-org/LlamaBarn/discussions/44)), Claude Code ([instructions](https://github.com/ggml-org/LlamaBarn/discussions/45))
 - **Custom scripts** — curl, AI SDK, etc.
 
-You can also use the built-in WebUI at http://localhost:2276 while LlamaBarn is running.
+You can also use the built-in WebUI at http://localhost:2276 while Llama is running.
 
 ## API examples
 
