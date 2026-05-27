@@ -27,6 +27,7 @@ struct LlamaServerAPI {
 
   /// Fetches the current status of all models.
   /// Returns a dictionary mapping model IDs to their status strings.
+  /// Possible values: "loaded", "loading", "sleeping", "unloaded".
   func fetchModelStatuses() async -> [String: String]? {
     guard let data = await get(endpoint: "models") else { return nil }
 
@@ -37,30 +38,6 @@ struct LlamaServerAPI {
     return response.data.reduce(into: [String: String]()) { dict, item in
       dict[item.id] = item.status?.value ?? "unloaded"
     }
-  }
-
-  /// Checks if a specific model is sleeping (idle timeout reached).
-  /// Returns true if the model is sleeping, false otherwise.
-  func isModelSleeping(id: String) async -> Bool {
-    guard var components = URLComponents(string: baseUrl + "/props") else { return false }
-    components.queryItems = [URLQueryItem(name: "model", value: id)]
-    guard let url = components.url else { return false }
-
-    var request = URLRequest(url: url)
-    request.timeoutInterval = 1.0
-
-    do {
-      let (data, response) = try await URLSession.shared.data(for: request)
-      guard let httpResponse = response as? HTTPURLResponse,
-        httpResponse.statusCode == 200
-      else { return false }
-
-      if let decoded = try? JSONDecoder().decode(PropsResponse.self, from: data) {
-        return decoded.is_sleeping ?? decoded.default_generation_settings?.is_sleeping ?? false
-      }
-    } catch {}
-
-    return false
   }
 
   // MARK: - Private Helpers
@@ -114,14 +91,5 @@ struct LlamaServerAPI {
       let value: String
     }
     let data: [ModelData]
-  }
-
-  private struct PropsResponse: Decodable {
-    let is_sleeping: Bool?
-    let default_generation_settings: DefaultGenerationSettings?
-
-    struct DefaultGenerationSettings: Decodable {
-      let is_sleeping: Bool?
-    }
   }
 }

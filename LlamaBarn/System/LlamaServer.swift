@@ -394,19 +394,13 @@ class LlamaServer {
   private func checkStatus() async {
     guard let newStatuses = await api.fetchModelStatuses() else { return }
 
-    // Check for sleeping models if any model is loaded.
-    // We look for 'loaded' status, and if found, query /props for that model.
-    // Since --models-max 1 ensures single model, checking the first loaded one is sufficient.
-    if let loadedModelId = newStatuses.first(where: { $0.value == "loaded" })?.key {
-      if UserSettings.sleepIdleTime != .disabled {
-        let isSleeping = await api.isModelSleeping(id: loadedModelId)
-        if isSleeping {
-          _ = await api.unloadModel(id: loadedModelId)
-          await MainActor.run {
-            if self.activeModelId != nil {
-              self.activeModelId = nil
-            }
-          }
+    // If the server reports a model as sleeping (idle timeout reached), unload it
+    // so the UI reflects the freed state.
+    if let sleepingModelId = newStatuses.first(where: { $0.value == "sleeping" })?.key {
+      _ = await api.unloadModel(id: sleepingModelId)
+      await MainActor.run {
+        if self.activeModelId == sleepingModelId {
+          self.activeModelId = nil
         }
       }
     }
