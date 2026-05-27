@@ -26,9 +26,12 @@ enum Layout {
   }
 
   /// Constrains a view to the standard UI icon size (width and height).
+  /// Uses `equalToConstant` so icons never shrink when other row content
+  /// (long titles, hover buttons appearing) competes for width — without this,
+  /// autolayout silently squeezes icons instead of truncating the subtitle.
   static func constrainToIconSize(_ view: NSView) {
-    view.widthAnchor.constraint(lessThanOrEqualToConstant: uiIconSize).isActive = true
-    view.heightAnchor.constraint(lessThanOrEqualToConstant: uiIconSize).isActive = true
+    view.widthAnchor.constraint(equalToConstant: uiIconSize).isActive = true
+    view.heightAnchor.constraint(equalToConstant: uiIconSize).isActive = true
   }
 }
 
