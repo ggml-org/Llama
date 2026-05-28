@@ -66,8 +66,9 @@ final class ModelItemView: ItemView, NSGestureRecognizerDelegate {
     self.onExpand = onExpand
     super.init(frame: .zero)
 
-    iconView.imageView.image = NSImage(
-      systemSymbolName: "cube.fill", accessibilityDescription: "Model")
+    iconView.imageView.image =
+      model.brandLogoAsset.flatMap { NSImage(named: $0) }
+      ?? NSImage(systemSymbolName: "cube.fill", accessibilityDescription: "Model")
 
     // Configure action buttons
     Theme.configure(cancelImageView, symbol: "xmark", color: .systemRed)

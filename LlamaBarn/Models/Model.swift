@@ -86,6 +86,30 @@ struct Model: Identifiable {
     "\(family) \(size)"
   }
 
+  /// Brand logo asset name in `Assets.xcassets/ModelLogos`, matched from the
+  /// parsed family name. Nil when the family doesn't match a known brand — the
+  /// row then falls back to a generic system symbol. Without a curated catalog
+  /// the brand is inferred by keyword rather than looked up.
+  var brandLogoAsset: String? {
+    let haystack = family.lowercased()
+    // Keyword → logo asset. Several Mistral lines share one mark; GLM is z.ai's;
+    // Nemotron is NVIDIA's. Order only matters where keywords overlap (none do).
+    let brands: [(keyword: String, asset: String)] = [
+      ("qwen", "qwen"),
+      ("gemma", "gemma"),
+      ("gpt", "gpt"),
+      ("mistral", "mistral"),
+      ("ministral", "mistral"),
+      ("devstral", "mistral"),
+      ("magistral", "mistral"),
+      ("glm", "z"),
+      ("nemotron", "nvidia"),
+    ]
+    guard let asset = brands.first(where: { haystack.contains($0.keyword) })?.asset
+    else { return nil }
+    return "ModelLogos/\(asset)"
+  }
+
   /// Pretty quantization label (e.g. "Q4") for the row subtitle.
   /// Nil when the label maps to "no qualifier needed" (full precision, empty).
   var quantizationLabel: String? {
