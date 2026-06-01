@@ -11,88 +11,13 @@
 		156891D32E268C5F00F71BD4 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 156891D22E268C5F00F71BD4 /* Sparkle */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXCopyFilesBuildPhase section */
-		1501F0B92E26D4C700040CD6 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "llama-cpp";
-			dstSubfolderSpec = 6;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
 /* Begin PBXFileReference section */
 		1568919C2E2685F700F71BD4 /* LlamaBarn.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LlamaBarn.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		1501F0C42E26D55600040CD6 /* Exceptions for "llama-cpp" folder in "LlamaBarn" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"libggml-base.0.dylib",
-				"libggml-blas.0.dylib",
-				"libggml-cpu.0.dylib",
-				"libggml-metal.0.dylib",
-				"libggml-rpc.0.dylib",
-				libggml.0.dylib,
-				libllama.0.dylib,
-				"libllama-common.0.dylib",
-				"libllama-fit-params-impl.dylib",
-				"libllama-server-impl.dylib",
-				libmtmd.0.dylib,
-				"llama-fit-params",
-				"llama-server",
-			);
-			target = 1568919B2E2685F700F71BD4 /* LlamaBarn */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
-/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-		1501F0C32E26D4D100040CD6 /* Exceptions for "llama-cpp" folder in "Copy Files" phase from "LlamaBarn" target */ = {
-			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
-			attributesByRelativePath = {
-				"libggml-base.0.dylib" = (CodeSignOnCopy, );
-				"libggml-blas.0.dylib" = (CodeSignOnCopy, );
-				"libggml-cpu.0.dylib" = (CodeSignOnCopy, );
-				"libggml-metal.0.dylib" = (CodeSignOnCopy, );
-				"libggml-rpc.0.dylib" = (CodeSignOnCopy, );
-				libggml.0.dylib = (CodeSignOnCopy, );
-				libllama.0.dylib = (CodeSignOnCopy, );
-				"libllama-common.0.dylib" = (CodeSignOnCopy, );
-				"libllama-fit-params-impl.dylib" = (CodeSignOnCopy, );
-				"libllama-server-impl.dylib" = (CodeSignOnCopy, );
-				libmtmd.0.dylib = (CodeSignOnCopy, );
-				"llama-fit-params" = (CodeSignOnCopy, );
-				"llama-server" = (CodeSignOnCopy, );
-			};
-			buildPhase = 1501F0B92E26D4C700040CD6 /* CopyFiles */;
-			membershipExceptions = (
-				"libggml-base.0.dylib",
-				"libggml-blas.0.dylib",
-				"libggml-cpu.0.dylib",
-				"libggml-metal.0.dylib",
-				"libggml-rpc.0.dylib",
-				libggml.0.dylib,
-				libllama.0.dylib,
-				"libllama-common.0.dylib",
-				"libllama-fit-params-impl.dylib",
-				"libllama-server-impl.dylib",
-				libmtmd.0.dylib,
-				"llama-fit-params",
-				"llama-server",
-			);
-		};
-/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1501F0AF2E26D4A400040CD6 /* llama-cpp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				1501F0C42E26D55600040CD6 /* Exceptions for "llama-cpp" folder in "LlamaBarn" target */,
-				1501F0C32E26D4D100040CD6 /* Exceptions for "llama-cpp" folder in "Copy Files" phase from "LlamaBarn" target */,
-			);
 			path = "llama-cpp";
 			sourceTree = "<group>";
 		};
@@ -143,7 +68,6 @@
 				156891982E2685F700F71BD4 /* Sources */,
 				156891992E2685F700F71BD4 /* Frameworks */,
 				1568919A2E2685F700F71BD4 /* Resources */,
-				1501F0B92E26D4C700040CD6 /* CopyFiles */,
 			);
 			buildRules = (
 			);
@@ -361,10 +285,6 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/llama-cpp",
-				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 0.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.llamabarn.LlamaBarn.dev;
@@ -397,10 +317,6 @@
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
-				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/llama-cpp",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 0.0.0;
