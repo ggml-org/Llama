@@ -20,6 +20,11 @@ struct ActiveDownload {
   var tasks: [Int: URLSessionDataTask]
   /// Bytes belonging to files that have already completed (hash-verified and promoted into HF cache).
   var completedFilesBytes: Int64 = 0
+  /// HF download plan (commit hash + blob hashes) needed to write into the HF
+  /// cache layout. Nil between placeholder creation and the async metadata
+  /// fetch completing. Shares this entry's lifecycle, so it can't drift out of
+  /// sync with the download the way a parallel dict would.
+  var plan: HFDownloadPlan?
 
   mutating func addTask(_ task: URLSessionDataTask) {
     tasks[task.taskIdentifier] = task

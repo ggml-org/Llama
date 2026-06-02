@@ -65,10 +65,6 @@ class ModelManager: NSObject, URLSessionDataDelegate {
   /// placeholder and resumes from the on-disk `.partial` bytes.
   var pausedDownloads: [String: PausedDownload] = [:]
 
-  /// HF download plan per model ID, gathered before download starts.
-  /// Contains commit hash and blob hashes needed to write into HF cache layout.
-  var downloadPlans: [String: HFDownloadPlan] = [:]
-
   /// Per-task streaming state for in-flight downloads. Keyed by URLSessionTask.taskIdentifier.
   /// Accessed from both the URLSession delegate queue (nonisolated) and the main actor.
   /// All access is serialized on `writersQueue`, so we opt out of actor isolation here.
@@ -165,7 +161,10 @@ class ModelManager: NSObject, URLSessionDataDelegate {
           )
           return
         }
-        self.downloadPlans[modelId] = plan
+        // The placeholder entry may be gone if the user cancelled during the
+        // async metadata fetch; if so, this is a no-op and startDownloadTasks
+        // bails on the missing plan below.
+        self.activeDownloads[modelId]?.plan = plan
         self.logger.info("HF download plan ready for \(model.displayName): \(plan.repoDir)")
         self.startDownloadTasks(model: model, files: filesToDownload)
       }
@@ -177,7 +176,7 @@ class ModelManager: NSObject, URLSessionDataDelegate {
   /// if a partial already exists on disk, we resume via a `Range` header.
   private func startDownloadTasks(model: Model, files: [URL]) {
     let modelId = model.id
-    guard let plan = downloadPlans[modelId] else {
+    guard let plan = activeDownloads[modelId]?.plan else {
       logger.error("Missing HF download plan when starting tasks for \(model.displayName)")
       tearDownActiveDownload(modelId: modelId, outcome: .pause)
       return
@@ -188,7 +187,8 @@ class ModelManager: NSObject, URLSessionDataDelegate {
       model: model,
       progress: Progress(totalUnitCount: totalUnitCount),
       tasks: [:],
-      completedFilesBytes: 0
+      completedFilesBytes: 0,
+      plan: plan
     )
 
     for fileUrl in files {
@@ -807,7 +807,7 @@ class ModelManager: NSObject, URLSessionDataDelegate {
 
     // Fetch HF download plan (commit/repoDir) on main actor.
     let plan: HFDownloadPlan? = DispatchQueue.main.sync {
-      self.downloadPlans[modelId]
+      self.activeDownloads[modelId]?.plan
     }
     guard let plan else {
       handleDownloadFailure(
@@ -839,7 +839,8 @@ class ModelManager: NSObject, URLSessionDataDelegate {
       }
       if wasCompleted {
         self.logger.info("All downloads completed for model: \(model.displayName)")
-        self.downloadPlans.removeValue(forKey: modelId)
+        // The plan rode along inside the ActiveDownload entry, which
+        // updateActiveDownload already removed once the last task finished.
         // Clean up the now-empty partial dir (the file itself moved to blobs).
         HFCache.removePartials(cacheDir: cacheDir, modelId: modelId)
         self.refreshDownloadedModels()
@@ -962,7 +963,7 @@ class ModelManager: NSObject, URLSessionDataDelegate {
   /// If we can't re-open the partial file, fail the whole model download rather than
   /// leave it hanging in `.downloading` with no forward progress.
   private func restartTask(model: Model, url: URL) {
-    guard let plan = downloadPlans[model.id] else { return }
+    guard let plan = activeDownloads[model.id]?.plan else { return }
     let cacheDir = UserSettings.hfCacheDirectory
     do {
       let writer = try openPartialWriter(
@@ -1051,7 +1052,6 @@ class ModelManager: NSObject, URLSessionDataDelegate {
       cancelTasks(for: modelId)
       activeDownloads.removeValue(forKey: modelId)
       lastNotificationTime.removeValue(forKey: modelId)
-      downloadPlans.removeValue(forKey: modelId)
       // Clear retry counters — a subsequent resume/retry should start a fresh budget.
       if let model {
         for url in model.allDownloadUrls { clearRetryState(for: url) }
