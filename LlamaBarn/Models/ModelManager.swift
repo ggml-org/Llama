@@ -47,15 +47,6 @@ class ModelManager: NSObject, URLSessionDataDelegate {
 
   var activeDownloads: [String: ActiveDownload] = [:]
 
-  /// Looks up a managed model by id. Checks in-flight downloads (which carry
-  /// placeholders synthesized by the deeplink handler), the paused map (also
-  /// placeholders for paused deeplink installs), then the downloaded list.
-  func findManagedModel(id: String) -> Model? {
-    if let m = activeDownloads[id]?.model { return m }
-    if let m = pausedDownloads[id]?.model { return m }
-    return downloadedModels.first { $0.id == id }
-  }
-
   /// Model id → paused-download state (bytes on disk + the `Model` the row
   /// will render from). Sources: `pauseModelDownload` (manually paused this
   /// session) and the internal failure paths (transient failures that
@@ -65,12 +56,10 @@ class ModelManager: NSObject, URLSessionDataDelegate {
   /// placeholder and resumes from the on-disk `.partial` bytes.
   var pausedDownloads: [String: PausedDownload] = [:]
 
-  /// Per-task streaming state for in-flight downloads. Keyed by URLSessionTask.taskIdentifier.
-  /// Accessed from both the URLSession delegate queue (nonisolated) and the main actor.
-  /// All access is serialized on `writersQueue`, so we opt out of actor isolation here.
-  nonisolated(unsafe) private var writers: [Int: PartialWriter] = [:]
-  nonisolated private let writersQueue = DispatchQueue(
-    label: "app.llamabarn.ModelManager.writers", qos: .userInitiated)
+  /// Per-task streaming state for in-flight downloads, keyed by
+  /// `URLSessionTask.taskIdentifier`. Accessed from both the URLSession delegate
+  /// queue (nonisolated) and the main actor; the table serializes all access.
+  nonisolated private let writerTable = WriterTable()
 
   // Retry state: tracks attempt count per URL for exponential backoff
   private var retryAttempts: [URL: Int] = [:]
@@ -87,9 +76,11 @@ class ModelManager: NSObject, URLSessionDataDelegate {
   override init() {
     super.init()
 
-    // URLSession delegate callbacks run on a background queue to avoid blocking main thread during
-    // file operations. State access is synchronized by dispatching to main queue when needed;
-    // writers dict access is guarded by writersQueue.
+    // URLSession delegate callbacks run on a background queue to avoid blocking the main thread
+    // during file operations. The callbacks are self-contained — each writer carries the context
+    // it needs (model, cache dir, plan) — so they never hop back to the main actor synchronously;
+    // they only fire-and-forget `DispatchQueue.main.async` for UI/state updates. Shared writer
+    // state lives in `writerTable`, which serializes access on its own queue.
     let queue = OperationQueue()
     queue.qualityOfService = .userInitiated
 
@@ -194,9 +185,9 @@ class ModelManager: NSObject, URLSessionDataDelegate {
     for fileUrl in files {
       do {
         let writer = try openPartialWriter(
-          modelId: modelId, cacheDir: cacheDir, url: fileUrl, plan: plan)
+          model: model, cacheDir: cacheDir, url: fileUrl, plan: plan)
         let task = makeDataTask(for: fileUrl, modelId: modelId, writer: writer)
-        writersQueue.sync { writers[task.taskIdentifier] = writer }
+        writerTable.sync { $0[task.taskIdentifier] = writer }
         aggregate.addTask(task)
         task.resume()
       } catch {
@@ -242,8 +233,9 @@ class ModelManager: NSObject, URLSessionDataDelegate {
   /// hash over any already-present prefix. The re-hash cost is bounded by existing file size,
   /// which is small relative to the remaining download.
   private func openPartialWriter(
-    modelId: String, cacheDir: URL, url: URL, plan: HFDownloadPlan
+    model: Model, cacheDir: URL, url: URL, plan: HFDownloadPlan
   ) throws -> PartialWriter {
+    let modelId = model.id
     // `filename` is repo-relative (e.g. `Q4_K_M/model.gguf`), not just a basename,
     // so `writeBlobAndLink` places the snapshot symlink at the correct nested
     // path. Entries whose download URL already points at a flat filename fall
@@ -271,7 +263,8 @@ class ModelManager: NSObject, URLSessionDataDelegate {
     }
 
     return PartialWriter(
-      modelId: modelId, url: url, filename: filename,
+      model: model, cacheDir: cacheDir, plan: plan,
+      url: url, filename: filename,
       partialURL: partialURL, handle: handle, hasher: hasher,
       bytesWritten: existing,
       expectedBlobHash: plan.blobHashes[url]
@@ -578,34 +571,27 @@ class ModelManager: NSObject, URLSessionDataDelegate {
     didReceive response: URLResponse,
     completionHandler: @escaping (URLSession.ResponseDisposition) -> Void
   ) {
-    // `findManagedModel` runs on the main actor — we already bounce to main
-    // elsewhere in this delegate (e.g. `UserSettings.hfCacheDirectory` on the
-    // 416 path), so one more sync hop is consistent with the existing shape.
-    guard let modelId = dataTask.taskDescription,
-      let model = DispatchQueue.main.sync(execute: {
-        ModelManager.shared.findManagedModel(id: modelId)
-      }),
+    // The writer carries everything we need (model, cache dir, plan), so the
+    // delegate never reaches back into the main actor. The writer is registered
+    // before the task is resumed, so it's always present by the first response.
+    let taskId = dataTask.taskIdentifier
+    guard let writer = writerTable.sync({ $0[taskId] }),
       let http = response as? HTTPURLResponse
     else {
       completionHandler(.cancel)
       return
     }
+    let modelId = writer.modelId
 
     let status = http.statusCode
 
     // 416 Range Not Satisfiable — partial is already at or past the remote's size.
     // Short-circuit: cancel the transfer (no body needed) and finalize what's on disk.
     if status == 416 {
-      let writer: PartialWriter? = writersQueue.sync {
-        writers.removeValue(forKey: dataTask.taskIdentifier)
-      }
+      writerTable.sync { $0[taskId] = nil }
       completionHandler(.cancel)
-      if let writer {
-        logger.info(
-          "416 for \(writer.filename); partial appears complete, finalizing")
-        finalizeTask(
-          modelId: modelId, model: model, writer: writer, dataTask: dataTask)
-      }
+      logger.info("416 for \(writer.filename); partial appears complete, finalizing")
+      finalizeTask(writer: writer, dataTask: dataTask)
       return
     }
 
@@ -614,13 +600,10 @@ class ModelManager: NSObject, URLSessionDataDelegate {
       let message = userMessage(forHTTPStatus: status)
       // 401/403/404 are permanent — remove partials so a later retry doesn't replay a bad state.
       if [401, 403, 404].contains(status) {
-        let cacheDir = DispatchQueue.main.sync { UserSettings.hfCacheDirectory }
-        HFCache.removePartials(cacheDir: cacheDir, modelId: modelId)
+        HFCache.removePartials(cacheDir: writer.cacheDir, modelId: modelId)
       }
-      let writer: PartialWriter? = writersQueue.sync {
-        writers.removeValue(forKey: dataTask.taskIdentifier)
-      }
-      writer?.closeHandle()
+      writerTable.sync { $0[taskId] = nil }
+      writer.closeHandle()
 
       // Keep Sentry error-grouping stable across releases.
       let nsErr = NSError(
@@ -632,15 +615,16 @@ class ModelManager: NSObject, URLSessionDataDelegate {
         ])
       SentrySDK.capture(error: nsErr)
       completionHandler(.cancel)
-      handleDownloadFailure(modelId: modelId, model: model, reason: message)
+      handleDownloadFailure(model: writer.model, reason: message)
       return
     }
 
     // 200 OK — server ignored our Range request (or we didn't send one).
     // Restart the file: truncate, reset the running hash, reset byte counter.
-    if status == 200 {
-      writersQueue.sync {
-        guard let writer = writers[dataTask.taskIdentifier] else { return }
+    // Both 200 and 206 yield a full-size; stash it for progress tracking.
+    let fullSize = extractFullSize(from: http, status: status)
+    writerTable.sync { _ in
+      if status == 200 {
         if writer.bytesWritten > 0 {
           logger.warning(
             "Server ignored Range for \(writer.filename); restarting from byte 0")
@@ -650,13 +634,8 @@ class ModelManager: NSObject, URLSessionDataDelegate {
         writer.bytesWritten = 0
         writer.hasher = HFCache.SHA256Hasher()
       }
-    }
-
-    // Both 200 and 206 yield a full-size; stash it for progress tracking.
-    let fullSize = extractFullSize(from: http, status: status)
-    if fullSize > 0 {
-      writersQueue.sync {
-        writers[dataTask.taskIdentifier]?.totalExpected = fullSize
+      if fullSize > 0 {
+        writer.totalExpected = fullSize
       }
     }
 
@@ -669,17 +648,18 @@ class ModelManager: NSObject, URLSessionDataDelegate {
   nonisolated func urlSession(
     _ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data
   ) {
-    var writeFailed = false
-    writersQueue.sync {
-      guard let writer = writers[dataTask.taskIdentifier] else { return }
+    let taskId = dataTask.taskIdentifier
+    let writeFailed = writerTable.sync { writers -> Bool in
+      guard let writer = writers[taskId] else { return false }
       do {
         try writer.handle.write(contentsOf: data)
         writer.hasher.update(data)
         writer.bytesWritten += Int64(data.count)
+        return false
       } catch {
         logger.error(
           "Write failed for \(writer.filename): \(error.localizedDescription)")
-        writeFailed = true
+        return true
       }
     }
     if writeFailed {
@@ -705,20 +685,15 @@ class ModelManager: NSObject, URLSessionDataDelegate {
   nonisolated func urlSession(
     _ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?
   ) {
-    // See note in the `didReceive` delegate above on the main-actor hop.
-    guard let modelId = task.taskDescription,
-      let model = DispatchQueue.main.sync(execute: {
-        ModelManager.shared.findManagedModel(id: modelId)
-      }),
-      let dataTask = task as? URLSessionDataTask
-    else { return }
+    guard let dataTask = task as? URLSessionDataTask else { return }
+    let taskId = task.taskIdentifier
+
+    // Always drop the writer so its file handle is closed before anything else
+    // touches the file. Its `model` is our source of truth for reporting.
+    let writer = writerTable.sync { $0.removeValue(forKey: taskId) }
 
     if let error {
       let nsError = error as NSError
-      // Always drop the writer so its file handle is closed before anything else touches the file.
-      let writer: PartialWriter? = writersQueue.sync {
-        writers.removeValue(forKey: task.taskIdentifier)
-      }
       writer?.closeHandle()
 
       // Cancelled: either user cancel or our own short-circuit (416 / HTTP error already handled).
@@ -729,6 +704,11 @@ class ModelManager: NSObject, URLSessionDataDelegate {
 
       // Capture remaining errors to Sentry; the SDK config in LlamaBarnApp filters common noise.
       SentrySDK.capture(error: error)
+
+      // No writer means a terminal handler already ran for this task; nothing to report.
+      guard let writer else { return }
+      let modelId = writer.modelId
+      let model = writer.model
 
       DispatchQueue.main.async { [weak self] in
         guard let self = self else { return }
@@ -744,7 +724,7 @@ class ModelManager: NSObject, URLSessionDataDelegate {
 
         if self.activeDownloads[modelId] != nil {
           _ = self.updateActiveDownload(modelId: modelId) { agg in
-            agg.removeTask(with: task.taskIdentifier)
+            agg.removeTask(with: taskId)
           }
           self.refreshProgress(modelId: modelId)
           self.postDownloadsDidChange()
@@ -763,20 +743,21 @@ class ModelManager: NSObject, URLSessionDataDelegate {
     }
 
     // Success: promote the `.partial` into the HF cache.
-    let writer: PartialWriter? = writersQueue.sync {
-      writers.removeValue(forKey: task.taskIdentifier)
-    }
     guard let writer else { return }  // already handled (e.g. 416 path)
-    finalizeTask(modelId: modelId, model: model, writer: writer, dataTask: dataTask)
+    finalizeTask(writer: writer, dataTask: dataTask)
   }
 
   /// Hashes, verifies, and promotes a completed `.partial` file into `blobs/<sha256>`.
   /// Runs on the delegate queue (background). Never on the main queue — we do file I/O here.
   nonisolated private func finalizeTask(
-    modelId: String, model: Model,
     writer: PartialWriter, dataTask: URLSessionDataTask
   ) {
     writer.closeHandle()
+
+    let model = writer.model
+    let cacheDir = writer.cacheDir
+    let plan = writer.plan
+    let modelId = writer.modelId
 
     let fileSize = FileManager.default.fileSize(atPath: writer.partialURL.path)
 
@@ -785,9 +766,7 @@ class ModelManager: NSObject, URLSessionDataDelegate {
     let minThreshold: Int64 = 1_000_000
     if fileSize <= minThreshold {
       try? FileManager.default.removeItem(at: writer.partialURL)
-      handleDownloadFailure(
-        modelId: modelId, model: model,
-        reason: "file too small (\(fileSize) B)")
+      handleDownloadFailure(model: model, reason: "file too small (\(fileSize) B)")
       return
     }
 
@@ -798,24 +777,12 @@ class ModelManager: NSObject, URLSessionDataDelegate {
         "Hash mismatch for \(writer.filename): expected \(expected), got \(computed)")
       try? FileManager.default.removeItem(at: writer.partialURL)
       handleDownloadFailure(
-        modelId: modelId, model: model,
+        model: model,
         reason: "File verification failed — the partial download was corrupt. Try again."
       )
       return
     }
     let blobHash = writer.expectedBlobHash ?? computed
-
-    // Fetch HF download plan (commit/repoDir) on main actor.
-    let plan: HFDownloadPlan? = DispatchQueue.main.sync {
-      self.activeDownloads[modelId]?.plan
-    }
-    guard let plan else {
-      handleDownloadFailure(
-        modelId: modelId, model: model,
-        reason: "Missing Hugging Face metadata for \(model.displayName).")
-      return
-    }
-    let cacheDir = DispatchQueue.main.sync { UserSettings.hfCacheDirectory }
 
     do {
       try HFCache.writeBlobAndLink(
@@ -825,8 +792,7 @@ class ModelManager: NSObject, URLSessionDataDelegate {
     } catch {
       logger.error(
         "Failed to promote partial \(writer.filename): \(error.localizedDescription)")
-      handleDownloadFailure(
-        modelId: modelId, model: model, reason: error.localizedDescription)
+      handleDownloadFailure(model: model, reason: error.localizedDescription)
       return
     }
 
@@ -851,13 +817,11 @@ class ModelManager: NSObject, URLSessionDataDelegate {
     }
   }
 
-  nonisolated private func handleDownloadFailure(
-    modelId: String, model: Model, reason: String
-  ) {
+  nonisolated private func handleDownloadFailure(model: Model, reason: String) {
     DispatchQueue.main.async { [weak self] in
       guard let self = self else { return }
       self.logger.error("Model download failed (\(reason)) for model: \(model.displayName)")
-      self.tearDownActiveDownload(modelId: modelId, outcome: .pause)
+      self.tearDownActiveDownload(modelId: model.id, outcome: .pause)
       NotificationCenter.default.post(
         name: .LBModelDownloadDidFail,
         object: self,
@@ -967,9 +931,9 @@ class ModelManager: NSObject, URLSessionDataDelegate {
     let cacheDir = UserSettings.hfCacheDirectory
     do {
       let writer = try openPartialWriter(
-        modelId: model.id, cacheDir: cacheDir, url: url, plan: plan)
+        model: model, cacheDir: cacheDir, url: url, plan: plan)
       let task = makeDataTask(for: url, modelId: model.id, writer: writer)
-      writersQueue.sync { writers[task.taskIdentifier] = writer }
+      writerTable.sync { $0[task.taskIdentifier] = writer }
       _ = updateActiveDownload(modelId: model.id) { agg in
         agg.addTask(task)
       }
@@ -979,7 +943,7 @@ class ModelManager: NSObject, URLSessionDataDelegate {
         "Retry failed to open partial for \(url.lastPathComponent): \(error.localizedDescription)"
       )
       handleDownloadFailure(
-        modelId: model.id, model: model,
+        model: model,
         reason: "Couldn't reopen staging file for retry: \(error.localizedDescription)"
       )
     }
@@ -1001,11 +965,9 @@ class ModelManager: NSObject, URLSessionDataDelegate {
       task.cancel()
     }
     // Drop writers and close their handles synchronously so the partial files aren't held open.
-    writersQueue.sync {
+    writerTable.sync { writers in
       for id in taskIds {
-        if let w = writers.removeValue(forKey: id) {
-          w.closeHandle()
-        }
+        writers.removeValue(forKey: id)?.closeHandle()
       }
     }
   }
@@ -1086,7 +1048,7 @@ class ModelManager: NSObject, URLSessionDataDelegate {
   private func refreshProgress(modelId: String) {
     guard var download = activeDownloads[modelId] else { return }
     let taskIds = Array(download.tasks.keys)
-    let (active, expected) = writersQueue.sync { () -> (Int64, Int64) in
+    let (active, expected) = writerTable.sync { writers -> (Int64, Int64) in
       var a: Int64 = 0
       var e: Int64 = 0
       for id in taskIds {
@@ -1205,16 +1167,52 @@ class ModelManager: NSObject, URLSessionDataDelegate {
   }
 }
 
+// MARK: - WriterTable
+
+/// Thread-safe table of in-flight `PartialWriter`s, keyed by `URLSessionTask.taskIdentifier`.
+///
+/// Owns the serial queue that guards both the dictionary and the fields of the
+/// writers it holds: a `PartialWriter`'s mutable state is only ever touched
+/// inside `sync`, so the writers themselves need no further synchronization.
+/// Encapsulating the dict + queue here gives the shared mutable state a single
+/// owner, instead of a raw `nonisolated(unsafe)` field living on the otherwise
+/// main-actor `ModelManager` — hence `@unchecked Sendable`.
+final class WriterTable: @unchecked Sendable {
+  private var writers: [Int: PartialWriter] = [:]
+  private let queue = DispatchQueue(
+    label: "app.llamabarn.ModelManager.writers", qos: .userInitiated)
+
+  /// Runs `body` with exclusive access to the writer table. The sole entry
+  /// point — every read or mutation of a writer goes through here.
+  func sync<T>(_ body: (inout [Int: PartialWriter]) -> T) -> T {
+    queue.sync { body(&writers) }
+  }
+}
+
 // MARK: - PartialWriter
 
 /// Per-file streaming state: open `.partial` file handle, running SHA256 hash,
-/// byte counters, and the expected blob hash when known.
+/// byte counters, the expected blob hash when known, plus the immutable
+/// download context (model, cache dir, HF plan) the delegate callbacks need.
 ///
-/// Reference type so URLSession delegate callbacks can mutate fields without re-storing
-/// into the `writers` dict. All access is serialized on `ModelManager.writersQueue`, so
-/// it's safe across the main actor / delegate queue boundary — hence `@unchecked Sendable`.
+/// Carrying that context here is what lets the nonisolated URLSession delegate
+/// methods run without any synchronous hop back to the main actor: everything
+/// they read is either fixed at download-start time or lives on this writer.
+///
+/// Reference type so URLSession delegate callbacks can mutate fields without
+/// re-storing into the table. All access is serialized on the owning
+/// `WriterTable`'s queue, so it's safe across the main actor / delegate queue
+/// boundary — hence `@unchecked Sendable`.
 final class PartialWriter: @unchecked Sendable {
   let modelId: String
+  /// The model this download belongs to. Snapshotted at start; immutable for
+  /// the life of the transfer, so the delegate can report failures against it
+  /// without looking the model up on the main actor.
+  let model: Model
+  /// HF cache root the finished blob is promoted into.
+  let cacheDir: URL
+  /// HF download plan (commit + repo dir) used by `writeBlobAndLink`.
+  let plan: HFDownloadPlan
   let url: URL
   let filename: String
   let partialURL: URL
@@ -1232,11 +1230,15 @@ final class PartialWriter: @unchecked Sendable {
   let expectedBlobHash: String?
 
   init(
-    modelId: String, url: URL, filename: String, partialURL: URL,
+    model: Model, cacheDir: URL, plan: HFDownloadPlan,
+    url: URL, filename: String, partialURL: URL,
     handle: FileHandle, hasher: HFCache.SHA256Hasher,
     bytesWritten: Int64, expectedBlobHash: String?
   ) {
-    self.modelId = modelId
+    self.modelId = model.id
+    self.model = model
+    self.cacheDir = cacheDir
+    self.plan = plan
     self.url = url
     self.filename = filename
     self.partialURL = partialURL
