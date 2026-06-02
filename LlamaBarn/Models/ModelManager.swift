@@ -323,11 +323,9 @@ class ModelManager: NSObject, URLSessionDataDelegate {
   func deleteDownloadedModel(_ model: Model) {
     cancelModelDownload(model)
 
-    // Clear active model if we're deleting the active model
-    let llamaServer = LlamaServer.shared
-    if llamaServer.activeModelId == model.id {
-      llamaServer.activeModelId = nil
-    }
+    // If the model being deleted is the active one, the server restart triggered
+    // below (via reload() once models.ini changes) drops it; status polling then
+    // reconciles modelStatuses, clearing the derived activeModelId.
 
     let paths = resolvedPaths[model.id]
 

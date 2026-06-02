@@ -57,10 +57,14 @@ class LlamaServer {
   var state: ServerState = .idle {
     didSet { NotificationCenter.default.post(name: .LBServerStateDidChange, object: self) }
   }
-  /// The ID of the currently active (loaded) model, or nil if no model is loaded.
-  var activeModelId: String?
-  var modelStatuses: [String: String] = [:] {
+  var modelStatuses: [String: ModelLoadState] = [:] {
     didSet { NotificationCenter.default.post(name: .LBModelStatusDidChange, object: self) }
+  }
+  /// The ID of the currently active model, derived from `modelStatuses`.
+  /// A model counts as active while it's loaded or in the process of loading.
+  /// `--models-max 1` guarantees at most one such model.
+  var activeModelId: String? {
+    modelStatuses.first { $0.value == .loaded || $0.value == .loading }?.key
   }
   var memoryUsageMb: Double = 0 {
     didSet { NotificationCenter.default.post(name: .LBServerMemoryDidChange, object: self) }
@@ -230,7 +234,7 @@ class LlamaServer {
       let errorMessage = "Process launch failed: \(error.localizedDescription)"
       logger.error("Failed to launch process: \(error)")
       self.state = .error(.launchFailed(errorMessage))
-      self.activeModelId = nil
+      self.modelStatuses = [:]
       return
     }
     startStatusPolling(port: port)
@@ -242,7 +246,9 @@ class LlamaServer {
     memoryUsageMb = 0
     state = .idle
 
-    activeModelId = nil
+    // Clearing statuses also clears the derived `activeModelId`, so a stopped
+    // server never leaves a model showing as loaded in the menu.
+    modelStatuses = [:]
 
     cleanUpResources()
   }
@@ -296,12 +302,12 @@ class LlamaServer {
 
   /// Checks if any model is currently loaded (not loading)
   var isAnyModelLoaded: Bool {
-    return modelStatuses.values.contains { $0 == "loaded" }
+    return modelStatuses.values.contains(.loaded)
   }
 
   /// Checks if any model is currently loading
   var isAnyModelLoading: Bool {
-    return modelStatuses.values.contains { $0 == "loading" }
+    return modelStatuses.values.contains(.loading)
   }
 
   /// Checks if the server is currently loading
@@ -311,20 +317,12 @@ class LlamaServer {
 
   /// Checks if the specified model is currently active
   func isActive(model: Model) -> Bool {
-    return modelStatuses[model.id] == "loaded"
+    return modelStatuses[model.id] == .loaded
   }
 
   /// Checks if the specified model is currently loading
   func isLoading(model: Model) -> Bool {
-    return modelStatuses[model.id] == "loading"
-  }
-
-  /// Returns the ID of the currently loaded variant for the given model, if any.
-  func loadedVariantId(for model: Model) -> String? {
-    if modelStatuses[model.id] == "loaded" {
-      return model.id
-    }
-    return nil
+    return modelStatuses[model.id] == .loading
   }
 
   /// Switch the active model in the UI. In Router Mode, this doesn't restart the server,
@@ -334,33 +332,27 @@ class LlamaServer {
       start()
     }
 
-    // Optimistically set status to "loading" for immediate UI feedback.
-    // The polling will update to "loaded" once the server confirms.
-    modelStatuses[model.id] = "loading"
+    // Optimistically set status to loading for immediate UI feedback. This also
+    // makes the model the derived `activeModelId`. Polling updates to .loaded
+    // once the server confirms.
+    modelStatuses[model.id] = .loading
 
     Task {
       _ = await api.loadModel(id: model.id)
     }
 
-    // In Router Mode, the model is loaded via the /models/load endpoint.
-    // We update local state so the UI knows what's selected.
-    self.activeModelId = model.id
     logger.info("Requested active model: \(model.displayName)")
   }
 
   /// Deselects the current model in the UI.
   func unloadModel(_ model: Model) {
-    // Optimistically set status to "unloaded" for immediate UI feedback.
-    // The polling will confirm once the server acknowledges.
-    let idToUnload = loadedVariantId(for: model) ?? model.id
-    modelStatuses[idToUnload] = "unloaded"
+    // Optimistically set status to unloaded for immediate UI feedback (which
+    // also clears the derived `activeModelId`). Polling confirms once the
+    // server acknowledges.
+    modelStatuses[model.id] = .unloaded
 
     Task {
-      _ = await api.unloadModel(id: idToUnload)
-    }
-
-    if activeModelId == model.id {
-      activeModelId = nil
+      _ = await api.unloadModel(id: model.id)
     }
   }
 
@@ -394,14 +386,10 @@ class LlamaServer {
     guard let newStatuses = await api.fetchModelStatuses() else { return }
 
     // If the server reports a model as sleeping (idle timeout reached), unload it
-    // so the UI reflects the freed state.
-    if let sleepingModelId = newStatuses.first(where: { $0.value == "sleeping" })?.key {
+    // so the UI reflects the freed state. A .sleeping model isn't counted as the
+    // active model, so no extra bookkeeping is needed here.
+    if let sleepingModelId = newStatuses.first(where: { $0.value == .sleeping })?.key {
       _ = await api.unloadModel(id: sleepingModelId)
-      await MainActor.run {
-        if self.activeModelId == sleepingModelId {
-          self.activeModelId = nil
-        }
-      }
     }
 
     await MainActor.run {
