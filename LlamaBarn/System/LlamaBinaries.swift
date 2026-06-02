@@ -1,7 +1,7 @@
 import Foundation
 import os.log
 
-/// Resolves where the llama.cpp executables (`llama-server`, `llama-fit-params`)
+/// Resolves where the llama.cpp executables (`llama`, `llama-fit-params`)
 /// live on disk.
 ///
 /// This is an exploratory branch for making the CLI a standalone install that
@@ -17,15 +17,17 @@ enum LlamaBinaries {
   private static let logger = Logger(subsystem: Logging.subsystem, category: "LlamaBinaries")
 
   /// Where Homebrew installs CLIs on Apple Silicon -- where we expect
-  /// `llama-server` / `llama-fit-params` to already live.
+  /// `llama` / `llama-fit-params` to already live.
   static let binDir: String = {
     let dir = "/opt/homebrew/bin"
     logger.info("Using llama.cpp binaries at \(dir, privacy: .public)")
     return dir
   }()
 
-  /// Path to the `llama-server` executable.
-  static var serverPath: String { binDir + "/llama-server" }
+  /// Path to the `llama` executable. The server is launched via its
+  /// `serve` subcommand (the modern replacement for the standalone
+  /// `llama-server` binary).
+  static var llamaPath: String { binDir + "/llama" }
 
   /// Path to the `llama-fit-params` executable.
   static var fitParamsPath: String { binDir + "/llama-fit-params" }

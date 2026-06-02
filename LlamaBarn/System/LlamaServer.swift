@@ -91,10 +91,10 @@ class LlamaServer {
 
   /// Basic validation of required paths
   private func validatePaths() throws {
-    let llamaServerPath = LlamaBinaries.serverPath
-    guard FileManager.default.fileExists(atPath: llamaServerPath) else {
-      logger.error("llama-server binary not found: \(llamaServerPath)")
-      throw LlamaServerError.invalidPath(llamaServerPath)
+    let llamaPath = LlamaBinaries.llamaPath
+    guard FileManager.default.fileExists(atPath: llamaPath) else {
+      logger.error("llama binary not found: \(llamaPath)")
+      throw LlamaServerError.invalidPath(llamaPath)
     }
   }
 
@@ -148,7 +148,7 @@ class LlamaServer {
 
     let presetsPath = UserSettings.appSupportDir.appendingPathComponent("models.ini").path
 
-    let llamaServerPath = LlamaBinaries.serverPath
+    let llamaPath = LlamaBinaries.llamaPath
 
     // Empty dir to suppress router mode's automatic model discovery from cache.
     // Without this, llama-server scans the HF cache and lists every GGUF it finds.
@@ -164,6 +164,8 @@ class LlamaServer {
     ]
 
     var arguments = [
+      // `serve` is the `llama` subcommand that replaces the old `llama-server`.
+      "serve",
       "--models-preset", presetsPath,
       "--port", String(port),
       "--models-max", "1",
@@ -190,7 +192,7 @@ class LlamaServer {
     let workingDirectory = UserSettings.appSupportDir.path
 
     let process = Process()
-    process.executableURL = URL(fileURLWithPath: llamaServerPath)
+    process.executableURL = URL(fileURLWithPath: llamaPath)
     process.arguments = arguments
     process.currentDirectoryURL = URL(fileURLWithPath: workingDirectory)
 
