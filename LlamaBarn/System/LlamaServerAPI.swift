@@ -1,6 +1,14 @@
 import Foundation
 import os.log
 
+/// Per-model load state as reported by llama-server's `/models` endpoint.
+enum ModelLoadState: String, Equatable {
+  case loaded
+  case loading
+  case sleeping
+  case unloaded
+}
+
 /// HTTP client for communicating with llama-server's REST API.
 /// Encapsulates request building and response parsing for server endpoints.
 struct LlamaServerAPI {
@@ -26,17 +34,17 @@ struct LlamaServerAPI {
   }
 
   /// Fetches the current status of all models.
-  /// Returns a dictionary mapping model IDs to their status strings.
-  /// Possible values: "loaded", "loading", "sleeping", "unloaded".
-  func fetchModelStatuses() async -> [String: String]? {
+  /// Returns a dictionary mapping model IDs to their load state.
+  /// Unknown or missing states are treated as `.unloaded`.
+  func fetchModelStatuses() async -> [String: ModelLoadState]? {
     guard let data = await get(endpoint: "models") else { return nil }
 
     guard let response = try? JSONDecoder().decode(ModelsResponse.self, from: data) else {
       return nil
     }
 
-    return response.data.reduce(into: [String: String]()) { dict, item in
-      dict[item.id] = item.status?.value ?? "unloaded"
+    return response.data.reduce(into: [String: ModelLoadState]()) { dict, item in
+      dict[item.id] = item.status.flatMap { ModelLoadState(rawValue: $0.value) } ?? .unloaded
     }
   }
 
