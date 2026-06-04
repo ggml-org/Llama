@@ -1,18 +1,19 @@
 import AppKit
 
-/// Header row above the installed models list. Shows the "Installed" label
-/// with a link to the running server's /models endpoint.
-final class InstalledHeaderView: ItemView {
+/// Header row above a menu section (e.g. "Installed", "Discover"). Shows the
+/// section title, optionally followed by a link (e.g. the running server's
+/// /models endpoint above the Installed section).
+final class SectionHeaderView: ItemView {
   private var linkUrl: URL?
   private let linkLabel = Theme.secondaryLabel()
 
-  init(linkText: String?, linkUrl: URL?) {
+  init(title: String = "Installed", linkText: String? = nil, linkUrl: URL? = nil) {
     self.linkUrl = linkUrl
     super.init(frame: .zero)
 
     let titleLabel = Theme.secondaryLabel()
     titleLabel.textColor = Theme.Colors.textPrimary
-    titleLabel.stringValue = "Installed"
+    titleLabel.stringValue = title
     titleLabel.maximumNumberOfLines = 1
     titleLabel.lineBreakMode = .byTruncatingTail
     titleLabel.cell?.truncatesLastVisibleLine = true

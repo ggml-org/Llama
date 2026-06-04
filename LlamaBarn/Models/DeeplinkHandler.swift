@@ -26,11 +26,24 @@ final class DeeplinkHandler {
 
     switch parsed {
     case .install(let repo, let quant):
-      Task { await resolveAndInstall(repo: repo, quant: quant) }
+      // Deeplinks fire with the menu closed, so announce progress via a hint bubble.
+      install(repo: repo, quant: quant, announce: true)
     }
   }
 
-  private func resolveAndInstall(repo: String, quant: String?) async {
+  /// Resolves a repo+quant and starts the download, identically to a deeplink.
+  /// Exposed so in-app entry points (e.g. the Discover catalog section) share
+  /// the exact same resolve, dedupe, and error-surfacing path as `llama://` links.
+  ///
+  /// `announce` controls the menu-bar hint bubble: on for deeplinks (where the
+  /// menu is closed and the bubble is the only feedback), off for in-app clicks
+  /// (where the menu is open and the row itself transitions to downloading, so a
+  /// bubble would just be redundant noise). Errors still surface as alerts either way.
+  func install(repo: String, quant: String?, announce: Bool) {
+    Task { await resolveAndInstall(repo: repo, quant: quant, announce: announce) }
+  }
+
+  private func resolveAndInstall(repo: String, quant: String?, announce: Bool) async {
     let manager = ModelManager.shared
     let token: String? = {
       let t = UserSettings.hfToken ?? ""
@@ -66,7 +79,7 @@ final class DeeplinkHandler {
       $0.id == resolved.modelId || $0.downloadUrl == resolved.mainUrl
     }) {
       logger.info("Deeplink \(resolved.modelId, privacy: .public) is already installed")
-      postHint("\(existing.displayName) is already installed")
+      if announce { postHint("\(existing.displayName) is already installed") }
       return
     }
 
@@ -84,8 +97,9 @@ final class DeeplinkHandler {
       // Acknowledge the deeplink with a speech bubble near the menu bar icon --
       // resolve can take a few seconds, so this is often the user's first sign
       // that the click landed. The bubble dismisses the moment they open the
-      // menu, where progress is surfaced.
-      postHint("Downloading \(entry.displayName)…")
+      // menu, where progress is surfaced. Skipped for in-app clicks, where the
+      // menu is already open and the row itself shows the download starting.
+      if announce { postHint("Downloading \(entry.displayName)…") }
     } catch {
       presentAlert(
         title: "Couldn’t start the download.",

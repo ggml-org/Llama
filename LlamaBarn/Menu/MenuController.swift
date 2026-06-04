@@ -14,6 +14,19 @@ final class MenuController: NSObject, NSMenuDelegate {
   private var expandedModelIds: Set<String> = []
   private var infoExpandedModelIds: Set<String> = []  // Models with info text expanded
 
+  /// Featured catalog suggestions for the Discover section. Fetched from the
+  /// remote catalog on launch (and on menu-open if still empty); empty when the
+  /// fetch hasn't landed or failed, in which case the section simply doesn't show.
+  private var discoverSuggestions: [Catalog.Suggestion] = []
+  private var isLoadingDiscover = false
+
+  /// Set of managed model ids reflected in the menu as last built. Lets the
+  /// progress observer distinguish a membership change (a download started or
+  /// stopped — needs a full rebuild so rows appear/disappear) from a plain
+  /// progress tick (just refresh the existing rows). Without this, a download
+  /// kicked off from Discover wouldn't surface as a row until the next rebuild.
+  private var renderedManagedIds: Set<String> = []
+
   private var hintPopover: HintPopover?
 
   // Store observer tokens for proper cleanup
@@ -37,6 +50,24 @@ final class MenuController: NSObject, NSMenuDelegate {
     configureStatusItem()
     setupObservers()
     showWelcomeIfNeeded()
+    loadDiscoverSuggestions()
+  }
+
+  /// Fetches featured catalog suggestions in the background, then rebuilds the
+  /// menu so the Discover section appears. No-op if a fetch is already in flight.
+  private func loadDiscoverSuggestions() {
+    guard !isLoadingDiscover else { return }
+    isLoadingDiscover = true
+    let systemMemoryMb = SystemMemory.memoryMb
+    Task { [weak self] in
+      let suggestions = await Catalog.fetchFeatured(systemMemoryMb: systemMemoryMb)
+      await MainActor.run {
+        guard let self else { return }
+        self.isLoadingDiscover = false
+        self.discoverSuggestions = suggestions
+        self.rebuildMenuIfPossible()
+      }
+    }
   }
 
   func openMenu() {
@@ -88,6 +119,8 @@ final class MenuController: NSObject, NSMenuDelegate {
   func menuWillOpen(_ menu: NSMenu) {
     guard menu === statusItem.menu else { return }
     modelManager.refreshDownloadedModels()
+    // Retry the catalog fetch if it hasn't landed yet (e.g. offline at launch).
+    if discoverSuggestions.isEmpty { loadDiscoverSuggestions() }
   }
 
   func menuDidClose(_ menu: NSMenu) {
@@ -114,8 +147,25 @@ final class MenuController: NSObject, NSMenuDelegate {
       addFolderWarning(to: menu)
     }
 
-    addInstalledSection(to: menu)
+    // Snapshot the managed models once — `managedModels` sorts and concatenates
+    // three lists, and the rebuild needs it for the installed rows, the Discover
+    // filter, the empty-state decision, and the membership snapshot below.
+    let managed = modelManager.managedModels
+    let suggestions = visibleDiscoverSuggestions(managed: managed)
+
+    addInstalledSection(to: menu, models: managed)
+    addDiscoverSection(to: menu, suggestions: suggestions, separated: !managed.isEmpty)
+
+    // Nothing installed and no suggestions to offer — fall back to the empty state.
+    if managed.isEmpty && suggestions.isEmpty {
+      menu.addItem(NSMenuItem.viewItem(with: EmptyStateView()))
+    }
+
     addFooter(to: menu)
+
+    // Snapshot the membership this build reflects, so the downloads observer can
+    // tell a membership change from a progress tick.
+    renderedManagedIds = Set(managed.map(\.id))
   }
 
   // MARK: - Live updates without closing submenus
@@ -152,8 +202,22 @@ final class MenuController: NSObject, NSMenuDelegate {
     // Model status changed (loaded/unloaded)
     observe(.LBModelStatusDidChange)
 
-    // Download progress updated - refresh progress indicators
-    observe(.LBModelDownloadsDidChange)
+    // Download state changed. A plain progress tick only refreshes existing
+    // rows; a membership change (download started/stopped — e.g. from Discover)
+    // rebuilds so the row appears or disappears without reopening the menu.
+    let downloadsObserver = NotificationCenter.default.addObserver(
+      forName: .LBModelDownloadsDidChange, object: nil, queue: .main
+    ) { [weak self] _ in
+      MainActor.assumeIsolated {
+        guard let self else { return }
+        let currentIds = Set(self.modelManager.managedModels.map(\.id))
+        if currentIds != self.renderedManagedIds {
+          self.rebuildMenuIfPossible()
+        }
+        self.refresh()
+      }
+    }
+    observers.append(downloadsObserver)
 
     // Model downloaded or deleted - rebuild the installed-models section
     observe(.LBModelDownloadedListDidChange, rebuildMenu: true)
@@ -255,17 +319,14 @@ final class MenuController: NSObject, NSMenuDelegate {
 
   // MARK: - Installed Section
 
-  private func addInstalledSection(to menu: NSMenu) {
-    let models = modelManager.managedModels
-    guard !models.isEmpty else {
-      menu.addItem(NSMenuItem.viewItem(with: EmptyStateView()))
-      return
-    }
+  private func addInstalledSection(to menu: NSMenu, models: [Model]) {
+    // Empty-state handling lives in rebuildMenu, which also weighs Discover.
+    guard !models.isEmpty else { return }
 
     // "Installed" header with a link to the running server's /models endpoint
     let host = LlamaServer.resolvedHost
     let modelsUrl = URL(string: "http://\(host):\(LlamaServer.defaultPort)/models")
-    let header = InstalledHeaderView(linkText: "models", linkUrl: modelsUrl)
+    let header = SectionHeaderView(title: "Installed", linkText: "models", linkUrl: modelsUrl)
     menu.addItem(NSMenuItem.viewItem(with: header))
 
     // Always show models
@@ -310,6 +371,53 @@ final class MenuController: NSObject, NSMenuDelegate {
       }
     }
     return items
+  }
+
+  // MARK: - Discover Section
+
+  /// Featured suggestions minus anything already installed, downloading, or
+  /// paused — matched by repo, since the suggestion's repo equals the `{org}/{repo}`
+  /// prefix of the model id the resolver produces.
+  private func visibleDiscoverSuggestions(managed: [Model]) -> [Catalog.Suggestion] {
+    let managedRepos = Set(
+      managed.map { model in
+        model.id.split(separator: ":").first.map(String.init) ?? model.id
+      })
+    return discoverSuggestions.filter { !managedRepos.contains($0.repo) }
+  }
+
+  /// Adds the "Discover" section: a short list of featured models, one best-fit
+  /// build per family, that install with a single click. Hidden when there's
+  /// nothing to suggest. `separated` draws a divider above it when an Installed
+  /// section precedes it.
+  private func addDiscoverSection(
+    to menu: NSMenu, suggestions: [Catalog.Suggestion], separated: Bool
+  ) {
+    guard !suggestions.isEmpty else { return }
+
+    if separated {
+      menu.addItem(NSMenuItem.viewItem(with: SeparatorView()))
+    }
+
+    let header = SectionHeaderView(title: "Discover")
+    menu.addItem(NSMenuItem.viewItem(with: header))
+
+    for suggestion in suggestions {
+      let view = CatalogItemView(suggestion: suggestion) { [weak self] suggestion in
+        self?.installSuggestion(suggestion)
+      }
+      menu.addItem(NSMenuItem.viewItem(with: view))
+    }
+  }
+
+  /// Starts a download for a catalog suggestion via the shared deeplink installer.
+  /// The resolve is async (a network round-trip), so we deliberately don't rebuild
+  /// here — doing so would flash the empty state while `managedModels` is still
+  /// empty. Once the download actually starts, the downloads observer sees the
+  /// membership change and rebuilds: the new row appears under Installed and the
+  /// suggestion drops out of Discover automatically (its repo is now managed).
+  private func installSuggestion(_ suggestion: Catalog.Suggestion) {
+    DeeplinkHandler.shared.install(repo: suggestion.repo, quant: suggestion.quant, announce: false)
   }
 
   private func toggleExpansion(for modelId: String) {
