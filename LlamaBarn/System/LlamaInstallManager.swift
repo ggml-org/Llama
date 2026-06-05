@@ -30,6 +30,11 @@ final class LlamaInstallManager {
     }
   }
 
+  /// Version of the resolved binary in use, for display (e.g. the menu footer).
+  /// Refreshed at launch and after an install; nil until first read or when no
+  /// binary is present.
+  private(set) var currentVersion: LlamaVersion?
+
   /// Ensures a usable `llama` binary exists, installing the app-owned one if
   /// none is found. Returns true if a binary is available afterward.
   @discardableResult
@@ -38,6 +43,7 @@ final class LlamaInstallManager {
       return await install()
     }
     state = .idle
+    await refreshVersion()
     return true
   }
 
@@ -49,6 +55,9 @@ final class LlamaInstallManager {
     do {
       try await LlamaInstaller.installLatest()
       logger.info("Installed the app-owned llama CLI")
+      // Refresh before flipping to .idle so the rebuild triggered by the state
+      // change already reflects the freshly-installed version.
+      await refreshVersion()
       state = .idle
       return true
     } catch {
@@ -57,5 +66,13 @@ final class LlamaInstallManager {
       state = .failed(message: message)
       return false
     }
+  }
+
+  /// Reads the in-use binary's version off the main thread and caches it.
+  private func refreshVersion() async {
+    currentVersion = await Task.detached {
+      guard let path = LlamaBinaries.llamaPath else { return nil }
+      return LlamaBinaries.readVersion(at: path)
+    }.value
   }
 }

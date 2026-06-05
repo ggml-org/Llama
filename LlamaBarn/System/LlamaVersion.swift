@@ -24,6 +24,9 @@ struct LlamaVersion: Comparable, CustomStringConvertible {
     self.raw = String(token)
   }
 
+  /// The clean build tag without the commit sha, e.g. `b9370`. For display.
+  var tag: String { "b\(build)" }
+
   static func < (lhs: LlamaVersion, rhs: LlamaVersion) -> Bool { lhs.build < rhs.build }
 
   var description: String { raw }

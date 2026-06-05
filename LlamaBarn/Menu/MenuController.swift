@@ -311,6 +311,7 @@ final class MenuController: NSObject, NSMenuDelegate {
     menu.addItem(NSMenuItem.viewItem(with: SeparatorView()))
 
     let footerView = FooterView(
+      llamaVersion: LlamaInstallManager.shared.currentVersion?.tag,
       onCheckForUpdates: { [weak self] in self?.checkForUpdates() },
       onOpenSettings: { [weak self] in self?.openSettings() },
       onQuit: { [weak self] in self?.quitApp() }
