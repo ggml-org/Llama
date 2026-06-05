@@ -124,24 +124,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // Initialize the shared model library manager to scan for existing models
     _ = ModelManager.shared
 
-    #if DEBUG
-      // Log the resolved CLI status (presence/ownership/version) for development.
-      // Runs off-main since status() blocks on a `version` subprocess.
-      Task.detached {
-        let status = LlamaBinaries.status()
-        Logger(subsystem: Logging.subsystem, category: "LlamaBinaries")
-          .info("CLI status: \(String(describing: status), privacy: .public)")
-      }
-    #endif
-
     // Create the AppKit-based status bar menu (installed models only for now)
     menuController = MenuController()
 
     // Initialize settings window controller (listens for LBShowSettings notifications)
     settingsWindowController = SettingsWindowController.shared
 
-    // Start the server in Router Mode
-    LlamaServer.shared.start()
+    // Ensure a usable llama binary exists, then start the server in Router Mode.
+    ensureCLIThenStartServer()
 
     // Listen for explicit update requests from the menu controller
     updatesObserver = NotificationCenter.default.addObserver(
@@ -167,6 +157,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     logger.info("LlamaBarn startup complete")
+  }
+
+  /// Ensures a usable `llama` binary is present -- installing one if none is
+  /// found -- then starts the server. Install logic lives here, at launch,
+  /// rather than in `LlamaServer.start()`, which runs on every model load and
+  /// settings change.
+  ///
+  /// For now a missing binary triggers a silent install; how this is surfaced
+  /// (silent vs. a prompt) and how an outdated binary is handled are left for
+  /// the install UX. If the install fails, `start()` surfaces the
+  /// missing-binary error state in the menu.
+  private func ensureCLIThenStartServer() {
+    Task { @MainActor in
+      let resolution = LlamaBinaries.resolve()
+      logger.info("CLI at launch: \(String(describing: resolution), privacy: .public)")
+
+      if case .missing = resolution {
+        logger.info("No llama binary found; installing the app-owned CLI")
+        do {
+          try await LlamaInstaller.installLatest()
+          logger.info("Installed the app-owned llama CLI")
+        } catch {
+          logger.error("CLI install failed: \(error.localizedDescription, privacy: .public)")
+        }
+      }
+
+      LlamaServer.shared.start()
+    }
   }
 
   func applicationWillTerminate(_ notification: Notification) {

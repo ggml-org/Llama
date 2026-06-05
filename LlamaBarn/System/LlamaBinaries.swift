@@ -57,6 +57,17 @@ enum LlamaBinaries {
       return .appOwned(path: appOwnedPath)
     }
 
+    #if DEBUG
+      // Dev affordance: pretend external installs (e.g. Homebrew) aren't present,
+      // so the missing -> install path can be exercised on a machine that already
+      // has llama.cpp. Toggle with:
+      //   defaults write app.llamabarn.LlamaBarn.dev forceAppOwnedLlama -bool YES
+      if UserDefaults.standard.bool(forKey: "forceAppOwnedLlama") {
+        logger.debug("forceAppOwnedLlama set; ignoring external installs")
+        return .missing
+      }
+    #endif
+
     for dir in externalDirs {
       let path = dir + "/llama"
       if fm.isExecutableFile(atPath: path) {
