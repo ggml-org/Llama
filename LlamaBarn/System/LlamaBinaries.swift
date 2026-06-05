@@ -1,34 +1,69 @@
 import Foundation
 import os.log
 
-/// Resolves where the llama.cpp executables (`llama`, `llama-fit-params`)
-/// live on disk.
+/// Resolves the `llama` executable the app drives, and classifies who owns it.
 ///
-/// This is an exploratory branch for making the CLI a standalone install that
-/// the app drives instead of carrying its own bundled copy. For this first step
-/// the app takes NO responsibility for installing anything -- it assumes a
-/// `llama.cpp` install is already present (via Homebrew) and just points at it.
+/// The app follows a shared-path model:
+/// - it owns the curl-install path (`~/.installama/llama`, what `installama.sh`
+///   produces): it may install a binary there and keep it updated
+/// - any other install (e.g. Homebrew) is treated as external: the app uses it
+///   but never modifies it
 ///
-/// There is deliberately no bundle fallback: if a model runs, it ran the external
-/// binary, because there is no other. A missing install surfaces as a clear error
-/// when the server/profiler validate the path before launching.
+/// `llama` is the unified llama.cpp executable -- the server is `llama serve`
+/// and memory profiling is `llama fit-params`, both subcommands of this one
+/// binary. There is no separate `llama-server` / `llama-fit-params` to find.
 enum LlamaBinaries {
 
   private static let logger = Logger(subsystem: Logging.subsystem, category: "LlamaBinaries")
 
-  /// Where Homebrew installs CLIs on Apple Silicon -- where we expect
-  /// `llama` / `llama-fit-params` to already live.
-  static let binDir: String = {
-    let dir = "/opt/homebrew/bin"
-    logger.info("Using llama.cpp binaries at \(dir, privacy: .public)")
-    return dir
-  }()
+  /// The curl-install path the app owns (matches `installama.sh`'s layout).
+  /// The real binary lives in `~/.installama`; `installama.sh` also drops a
+  /// `~/.local/bin/llama` symlink onto PATH, but the app points at the real file.
+  static let appOwnedPath: String =
+    (NSHomeDirectory() as NSString).appendingPathComponent(".installama/llama")
 
-  /// Path to the `llama` executable. The server is launched via its
-  /// `serve` subcommand (the modern replacement for the standalone
-  /// `llama-server` binary).
-  static var llamaPath: String { binDir + "/llama" }
+  /// External locations to probe when the app hasn't installed its own binary.
+  /// Covers the Homebrew bin dirs (Apple Silicon and Intel).
+  private static let externalDirs = ["/opt/homebrew/bin", "/usr/local/bin"]
 
-  /// Path to the `llama-fit-params` executable.
-  static var fitParamsPath: String { binDir + "/llama-fit-params" }
+  /// Where the `llama` binary is and who owns it.
+  enum Resolution: Equatable {
+    /// App-managed binary at the curl-install path; the app may update it.
+    case appOwned(path: String)
+    /// A pre-existing install (e.g. Homebrew); use it but never modify it.
+    case external(path: String)
+    /// No `llama` binary found anywhere; the install flow needs to run.
+    case missing
+  }
+
+  /// Resolves the active `llama` binary. The app-owned path wins, then the
+  /// external locations in order, else `.missing`.
+  static func resolve() -> Resolution {
+    let fm = FileManager.default
+
+    if fm.isExecutableFile(atPath: appOwnedPath) {
+      return .appOwned(path: appOwnedPath)
+    }
+
+    for dir in externalDirs {
+      let path = dir + "/llama"
+      if fm.isExecutableFile(atPath: path) {
+        return .external(path: path)
+      }
+    }
+
+    return .missing
+  }
+
+  /// The path to the `llama` binary to invoke, or `nil` if none is installed.
+  static var llamaPath: String? {
+    switch resolve() {
+    case .appOwned(let path), .external(let path):
+      logger.debug("Using llama binary at \(path, privacy: .public)")
+      return path
+    case .missing:
+      logger.error("No llama binary found")
+      return nil
+    }
+  }
 }

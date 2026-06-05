@@ -93,13 +93,13 @@ class LlamaServer {
     }
   }
 
-  /// Basic validation of required paths
-  private func validatePaths() throws {
-    let llamaPath = LlamaBinaries.llamaPath
-    guard FileManager.default.fileExists(atPath: llamaPath) else {
-      logger.error("llama binary not found: \(llamaPath)")
-      throw LlamaServerError.invalidPath(llamaPath)
+  /// Resolves the `llama` binary path, throwing if no install is found.
+  private func resolveLlamaPath() throws -> String {
+    guard let path = LlamaBinaries.llamaPath else {
+      logger.error("llama binary not found")
+      throw LlamaServerError.invalidPath("llama")
     }
+    return path
   }
 
   private func attachOutputHandlers(for process: Process) {
@@ -137,9 +137,10 @@ class LlamaServer {
     let port = Self.defaultPort
     stop()
 
-    // Validate paths
+    // Resolve the llama binary up front; a missing install surfaces as an error.
+    let llamaPath: String
     do {
-      try validatePaths()
+      llamaPath = try resolveLlamaPath()
     } catch let error as LlamaServerError {
       self.state = .error(error)
       return
@@ -151,8 +152,6 @@ class LlamaServer {
     state = .loading
 
     let presetsPath = UserSettings.appSupportDir.appendingPathComponent("models.ini").path
-
-    let llamaPath = LlamaBinaries.llamaPath
 
     // Empty dir to suppress router mode's automatic model discovery from cache.
     // Without this, llama-server scans the HF cache and lists every GGUF it finds.

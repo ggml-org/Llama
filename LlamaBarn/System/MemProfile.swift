@@ -4,7 +4,7 @@ import os.log
 
 /// Per-model memory profile: parameters of an affine estimator that predicts
 /// total memory at any context size. Currently produced by probing with
-/// `llama-fit-params`, but the data is independent of how it's measured.
+/// `llama fit-params`, but the data is independent of how it's measured.
 /// Cached to disk so we don't re-run on every launch.
 ///
 /// All fields are non-optional on purpose: when we add a new field, synthesized
@@ -36,7 +36,7 @@ struct MemProfile: Codable {
   }
 }
 
-/// Probes a model with the `llama-fit-params` binary to derive a `MemProfile`.
+/// Probes a model with `llama fit-params` to derive a `MemProfile`.
 /// Run once per installed model; the result is cached on disk.
 enum MemProfileRunner {
 
@@ -57,19 +57,17 @@ enum MemProfileRunner {
   /// Takes ~2s per model (two probes). Returns nil on failure.
   /// Supports cancellation — terminates the subprocess if the Task is cancelled.
   static func run(modelPath: String) async -> MemProfile? {
-    let binaryPath = LlamaBinaries.fitParamsPath
-
-    guard FileManager.default.fileExists(atPath: binaryPath) else {
-      logger.error("llama-fit-params binary not found at \(binaryPath)")
+    guard let llamaPath = LlamaBinaries.llamaPath else {
+      logger.error("llama binary not found")
       return nil
     }
 
     let ctxLo: UInt32 = 4096
     let ctxHi: UInt32 = 131072
 
-    guard let loMib = await probeTotalMib(binary: binaryPath, modelPath: modelPath, ctx: ctxLo)
+    guard let loMib = await probeTotalMib(llama: llamaPath, modelPath: modelPath, ctx: ctxLo)
     else { return nil }
-    guard let hiMib = await probeTotalMib(binary: binaryPath, modelPath: modelPath, ctx: ctxHi)
+    guard let hiMib = await probeTotalMib(llama: llamaPath, modelPath: modelPath, ctx: ctxHi)
     else { return nil }
 
     // Affine fit: solve a + b·ctx_lo = lo, a + b·ctx_hi = hi.
@@ -102,7 +100,7 @@ enum MemProfileRunner {
     return MemProfile(ctxBytesPer1kTokens: bBytesPer1k, residentBytes: aBytes)
   }
 
-  /// Runs `llama-fit-params -c <ctx> -fitp on` and returns the total MiB
+  /// Runs `llama fit-params -c <ctx> -fitp on` and returns the total MiB
   /// footprint across all devices (sum of model + context + compute columns).
   ///
   /// `-fitp on` writes one line per device to stdout, e.g.:
@@ -112,11 +110,11 @@ enum MemProfileRunner {
   /// memory every row draws from the same physical RAM, so all rows count
   /// toward the same budget.
   private static func probeTotalMib(
-    binary: String, modelPath: String, ctx: UInt32
+    llama: String, modelPath: String, ctx: UInt32
   ) async -> Int? {
     let process = Process()
-    process.executableURL = URL(fileURLWithPath: binary)
-    process.arguments = ["-m", modelPath, "-c", String(ctx), "-fitp", "on"]
+    process.executableURL = URL(fileURLWithPath: llama)
+    process.arguments = ["fit-params", "-m", modelPath, "-c", String(ctx), "-fitp", "on"]
 
     let stdoutPipe = Pipe()
     let stderrPipe = Pipe()
@@ -126,7 +124,7 @@ enum MemProfileRunner {
     do {
       try process.run()
     } catch {
-      logger.error("Failed to launch llama-fit-params: \(error.localizedDescription)")
+      logger.error("Failed to launch llama fit-params: \(error.localizedDescription)")
       return nil
     }
 
@@ -144,7 +142,7 @@ enum MemProfileRunner {
         // status 15 = SIGTERM from our cancellation handler, don't log
         if process.terminationStatus != 15 {
           logger.error(
-            "llama-fit-params (ctx=\(ctx)) exited with status \(process.terminationStatus): \(errOutput.prefix(500))"
+            "llama fit-params (ctx=\(ctx)) exited with status \(process.terminationStatus): \(errOutput.prefix(500))"
           )
         }
         return nil
