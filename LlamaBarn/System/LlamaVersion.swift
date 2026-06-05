@@ -27,6 +27,9 @@ struct LlamaVersion: Comparable, CustomStringConvertible {
   /// The clean build tag without the commit sha, e.g. `b9370`. For display.
   var tag: String { "b\(build)" }
 
+  // Identity and ordering are by build number -- the commit sha is ignored, so a
+  // pinned tag like `b9444` compares equal to a reported `b9444-<sha>`.
+  static func == (lhs: LlamaVersion, rhs: LlamaVersion) -> Bool { lhs.build == rhs.build }
   static func < (lhs: LlamaVersion, rhs: LlamaVersion) -> Bool { lhs.build < rhs.build }
 
   var description: String { raw }

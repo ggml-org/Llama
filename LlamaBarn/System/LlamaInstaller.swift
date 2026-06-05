@@ -43,7 +43,6 @@ enum LlamaInstaller {
 
   enum InstallError: Error, LocalizedError {
     case unsupportedHardware(String)
-    case noVersion
     case downloadFailed(String)
     case decompressFailed(String)
     case installFailed(String)
@@ -52,8 +51,6 @@ enum LlamaInstaller {
       switch self {
       case .unsupportedHardware(let detail):
         return "No prebuilt llama binary for this Mac (\(detail))."
-      case .noVersion:
-        return "Couldn't determine the latest llama version."
       case .downloadFailed(let detail):
         return "Download failed: \(detail)"
       case .decompressFailed(let detail):
@@ -65,26 +62,6 @@ enum LlamaInstaller {
   }
 
   // MARK: - Public API
-
-  /// Fetches the latest available version tag (e.g. `b9444`).
-  static func latestVersion() async throws -> String {
-    guard let url = URL(string: "\(bucketBase)/latest") else { throw InstallError.noVersion }
-    let (data, response) = try await URLSession.shared.data(from: url)
-    guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
-      let raw = String(data: data, encoding: .utf8)?
-        .trimmingCharacters(in: .whitespacesAndNewlines),
-      !raw.isEmpty
-    else {
-      throw InstallError.noVersion
-    }
-    return raw
-  }
-
-  /// Resolves the latest version and installs it.
-  static func installLatest() async throws {
-    let version = try await latestVersion()
-    try await install(version: version)
-  }
 
   /// Installs (or replaces) the app-owned `llama` binary at `version`.
   static func install(version: String) async throws {

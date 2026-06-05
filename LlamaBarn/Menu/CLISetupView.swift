@@ -36,7 +36,7 @@ final class CLISetupView: ItemView {
       let title = Theme.primaryLabel("Update llama.cpp")
       let description = wrappingLabel(
         "Your llama.cpp (\(version.tag)) is older than the recommended "
-          + "\(LlamaBinaries.minVersion.tag). Update it with “brew upgrade llama.cpp”.")
+          + "\(LlamaBinaries.floorVersion.tag). Update it with “brew upgrade llama.cpp”.")
       views = [title, description, actionLink("→ Re-check")]
 
     case .idle:

@@ -26,14 +26,16 @@ enum LlamaBinaries {
   /// Covers the Homebrew bin dirs (Apple Silicon and Intel).
   private static let externalDirs = ["/opt/homebrew/bin", "/usr/local/bin"]
 
-  /// Minimum build the app supports. The app drives `llama serve` / `llama
-  /// fit-params` with a specific set of flags; older builds may lack them. Bump
-  /// this when the app starts relying on a newer flag. We require a *minimum*
-  /// rather than an exact build so an external install the app can't update
-  /// (e.g. Homebrew) is flagged only when genuinely too old, not on every point
-  /// release. The version the app *installs* is chosen separately (see
-  /// `LlamaInstaller`).
-  static let minVersion = LlamaVersion(parsing: "b9370")!
+  /// The build the app installs and keeps its own binary at -- the pinned
+  /// target, not whatever is newest. Bump per app release after smoke-testing
+  /// `serve` + `fit-params`; the app's auto-updater then rolls it out.
+  static let targetVersion = LlamaVersion(parsing: "b9444")!
+
+  /// The minimum build the app accepts from an external install (e.g. Homebrew)
+  /// before nudging the user to update -- the app can't update those itself.
+  /// Must be <= targetVersion; should track the oldest build whose `serve` /
+  /// `fit-params` flags the app relies on (currently a conservative placeholder).
+  static let floorVersion = LlamaVersion(parsing: "b9370")!
 
   /// Who owns the resolved binary -- determines who can update it.
   enum Ownership: Equatable { case appOwned, external }
@@ -90,17 +92,12 @@ enum LlamaBinaries {
     }
   }
 
-  /// The binary's readiness, combining presence, ownership, and version.
-  /// (The path itself comes from `llamaPath`; callers that act on status only
-  /// need ownership and version.)
-  enum Status: Equatable {
-    /// Present and at least `minVersion`. `version` is nil only when it couldn't
-    /// be read (we fail open and treat the binary as usable).
-    case ready(ownership: Ownership, version: LlamaVersion?)
-    /// Present but below `minVersion`. App-owned installs can be updated by the
-    /// app; external ones (e.g. Homebrew) must be updated by the user.
-    case outdated(ownership: Ownership, version: LlamaVersion)
-    /// No binary found anywhere.
+  /// What's installed: ownership plus the reported version (nil if it couldn't
+  /// be read), or nothing at all. These are facts -- the target/floor policy
+  /// that turns them into install/update/nudge decisions lives in
+  /// `LlamaInstallManager`.
+  enum Installed: Equatable {
+    case present(ownership: Ownership, version: LlamaVersion?)
     case missing
   }
 
@@ -130,32 +127,16 @@ enum LlamaBinaries {
     return LlamaVersion(parsing: String(decoding: data, as: UTF8.self))
   }
 
-  /// Resolves the binary and judges its readiness against `minVersion`. Blocks
-  /// on a `version` subprocess, so call off the main thread.
-  ///
-  /// If the version can't be read (corrupt binary, unexpected output), we fail
-  /// open and report `.ready` rather than block a probably-fine binary.
-  static func status() -> Status {
-    let path: String
-    let ownership: Ownership
+  /// Resolves the binary and reads its version. Blocks on a `version`
+  /// subprocess, so call off the main thread.
+  static func installed() -> Installed {
     switch resolve() {
     case .missing:
       return .missing
-    case .appOwned(let p):
-      path = p
-      ownership = .appOwned
-    case .external(let p):
-      path = p
-      ownership = .external
+    case .appOwned(let path):
+      return .present(ownership: .appOwned, version: readVersion(at: path))
+    case .external(let path):
+      return .present(ownership: .external, version: readVersion(at: path))
     }
-
-    let version = readVersion(at: path)
-    if let version, version < minVersion {
-      return .outdated(ownership: ownership, version: version)
-    }
-    if version == nil {
-      logger.error("Couldn't read llama version at \(path, privacy: .public); assuming usable")
-    }
-    return .ready(ownership: ownership, version: version)
   }
 }

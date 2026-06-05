@@ -21,7 +21,7 @@ final class LlamaInstallManager {
     case installing
     /// The install failed; `message` is user-facing. Retry via `install()`.
     case failed(message: String)
-    /// An external (e.g. Homebrew) binary is present but below `minVersion`.
+    /// An external (e.g. Homebrew) binary is present but below `floorVersion`.
     /// The app can't update it, so it nudges the user to do so. Non-blocking:
     /// the server still runs, since the old binary often works.
     case externalTooOld(version: LlamaVersion)
@@ -39,41 +39,47 @@ final class LlamaInstallManager {
   /// binary is present.
   private(set) var currentVersion: LlamaVersion?
 
-  /// Ensures a usable `llama` binary is available, acting on its status:
-  /// install when missing, update (reinstall) an outdated app-owned binary, or
-  /// nudge when an external binary is too old. Returns true if the server should
-  /// start afterward (it should in every case except a failed install).
+  /// Ensures a usable `llama` binary is available, applying the version policy:
+  /// install when missing, reconcile an app-owned binary to the pinned target
+  /// when it differs, or nudge when an external binary is below the floor.
+  /// Returns true if the server should start afterward (always, except a failed
+  /// install).
   @discardableResult
   func ensureReady() async -> Bool {
-    let status = await Task.detached { LlamaBinaries.status() }.value
-    switch status {
-    case .ready(_, let version):
+    switch await Task.detached(operation: { LlamaBinaries.installed() }).value {
+    case .missing:
+      return await install()
+
+    case .present(.appOwned, let version):
+      // The app owns this one -- keep it at the pinned target. A nil version
+      // (unreadable) fails open as ready, to avoid a reinstall loop.
+      if let version, version != LlamaBinaries.targetVersion {
+        return await install()
+      }
       currentVersion = version
       state = .idle
       return true
 
-    case .missing:
-      return await install()
-
-    case .outdated(.appOwned, _):
-      // The app owns this one -- update it to the latest.
-      return await install()
-
-    case .outdated(.external, let version):
-      // Can't touch an external install; nudge but keep running (warn, not block).
+    case .present(.external, let version):
+      // Can't touch an external install; nudge if below the floor but keep
+      // running (warn, not block).
       currentVersion = version
-      state = .externalTooOld(version: version)
+      if let version, version < LlamaBinaries.floorVersion {
+        state = .externalTooOld(version: version)
+      } else {
+        state = .idle
+      }
       return true
     }
   }
 
-  /// Installs (or reinstalls) the app-owned binary, driving `state`. Also the
-  /// retry entry point. Returns true on success.
+  /// Installs (or reinstalls) the app-owned binary at the pinned target,
+  /// driving `state`. Also the retry entry point. Returns true on success.
   @discardableResult
   func install() async -> Bool {
     state = .installing
     do {
-      try await LlamaInstaller.installLatest()
+      try await LlamaInstaller.install(version: LlamaBinaries.targetVersion.tag)
       logger.info("Installed the app-owned llama CLI")
       // Refresh before flipping to .idle so the rebuild triggered by the state
       // change already reflects the freshly-installed version.
