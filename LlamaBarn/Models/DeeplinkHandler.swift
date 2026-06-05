@@ -28,8 +28,31 @@ final class DeeplinkHandler {
     case .install(let repo, let quant):
       // Deeplinks fire with the menu closed, so announce progress via a hint bubble.
       install(repo: repo, quant: quant, announce: true)
+    #if DEBUG
+      case .installCLI:
+        installCLI()
+    #endif
     }
   }
+
+  #if DEBUG
+    /// Installs/updates the app-owned `llama` binary, surfacing success or failure
+    /// via a hint bubble / alert (the menu is closed when a deeplink fires).
+    /// Dev-only trigger for exercising the installer; not a shipping entry point.
+    func installCLI() {
+      postHint("Installing the llama CLI…")
+      Task {
+        do {
+          try await LlamaInstaller.installLatest()
+          postHint("Installed the llama CLI")
+        } catch {
+          presentAlert(
+            title: "Couldn’t install the llama CLI.",
+            body: (error as? LocalizedError)?.errorDescription ?? error.localizedDescription)
+        }
+      }
+    }
+  #endif
 
   /// Resolves a repo+quant and starts the download, identically to a deeplink.
   /// Exposed so in-app entry points (e.g. the Discover catalog section) share

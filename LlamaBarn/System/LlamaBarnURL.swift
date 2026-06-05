@@ -8,6 +8,12 @@ enum LlamaBarnURL: Equatable {
   /// `llama://install?repo={org}/{repo}[&quant={label}]`
   case install(repo: String, quant: String?)
 
+  #if DEBUG
+    /// `llama://install-cli` -- installs/updates the app-owned `llama` binary.
+    /// Dev-only trigger for exercising the installer; not a shipping verb.
+    case installCLI
+  #endif
+
   /// The URL scheme this build registers, read from `CFBundleURLTypes` in
   /// `Info.plist`. Production builds register `llama`; dev builds register
   /// `llama-dev`, so a developer with both installed can route deeplinks
@@ -40,6 +46,10 @@ enum LlamaBarnURL: Equatable {
     switch host {
     case "install":
       return parseInstall(query: comps.queryItems ?? [])
+    #if DEBUG
+      case "install-cli":
+        return .installCLI
+    #endif
     default:
       return nil
     }
