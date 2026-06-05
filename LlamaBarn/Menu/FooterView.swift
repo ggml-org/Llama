@@ -4,12 +4,16 @@ final class FooterView: ItemView {
   private let onCheckForUpdates: () -> Void
   private let onOpenSettings: () -> Void
   private let onQuit: () -> Void
+  /// Build of the `llama` binary actually in use, or nil if not yet known.
+  private let llamaVersion: String?
 
   init(
+    llamaVersion: String?,
     onCheckForUpdates: @escaping () -> Void,
     onOpenSettings: @escaping () -> Void,
     onQuit: @escaping () -> Void
   ) {
+    self.llamaVersion = llamaVersion
     self.onCheckForUpdates = onCheckForUpdates
     self.onOpenSettings = onOpenSettings
     self.onQuit = onQuit
@@ -36,8 +40,9 @@ final class FooterView: ItemView {
     versionButton.isBordered = false
     versionButton.translatesAutoresizingMaskIntoConstraints = false
 
-    // Llama Version Label
-    let llamaLabel = Theme.tertiaryLabel(" · llama.cpp \(AppInfo.llamaCppVersion)")
+    // Llama Version Label -- the build of the binary actually being driven.
+    let llamaText = llamaVersion.map { " · llama.cpp \($0)" } ?? " · llama.cpp"
+    let llamaLabel = Theme.tertiaryLabel(llamaText)
     llamaLabel.translatesAutoresizingMaskIntoConstraints = false
 
     // Settings Button
