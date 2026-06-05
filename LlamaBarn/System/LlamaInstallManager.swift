@@ -47,7 +47,7 @@ final class LlamaInstallManager {
   func ensureReady() async -> Bool {
     let status = await Task.detached { LlamaBinaries.status() }.value
     switch status {
-    case .ready(_, _, let version):
+    case .ready(_, let version):
       currentVersion = version
       state = .idle
       return true
@@ -55,11 +55,11 @@ final class LlamaInstallManager {
     case .missing:
       return await install()
 
-    case .outdated(_, .appOwned, _):
+    case .outdated(.appOwned, _):
       // The app owns this one -- update it to the latest.
       return await install()
 
-    case .outdated(_, .external, let version):
+    case .outdated(.external, let version):
       // Can't touch an external install; nudge but keep running (warn, not block).
       currentVersion = version
       state = .externalTooOld(version: version)

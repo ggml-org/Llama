@@ -91,13 +91,15 @@ enum LlamaBinaries {
   }
 
   /// The binary's readiness, combining presence, ownership, and version.
+  /// (The path itself comes from `llamaPath`; callers that act on status only
+  /// need ownership and version.)
   enum Status: Equatable {
     /// Present and at least `minVersion`. `version` is nil only when it couldn't
     /// be read (we fail open and treat the binary as usable).
-    case ready(path: String, ownership: Ownership, version: LlamaVersion?)
+    case ready(ownership: Ownership, version: LlamaVersion?)
     /// Present but below `minVersion`. App-owned installs can be updated by the
     /// app; external ones (e.g. Homebrew) must be updated by the user.
-    case outdated(path: String, ownership: Ownership, version: LlamaVersion)
+    case outdated(ownership: Ownership, version: LlamaVersion)
     /// No binary found anywhere.
     case missing
   }
@@ -149,11 +151,11 @@ enum LlamaBinaries {
 
     let version = readVersion(at: path)
     if let version, version < minVersion {
-      return .outdated(path: path, ownership: ownership, version: version)
+      return .outdated(ownership: ownership, version: version)
     }
     if version == nil {
       logger.error("Couldn't read llama version at \(path, privacy: .public); assuming usable")
     }
-    return .ready(path: path, ownership: ownership, version: version)
+    return .ready(ownership: ownership, version: version)
   }
 }
