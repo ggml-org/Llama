@@ -4,7 +4,7 @@ import os.log
 /// Resolves the `llama` executable the app drives, and classifies who owns it.
 ///
 /// The app follows a shared-path model:
-/// - it owns the curl-install path (`~/.installama/llama`, what `installama.sh`
+/// - it owns the curl-install path (`~/.llama-app/llama`, what `install.sh`
 ///   produces): it may install a binary there and keep it updated
 /// - any other install (e.g. Homebrew) is treated as external: the app uses it
 ///   but never modifies it
@@ -16,11 +16,11 @@ enum LlamaBinaries {
 
   private static let logger = Logger(subsystem: Logging.subsystem, category: "LlamaBinaries")
 
-  /// The curl-install path the app owns (matches `installama.sh`'s layout).
-  /// The real binary lives in `~/.installama`; `installama.sh` also drops a
+  /// The curl-install path the app owns (matches `install.sh`'s layout).
+  /// The real binary lives in `~/.llama-app`; `install.sh` also drops a
   /// `~/.local/bin/llama` symlink onto PATH, but the app points at the real file.
   static let appOwnedPath: String =
-    (NSHomeDirectory() as NSString).appendingPathComponent(".installama/llama")
+    (NSHomeDirectory() as NSString).appendingPathComponent(".llama-app/llama")
 
   /// External locations to probe when the app hasn't installed its own binary.
   /// Covers the Homebrew bin dirs (Apple Silicon and Intel).

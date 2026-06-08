@@ -6,7 +6,7 @@ import os.log
 /// drives `LlamaInstaller` off the UI.
 ///
 /// The install itself is silent (no permission prompt): it writes only to
-/// `~/.installama` / `~/.local/bin`, needs no privilege escalation, and is part
+/// `~/.llama-app` / `~/.local/bin`, needs no privilege escalation, and is part
 /// of the app's "it just works" setup -- but it's never opaque, hence the state.
 @MainActor
 final class LlamaInstallManager {

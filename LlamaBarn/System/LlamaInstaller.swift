@@ -3,8 +3,8 @@ import Foundation
 import os.log
 
 /// Installs and updates the app-owned `llama` CLI by fetching prebuilt binaries
-/// from the same Hugging Face bucket `installama.sh` uses, laid out the same way:
-/// the real binary at `~/.installama/llama` plus a `~/.local/bin/llama` symlink
+/// from the same Hugging Face bucket the official `install.sh` uses, laid out the same way:
+/// the real binary at `~/.llama-app/llama` plus a `~/.local/bin/llama` symlink
 /// so `llama` works from a terminal too.
 ///
 /// macOS ships no zstd and the bucket serves the binary zstd-compressed, so we
@@ -35,7 +35,7 @@ enum LlamaInstaller {
   }
   private static var unzstdPath: String { installDir + "/unzstd" }
 
-  /// The on-PATH symlink `installama.sh` creates so `llama` works in a terminal.
+  /// The on-PATH symlink `install.sh` creates so `llama` works in a terminal.
   private static var symlinkDir: String {
     (NSHomeDirectory() as NSString).appendingPathComponent(".local/bin")
   }
@@ -83,7 +83,7 @@ enum LlamaInstaller {
   // MARK: - Steps
 
   /// Maps this Mac's CPU to a Metal bucket config (`m1`…`m5`), mirroring
-  /// `installama.sh`, which buckets every M-series variant (Pro/Max/Ultra) by
+  /// `install.sh`, which buckets every M-series variant (Pro/Max/Ultra) by
   /// generation number.
   private static func metalConfig() throws -> String {
     var size = 0
@@ -159,7 +159,7 @@ enum LlamaInstaller {
     }
   }
 
-  /// Mirrors `installama.sh`'s `ln -sf`: point `~/.local/bin/llama` at our
+  /// Mirrors `install.sh`'s `ln -sf`: point `~/.local/bin/llama` at our
   /// binary so it's available in a terminal. Best-effort -- the app resolves the
   /// real path directly, so a failure here doesn't break the app. We won't
   /// clobber a real file a user may have placed there; only absent or symlink
