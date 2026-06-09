@@ -6,14 +6,20 @@ final class FooterView: ItemView {
   private let onQuit: () -> Void
   /// Build of the `llama` binary actually in use, or nil if not yet known.
   private let llamaVersion: String?
+  /// Whether that binary is an unmanaged install (e.g. Homebrew) the app won't
+  /// update -- flagged with an "(external)" marker so a stale version isn't
+  /// mistaken for a bug.
+  private let llamaIsUnmanaged: Bool
 
   init(
     llamaVersion: String?,
+    llamaIsUnmanaged: Bool,
     onCheckForUpdates: @escaping () -> Void,
     onOpenSettings: @escaping () -> Void,
     onQuit: @escaping () -> Void
   ) {
     self.llamaVersion = llamaVersion
+    self.llamaIsUnmanaged = llamaIsUnmanaged
     self.onCheckForUpdates = onCheckForUpdates
     self.onOpenSettings = onOpenSettings
     self.onQuit = onQuit
@@ -41,7 +47,10 @@ final class FooterView: ItemView {
     versionButton.translatesAutoresizingMaskIntoConstraints = false
 
     // Llama Version Label -- the build of the binary actually being driven.
-    let llamaText = llamaVersion.map { " · llama.cpp \($0)" } ?? " · llama.cpp"
+    // Unmanaged (e.g. Homebrew) installs get an "· ext" marker, since the
+    // app won't update them and their version can legitimately trail the pin.
+    let marker = llamaIsUnmanaged ? " · ext" : ""
+    let llamaText = llamaVersion.map { " · llama.cpp \($0)\(marker)" } ?? " · llama.cpp"
     let llamaLabel = Theme.tertiaryLabel(llamaText)
     llamaLabel.translatesAutoresizingMaskIntoConstraints = false
 

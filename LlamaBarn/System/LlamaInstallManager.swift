@@ -39,6 +39,11 @@ final class LlamaInstallManager {
   /// binary is present.
   private(set) var currentVersion: LlamaVersion?
 
+  /// Whether the resolved binary is an unmanaged install (e.g. Homebrew) the app
+  /// won't touch -- surfaced in the footer (an "· ext" marker) so a stale version (and a no-op
+  /// "Check for Updates") is explained rather than mysterious.
+  private(set) var currentIsUnmanaged = false
+
   /// Ensures a usable `llama` binary is available, applying the version policy:
   /// install when missing, reconcile the managed binary to the pinned target
   /// when it differs, or nudge when an unmanaged binary is below the floor.
@@ -57,6 +62,7 @@ final class LlamaInstallManager {
         return await install()
       }
       currentVersion = version
+      currentIsUnmanaged = false
       state = .idle
       return true
 
@@ -64,6 +70,7 @@ final class LlamaInstallManager {
       // Can't touch an unmanaged install; nudge if below the floor but keep
       // running (warn, not block).
       currentVersion = version
+      currentIsUnmanaged = true
       if let version, version < LlamaBinaries.floorVersion {
         state = .unmanagedTooOld(version: version)
       } else {
@@ -82,8 +89,10 @@ final class LlamaInstallManager {
       try await LlamaInstaller.install(version: LlamaBinaries.targetVersion.tag)
       logger.info("Installed the app-managed llama CLI")
       // Refresh before flipping to .idle so the rebuild triggered by the state
-      // change already reflects the freshly-installed version.
+      // change already reflects the freshly-installed version. The freshly
+      // installed binary is app-managed.
       await refreshVersion()
+      currentIsUnmanaged = false
       state = .idle
       return true
     } catch {
