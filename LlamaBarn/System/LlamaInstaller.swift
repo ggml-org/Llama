@@ -18,7 +18,7 @@ enum LlamaInstaller {
   private static let logger = Logger(subsystem: Logging.subsystem, category: "LlamaInstaller")
 
   /// Root of the prebuilt-binary bucket. `…/resolve/latest` returns the current
-  /// version tag (e.g. `b9444`); `…/resolve/<ver>/<arch>/<os>/…` are artifacts.
+  /// version tag (e.g. `b9553`); `…/resolve/<ver>/<arch>/<os>/…` are artifacts.
   private static let bucketBase =
     "https://huggingface.co/buckets/ggml-org/install.sh/resolve"
 
