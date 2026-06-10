@@ -400,10 +400,10 @@ final class MenuController: NSObject, NSMenuDelegate {
     return discoverSuggestions.filter { !managedRepos.contains($0.repo) }
   }
 
-  /// Adds the "Discover" section: a short list of featured models, one best-fit
-  /// build per family, that install with a single click. Hidden when there's
-  /// nothing to suggest. `separated` draws a divider above it when an Installed
-  /// section precedes it.
+  /// Adds the "Discover" section: a short list of featured models — up to two
+  /// device-appropriate picks per family — that install with a single click.
+  /// Hidden when there's nothing to suggest. `separated` draws a divider above it
+  /// when an Installed section precedes it.
   private func addDiscoverSection(
     to menu: NSMenu, suggestions: [Catalog.Suggestion], separated: Bool
   ) {
