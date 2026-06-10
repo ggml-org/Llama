@@ -29,9 +29,9 @@ LlamaBarn runs a local server at `http://localhost:2276/v1`.
 ## Features
 
 - **100% local** — Models run on your device; no data leaves your Mac
-- **Small footprint** — `12 MB` native macOS app
+- **Small footprint** — `4 MB` native macOS app
 - **Zero configuration** — models are auto-configured with optimal settings for your Mac
-- **Smart model catalog** — shows what fits your Mac, with quantized fallbacks for what doesn't
+- **Recommended for your Mac** — suggests models sized to fit your hardware; browse the full catalog at [llama.app](https://llama.app)
 - **Standard storage** — models live in the Hugging Face cache (`~/.cache/huggingface/hub`), shared with `llama.cpp` and other HF-aware tools
 - **Built on llama.cpp** — from the GGML org, developed alongside llama.cpp
 
