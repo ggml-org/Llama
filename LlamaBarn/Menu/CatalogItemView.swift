@@ -14,6 +14,11 @@ final class CatalogItemView: ItemView {
   private let subtitleLabel = Theme.tertiaryLabel()
   private let installImageView = NSImageView()
 
+  /// Subtitle: just the download size, e.g. "2.5 GB". The quant (e.g. "Q4") is
+  /// deliberately omitted — Discover already picks one build per size, so the
+  /// quant isn't a user choice here, just jargon; full detail lives on the web.
+  private var subtitleText: String { suggestion.sizeLabel ?? "" }
+
   init(suggestion: Catalog.Suggestion, onInstall: @escaping (Catalog.Suggestion) -> Void) {
     self.suggestion = suggestion
     self.onInstall = onInstall
@@ -43,16 +48,6 @@ final class CatalogItemView: ItemView {
   }
 
   required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-
-  /// Subtitle: human size plus the quant label, e.g. "5.0 GB · Q8".
-  private var subtitleText: String {
-    var parts: [String] = []
-    if let size = suggestion.sizeLabel { parts.append(size) }
-    if let quant = suggestion.quant.map(Format.quantization), !quant.isEmpty {
-      parts.append(quant)
-    }
-    return parts.joined(separator: " · ")
-  }
 
   private func setupLayout() {
     let textColumn = NSStackView(views: [titleLabel, subtitleLabel])
