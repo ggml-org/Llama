@@ -173,7 +173,15 @@ final class MenuController: NSObject, NSMenuDelegate {
       // placeholder when empty — so it anchors the menu instead of vanishing and
       // leaving Recommended as a floating first section.
       addInstalledSection(to: menu, models: managed)
-      addDiscoverSection(to: menu, suggestions: suggestions)
+      if suggestions.isEmpty {
+        // No picks to show (all recommended models already installed, or the
+        // catalog is unavailable) but the user has models — keep a standalone
+        // Browse more link so the web catalog stays one click away.
+        menu.addItem(NSMenuItem.viewItem(with: SeparatorView()))
+        menu.addItem(NSMenuItem.viewItem(with: BrowseMoreRow(url: Self.browseCatalogUrl)))
+      } else {
+        addDiscoverSection(to: menu, suggestions: suggestions)
+      }
     }
 
     addFooter(to: menu)
