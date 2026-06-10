@@ -36,15 +36,20 @@ final class FooterView: ItemView {
   }
 
   private func setup() {
-    // Version Button
-    let versionButton = NSButton(
-      title: "", target: self, action: #selector(checkForUpdatesClicked))
-    versionButton.attributedTitle = NSAttributedString(
+    // Version label -- a plain label (not an NSButton) so its text starts at the
+    // exact content edge; a borderless button's cell adds a ~2px inset that left
+    // it looking misaligned against the header and model rows. Clickable via a
+    // gesture, matching the menu's other inline links (WebUI, "models").
+    let versionLabel = Theme.secondaryLabel()
+    versionLabel.attributedStringValue = NSAttributedString(
       string: appVersionText,
       attributes: Theme.secondaryAttributes(color: Theme.Colors.textPrimary)
     )
-    versionButton.isBordered = false
-    versionButton.translatesAutoresizingMaskIntoConstraints = false
+    versionLabel.isSelectable = false
+    versionLabel.translatesAutoresizingMaskIntoConstraints = false
+    let versionClick = NSClickGestureRecognizer(
+      target: self, action: #selector(checkForUpdatesClicked))
+    versionLabel.addGestureRecognizer(versionClick)
 
     // Llama Version Label -- the build of the binary actually being driven.
     // Unmanaged (e.g. Homebrew) installs get an "· ext" marker, since the
@@ -63,17 +68,17 @@ final class FooterView: ItemView {
     let quitButton = FooterButton(title: "Quit", target: self, action: #selector(quitClicked))
     quitButton.translatesAutoresizingMaskIntoConstraints = false
 
-    contentView.addSubview(versionButton)
+    contentView.addSubview(versionLabel)
     contentView.addSubview(llamaLabel)
     contentView.addSubview(settingsButton)
     contentView.addSubview(quitButton)
 
     NSLayoutConstraint.activate([
       // Left side
-      versionButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-      versionButton.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+      versionLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+      versionLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
 
-      llamaLabel.leadingAnchor.constraint(equalTo: versionButton.trailingAnchor),
+      llamaLabel.leadingAnchor.constraint(equalTo: versionLabel.trailingAnchor),
       llamaLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
 
       // Right side
