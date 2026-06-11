@@ -72,7 +72,7 @@ struct SettingsView: View {
     Form {
       // Launch at login section
       Section {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 4) {
           Toggle("Launch at login", isOn: $launchAtLogin)
             .onChange(of: launchAtLogin) { _, newValue in
               _ = LaunchAtLogin.setEnabled(newValue)
@@ -86,7 +86,7 @@ struct SettingsView: View {
 
       // Sleep idle time section
       Section {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 4) {
           LabeledContent("Unload when idle") {
             Picker("", selection: $sleepIdleTime) {
               ForEach(UserSettings.SleepIdleTime.allCases, id: \.self) { time in
@@ -108,7 +108,7 @@ struct SettingsView: View {
 
       // Optional HF access token section
       Section {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 4) {
           HStack {
             Text("Hugging Face Token")
             Spacer()
@@ -138,7 +138,7 @@ struct SettingsView: View {
       }
       // HF cache directory section
       Section {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 4) {
           Text("Cache directory")
 
           Text("Where downloaded models are stored.")
@@ -148,6 +148,7 @@ struct SettingsView: View {
           HStack(spacing: 6) {
             // Current path in a "well" -- a quiet fill, not a bordered
             // field, so it reads as a displayed value, not an editable input
+            // (extra top padding separates the control row from the caption)
             HStack(spacing: 6) {
               Text(abbreviatedPath(hfCacheDir))
                 .font(.callout)
@@ -188,6 +189,7 @@ struct SettingsView: View {
             .font(.callout)
             .controlSize(.small)
           }
+          .padding(.top, 4)
         }
       }
     }
