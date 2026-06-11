@@ -109,39 +109,47 @@ struct SettingsView: View {
       // HF cache directory section
       Section {
         VStack(alignment: .leading, spacing: 8) {
-          // Manual HStack instead of LabeledContent so the path can
-          // shrink via truncation and everything stays on one line.
+          Text("Cache directory")
+
+          Text("Where downloaded models are stored.")
+            .font(.callout)
+            .foregroundStyle(.secondary)
+
           HStack(spacing: 6) {
-            Text("Cache directory")
-              .fixedSize()
+            // Current path in a "well" -- a quiet fill, not a bordered
+            // field, so it reads as a displayed value, not an editable input
+            HStack(spacing: 6) {
+              Text(abbreviatedPath(hfCacheDir))
+                .font(.callout)
+                .textSelection(.enabled)
+                .lineLimit(1)
+                .truncationMode(.middle)
 
-            Spacer()
+              Spacer(minLength: 0)
 
-            // Path text -- layoutPriority -1 lets it shrink first
-            // so buttons stay on the same line
-            Text(abbreviatedPath(hfCacheDir))
-              .font(.callout)
-              .foregroundStyle(.secondary)
-              .textSelection(.enabled)
-              .lineLimit(1)
-              .truncationMode(.middle)
-              .layoutPriority(-1)
-
-            // Show restore button only when using custom directory
-            if UserSettings.hasCustomHFCacheDirectory {
               Button {
+                NSWorkspace.shared.activateFileViewerSelecting([hfCacheDir])
+              } label: {
+                Image(systemName: "folder")
+              }
+              .buttonStyle(.plain)
+              .foregroundStyle(.secondary)
+              .help("Show in Finder")
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 6))
+
+            // Show a reset button only when a custom directory is set
+            if UserSettings.hasCustomHFCacheDirectory {
+              Button("Reset") {
                 UserSettings.hfCacheDirectory = UserSettings.defaultHFCacheDirectory
                 hfCacheDir = UserSettings.hfCacheDirectory
                 ModelManager.shared.refreshDownloadedModels()
-              } label: {
-                // Unicode counterclockwise arrow -- renders at the same
-                // optical size as text, unlike SF Symbols
-                Text("↺")
               }
               .font(.callout)
               .controlSize(.small)
-              .help("Restore default directory")
-              .fixedSize()
+              .help("Restore the default directory")
             }
 
             Button("Select...") {
@@ -149,12 +157,7 @@ struct SettingsView: View {
             }
             .font(.callout)
             .controlSize(.small)
-            .fixedSize()
           }
-
-          Text("Where downloaded models are stored.")
-            .font(.callout)
-            .foregroundStyle(.secondary)
         }
       }
       // Optional HF access token section
@@ -208,7 +211,9 @@ struct SettingsView: View {
 
     if panel.runModal() == .OK, let url = panel.url {
       UserSettings.hfCacheDirectory = url
-      hfCacheDir = url
+      // Re-read for the canonical representation (the panel's URL may
+      // differ in trailing slash / symlink resolution)
+      hfCacheDir = UserSettings.hfCacheDirectory
       ModelManager.shared.refreshDownloadedModels()
     }
   }
