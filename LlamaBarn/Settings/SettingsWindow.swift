@@ -97,7 +97,7 @@ struct SettingsView: View {
             }
           }
 
-          Text("Automatically unloads the model from memory when not in use.")
+          Text("Auto-unloads model when not in use.")
             .font(.system(size: 11))
             .foregroundStyle(.secondary)
         }
