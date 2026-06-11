@@ -235,9 +235,10 @@ struct SettingsView: View {
 }
 
 /// Compact pill-style segmented picker -- the SwiftUI counterpart of the
-/// menu's context tier picker (ExpandedModelDetailsView): an outlined row of
-/// clickable pills where the selected one gets a subtle background and primary
-/// text, with hairline dividers between unselected neighbors.
+/// menu's context tier picker (ExpandedModelDetailsView): a row of clickable
+/// pills where the selected one gets a subtle background and primary text.
+/// No outline or background; hairline dividers separate the pills and cap
+/// the row at the start and end so it still reads as one control.
 struct PillPicker<Option: Hashable>: View {
   let options: [(value: Option, label: String)]
   @Binding var selection: Option
@@ -247,18 +248,11 @@ struct PillPicker<Option: Hashable>: View {
   }
 
   var body: some View {
-    // 1px spacing matches the gap the menu picker keeps around its dividers
     HStack(spacing: 1) {
+      divider(hidden: selectedIdx == 0)
       ForEach(Array(options.enumerated()), id: \.offset) { idx, option in
         if idx > 0 {
-          // Hairline divider, hidden (kept for stable layout) when adjacent
-          // to the selected pill -- its background already delimits the gap
-          Rectangle()
-            .fill(
-              idx == selectedIdx || idx - 1 == selectedIdx
-                ? Color.clear : Color(nsColor: Theme.Colors.separator)
-            )
-            .frame(width: 1, height: 8)
+          divider(hidden: idx == selectedIdx || idx - 1 == selectedIdx)
         }
 
         let selected = idx == selectedIdx
@@ -284,17 +278,18 @@ struct PillPicker<Option: Hashable>: View {
         }
         .buttonStyle(.plain)
       }
+      divider(hidden: selectedIdx == options.count - 1)
     }
-    // Equal breathing room between the pills and the outline on all sides
-    .padding(.horizontal, 2)
     .padding(.vertical, 2)
-    .overlay(
-      // Subtle outline around the whole row to give the picker a defined shape
-      RoundedRectangle(cornerRadius: 6)
-        .strokeBorder(Color(nsColor: Theme.Colors.separator), lineWidth: 1)
-        // Keep the outline from intercepting clicks meant for the pills
-        .allowsHitTesting(false)
-    )
+  }
+
+  /// Hairline divider; hidden ones keep their layout slot (clear color) so
+  /// pills don't shift as the selection moves. The dividers adjacent to the
+  /// selected pill are hidden -- its background already delimits the gap.
+  private func divider(hidden: Bool) -> some View {
+    Rectangle()
+      .fill(hidden ? Color.clear : Color(nsColor: Theme.Colors.separator))
+      .frame(width: 1, height: 8)
   }
 }
 
