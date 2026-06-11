@@ -106,6 +106,36 @@ struct SettingsView: View {
         }
       }
 
+      // Optional HF access token section
+      Section {
+        VStack(alignment: .leading, spacing: 8) {
+          HStack {
+            Text("Hugging Face Token")
+            Spacer()
+            Button {
+              showingHFTokenSheet = true
+            } label: {
+              if hfToken.isEmpty {
+                Text("Set")
+              } else {
+                Text(truncatedToken(hfToken))
+              }
+            }
+            .font(.callout)
+            .controlSize(.small)
+          }
+
+          Text("Authenticate model downloads; optional.")
+            .font(.callout)
+            .foregroundStyle(.secondary)
+        }
+      }
+      .sheet(isPresented: $showingHFTokenSheet) {
+        HFTokenSheet(currentToken: hfToken) { newToken in
+          hfToken = newToken
+          UserSettings.hfToken = newToken.isEmpty ? nil : newToken
+        }
+      }
       // HF cache directory section
       Section {
         VStack(alignment: .leading, spacing: 8) {
@@ -158,36 +188,6 @@ struct SettingsView: View {
             .font(.callout)
             .controlSize(.small)
           }
-        }
-      }
-      // Optional HF access token section
-      Section {
-        VStack(alignment: .leading, spacing: 8) {
-          HStack {
-            Text("Hugging Face Token")
-            Spacer()
-            Button {
-              showingHFTokenSheet = true
-            } label: {
-              if hfToken.isEmpty {
-                Text("Set")
-              } else {
-                Text(truncatedToken(hfToken))
-              }
-            }
-            .font(.callout)
-            .controlSize(.small)
-          }
-
-          Text("Authenticate model downloads; optional.")
-            .font(.callout)
-            .foregroundStyle(.secondary)
-        }
-      }
-      .sheet(isPresented: $showingHFTokenSheet) {
-        HFTokenSheet(currentToken: hfToken) { newToken in
-          hfToken = newToken
-          UserSettings.hfToken = newToken.isEmpty ? nil : newToken
         }
       }
     }
