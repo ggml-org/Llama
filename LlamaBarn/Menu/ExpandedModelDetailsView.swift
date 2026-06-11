@@ -13,6 +13,9 @@ final class ExpandedModelDetailsView: ItemView {
   // One pill per tier, same order as `tiers`. Each is a label wrapped in a
   // padded container whose layer draws the selection background.
   private var segments: [(container: NSView, label: NSTextField)] = []
+  // Hairline dividers between adjacent pills; divider[i] sits between
+  // segments i and i+1. Hidden when adjacent to the selected pill.
+  private var dividers: [NSView] = []
   // Index of the currently selected tier in `tiers`.
   private var selectedIdx = 0
   // The pill row container -- outlined to give the picker a defined shape.
@@ -72,18 +75,24 @@ final class ExpandedModelDetailsView: ItemView {
 
       let picker = NSStackView()
       picker.orientation = .horizontal
-      picker.spacing = 2
+      // 1px gap on either side of each divider so the selected pill's
+      // background reaches almost to the neighboring dividers.
+      picker.spacing = 1
       // Subtle outline around the whole row to give the picker a defined shape.
       picker.wantsLayer = true
       picker.layer?.borderWidth = 1
       picker.layer?.cornerRadius = 6
-      picker.edgeInsets = NSEdgeInsets(top: 2, left: 2, bottom: 2, right: 2)
+      // 1px horizontal insets to match the gap pills keep from the dividers.
+      picker.edgeInsets = NSEdgeInsets(top: 2, left: 1, bottom: 2, right: 1)
       // Hug the pills tightly -- otherwise the stack stretches to the menu
       // width and the outline trails off past the last pill.
       picker.setHuggingPriority(.required, for: .horizontal)
       picker.setContentHuggingPriority(.required, for: .horizontal)
       self.picker = picker
-      for tier in tiers {
+      for (idx, tier) in tiers.enumerated() {
+        if idx > 0 {
+          picker.addArrangedSubview(makeDivider())
+        }
         picker.addArrangedSubview(makeSegment(label: tier.shortLabel))
       }
       restyleSegments()
@@ -125,8 +134,8 @@ final class ExpandedModelDetailsView: ItemView {
     label.translatesAutoresizingMaskIntoConstraints = false
     container.addSubview(label)
     NSLayoutConstraint.activate([
-      label.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 5),
-      label.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -5),
+      label.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 6),
+      label.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -6),
       label.topAnchor.constraint(equalTo: container.topAnchor, constant: 1),
       label.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -1),
     ])
@@ -137,8 +146,21 @@ final class ExpandedModelDetailsView: ItemView {
     return container
   }
 
+  /// Creates a hairline divider that visually splits the gap between two
+  /// unselected pills (the gap otherwise reads as double the edge padding).
+  private func makeDivider() -> NSView {
+    let divider = NSView()
+    divider.wantsLayer = true
+    divider.translatesAutoresizingMaskIntoConstraints = false
+    divider.widthAnchor.constraint(equalToConstant: 1).isActive = true
+    divider.heightAnchor.constraint(equalToConstant: 8).isActive = true
+    dividers.append(divider)
+    return divider
+  }
+
   /// Applies selected/unselected styling to every pill: the selected tier gets
   /// a subtle background and primary text, the rest plain secondary text.
+  /// Also recolors the dividers, hiding those adjacent to the selection.
   private func restyleSegments() {
     picker?.layer?.setBorderColor(Theme.Colors.separator, in: self)
     for (idx, segment) in segments.enumerated() {
@@ -146,6 +168,13 @@ final class ExpandedModelDetailsView: ItemView {
       segment.label.textColor = selected ? Theme.Colors.textPrimary : Theme.Colors.textSecondary
       segment.container.layer?.setBackgroundColor(
         selected ? Theme.Colors.subtleBackground : .clear, in: self)
+    }
+    // Hide (via clear color, to keep layout stable) the dividers touching the
+    // selected pill -- its background already delimits those gaps.
+    for (idx, divider) in dividers.enumerated() {
+      let adjacentToSelection = idx == selectedIdx || idx + 1 == selectedIdx
+      divider.layer?.setBackgroundColor(
+        adjacentToSelection ? .clear : Theme.Colors.separator, in: self)
     }
   }
 
