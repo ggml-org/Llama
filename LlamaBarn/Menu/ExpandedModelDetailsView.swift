@@ -125,10 +125,10 @@ final class ExpandedModelDetailsView: ItemView {
     label.translatesAutoresizingMaskIntoConstraints = false
     container.addSubview(label)
     NSLayoutConstraint.activate([
-      label.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 6),
-      label.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -6),
-      label.topAnchor.constraint(equalTo: container.topAnchor, constant: 2),
-      label.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -2),
+      label.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 5),
+      label.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -5),
+      label.topAnchor.constraint(equalTo: container.topAnchor, constant: 1),
+      label.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -1),
     ])
 
     let click = NSClickGestureRecognizer(target: self, action: #selector(didClickSegment(_:)))
