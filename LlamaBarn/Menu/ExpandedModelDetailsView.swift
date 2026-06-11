@@ -82,8 +82,10 @@ final class ExpandedModelDetailsView: ItemView {
       picker.wantsLayer = true
       picker.layer?.borderWidth = 1
       picker.layer?.cornerRadius = 6
-      // 1px horizontal insets to match the gap pills keep from the dividers.
-      picker.edgeInsets = NSEdgeInsets(top: 2, left: 1, bottom: 2, right: 1)
+      // 2px insets all around so the selected pill's background keeps the
+      // same breathing room from the outline at the ends as it does
+      // vertically.
+      picker.edgeInsets = NSEdgeInsets(top: 2, left: 2, bottom: 2, right: 2)
       // Hug the pills tightly -- otherwise the stack stretches to the menu
       // width and the outline trails off past the last pill.
       picker.setHuggingPriority(.required, for: .horizontal)
