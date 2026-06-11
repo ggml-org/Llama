@@ -85,6 +85,10 @@ final class ExpandedModelDetailsView: ItemView {
       picker.layer?.borderWidth = 1
       picker.layer?.cornerRadius = 6
       picker.edgeInsets = NSEdgeInsets(top: 2, left: 2, bottom: 2, right: 2)
+      // Hug the pills tightly -- otherwise the stack stretches to the menu
+      // width and the outline trails off past the last pill.
+      picker.setHuggingPriority(.required, for: .horizontal)
+      picker.setContentHuggingPriority(.required, for: .horizontal)
       self.picker = picker
       for (idx, tier) in tiers.enumerated() {
         picker.addArrangedSubview(makeSegment(label: tier.shortLabel, idx: idx))
