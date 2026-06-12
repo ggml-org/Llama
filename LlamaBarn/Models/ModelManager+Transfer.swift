@@ -157,15 +157,14 @@ extension ModelManager {
       guard let writer else { return }
       let modelId = writer.modelId
       let model = writer.model
+      let originalURL = task.originalRequest?.url
 
       DispatchQueue.main.async { [weak self] in
         guard let self = self else { return }
         self.logger.error("Model download failed: \(error.localizedDescription)")
 
         // Retry transient network errors (partial file is the resume state).
-        if let originalURL = task.originalRequest?.url,
-          self.shouldRetry(error: nsError, url: originalURL)
-        {
+        if let originalURL, self.shouldRetry(error: nsError, url: originalURL) {
           self.scheduleRetry(url: originalURL, modelId: modelId)
           return
         }
@@ -183,7 +182,7 @@ extension ModelManager {
         }
 
         // Clear retry state on final failure.
-        if let originalURL = task.originalRequest?.url {
+        if let originalURL {
           self.clearRetryState(for: originalURL)
         }
       }
