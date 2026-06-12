@@ -199,19 +199,27 @@ final class MenuController: NSObject, NSMenuDelegate {
     }
   }
 
-  private func observe(_ name: Notification.Name, rebuildMenu: Bool = false) {
-    let observer = NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main)
-    {
-      [weak self] _ in
+  /// Registers a main-queue notification observer whose token is cleaned up in deinit.
+  private func observe(_ name: Notification.Name, handler: @escaping (Notification) -> Void) {
+    let observer = NotificationCenter.default.addObserver(
+      forName: name, object: nil, queue: .main
+    ) { note in
       MainActor.assumeIsolated {
-        guard let self else { return }
-        if rebuildMenu {
-          self.rebuildMenuIfPossible()
-        }
-        self.refresh()
+        handler(note)
       }
     }
     observers.append(observer)
+  }
+
+  /// Common case: refresh existing views, optionally rebuilding the menu first.
+  private func observe(_ name: Notification.Name, rebuildMenu: Bool = false) {
+    observe(name) { [weak self] _ in
+      guard let self else { return }
+      if rebuildMenu {
+        self.rebuildMenuIfPossible()
+      }
+      self.refresh()
+    }
   }
 
   // Observe server and download changes while the menu is open.
@@ -232,19 +240,14 @@ final class MenuController: NSObject, NSMenuDelegate {
     // Download state changed. A plain progress tick only refreshes existing
     // rows; a membership change (download started/stopped — e.g. from Discover)
     // rebuilds so the row appears or disappears without reopening the menu.
-    let downloadsObserver = NotificationCenter.default.addObserver(
-      forName: .LBModelDownloadsDidChange, object: nil, queue: .main
-    ) { [weak self] _ in
-      MainActor.assumeIsolated {
-        guard let self else { return }
-        let currentIds = Set(self.modelManager.managedModels.map(\.id))
-        if currentIds != self.renderedManagedIds {
-          self.rebuildMenuIfPossible()
-        }
-        self.refresh()
+    observe(.LBModelDownloadsDidChange) { [weak self] _ in
+      guard let self else { return }
+      let currentIds = Set(self.modelManager.managedModels.map(\.id))
+      if currentIds != self.renderedManagedIds {
+        self.rebuildMenuIfPossible()
       }
+      self.refresh()
     }
-    observers.append(downloadsObserver)
 
     // Model downloaded or deleted - rebuild the installed-models section
     observe(.LBModelDownloadedListDidChange, rebuildMenu: true)
@@ -253,25 +256,15 @@ final class MenuController: NSObject, NSMenuDelegate {
     observe(.LBUserSettingsDidChange, rebuildMenu: true)
 
     // A background flow (e.g. DeeplinkHandler) wants to surface a hint bubble.
-    let hintObserver = NotificationCenter.default.addObserver(
-      forName: .LBShowMenuHint, object: nil, queue: .main
-    ) { [weak self] note in
-      MainActor.assumeIsolated {
-        guard let msg = note.userInfo?["message"] as? String else { return }
-        self?.showHint(msg)
-      }
+    observe(.LBShowMenuHint) { [weak self] note in
+      guard let msg = note.userInfo?["message"] as? String else { return }
+      self?.showHint(msg)
     }
-    observers.append(hintObserver)
 
     // Download failed - show alert
-    let failObserver = NotificationCenter.default.addObserver(
-      forName: .LBModelDownloadDidFail, object: nil, queue: .main
-    ) { [weak self] note in
-      MainActor.assumeIsolated {
-        self?.handleDownloadFailure(notification: note)
-      }
+    observe(.LBModelDownloadDidFail) { [weak self] note in
+      self?.handleDownloadFailure(notification: note)
     }
-    observers.append(failObserver)
 
     refresh()
   }
