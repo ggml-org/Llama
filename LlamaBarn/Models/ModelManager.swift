@@ -379,6 +379,9 @@ class ModelManager: NSObject, URLSessionDataDelegate {
   private func generateModelsFileContent() -> String {
     var content = ""
 
+    // Enable larger batch size for better performance on high-memory devices (>=32 GB RAM)
+    let useLargeBatch = Double(SystemMemory.memoryMb) / 1024.0 >= 32.0
+
     for model in downloadedModels {
       // Use the effective tier (user selection or max compatible)
       guard let tier = model.effectiveCtxTier else { continue }
@@ -395,9 +398,7 @@ class ModelManager: NSObject, URLSessionDataDelegate {
         content += "mmproj = \(mmprojPath)\n"
       }
 
-      // Enable larger batch size for better performance on high-memory devices (>=32 GB RAM)
-      let systemMemoryGb = Double(SystemMemory.memoryMb) / 1024.0
-      if systemMemoryGb >= 32.0 {
+      if useLargeBatch {
         content += "ubatch-size = 2048\n"
       }
 
