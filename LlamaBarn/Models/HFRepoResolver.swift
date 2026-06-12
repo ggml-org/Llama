@@ -121,10 +121,7 @@ enum HFRepoResolver {
     if let m = mmproj { allPicked.append(m.rfilename) }
     let sizeByPath: [String: Int64] = Dictionary(
       uniqueKeysWithValues: siblings.map { ($0.rfilename, $0.size ?? 0) })
-    var approxBytes: Int64 = 0
-    for path in allPicked {
-      approxBytes += sizeByPath[path] ?? 0
-    }
+    let approxBytes = allPicked.reduce(Int64(0)) { $0 + (sizeByPath[$1] ?? 0) }
 
     // `repo` is already validated as `{org}/{name}` upstream, so the sideloaded
     // id is just `{repo}:{QUANT}`.
