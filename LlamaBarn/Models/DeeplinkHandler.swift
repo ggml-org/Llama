@@ -45,10 +45,6 @@ final class DeeplinkHandler {
 
   private func resolveAndInstall(repo: String, quant: String?, announce: Bool) async {
     let manager = ModelManager.shared
-    let token: String? = {
-      let t = UserSettings.hfToken ?? ""
-      return t.isEmpty ? nil : t
-    }()
 
     let resolved: HFRepoResolver.Resolved
     do {
@@ -56,7 +52,7 @@ final class DeeplinkHandler {
         repo: repo,
         quant: quant,
         systemMemoryMb: SystemMemory.memoryMb,
-        token: token
+        token: UserSettings.hfToken
       )
     } catch {
       logger.error(
