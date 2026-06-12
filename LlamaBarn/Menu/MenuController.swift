@@ -331,11 +331,11 @@ final class MenuController: NSObject, NSMenuDelegate {
     menu.addItem(item)
   }
 
-  @objc private func checkForUpdates() {
+  private func checkForUpdates() {
     NotificationCenter.default.post(name: .LBCheckForUpdates, object: nil)
   }
 
-  @objc private func quitApp() {
+  private func quitApp() {
     NSApplication.shared.terminate(nil)
   }
 
