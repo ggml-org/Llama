@@ -4,6 +4,7 @@ import Foundation
 /// Derived by splitting the repo name on `-` and classifying segments.
 struct ParsedRepo {
   let org: String  // HF org, e.g. "bartowski"
+  let repo: String  // Raw repo name, e.g. "Llama-3.2-1B-Instruct-GGUF"
   let name: String  // Model name, e.g. "Llama-3.2"
   let params: String?  // Parameter count, e.g. "1B", "270M"
   let tags: [String]  // Remaining segments, e.g. ["Instruct"]
@@ -41,7 +42,7 @@ enum HFRepoParser {
 
     // If name is empty (params is the first segment), use the full repo as name
     guard !nameSegments.isEmpty else {
-      return ParsedRepo(org: org, name: repo, params: nil, tags: [])
+      return ParsedRepo(org: org, repo: repo, name: repo, params: nil, tags: [])
     }
 
     let name = nameSegments.joined(separator: "-")
@@ -54,7 +55,7 @@ enum HFRepoParser {
     let excludedTags: Set<String> = ["GGUF", "GGML", "gguf", "ggml"]
     let tags = segments[tagsStartIdx...].filter { !excludedTags.contains($0) }
 
-    return ParsedRepo(org: org, name: name, params: params, tags: tags)
+    return ParsedRepo(org: org, repo: repo, name: name, params: params, tags: tags)
   }
 
   /// Extracts quantization from a GGUF filename.
