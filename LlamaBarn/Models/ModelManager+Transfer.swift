@@ -184,7 +184,7 @@ extension ModelManager {
 
         // Clear retry state on final failure.
         if let originalURL = task.originalRequest?.url {
-          self.retryAttempts.removeValue(forKey: originalURL)
+          self.clearRetryState(for: originalURL)
         }
       }
       return
@@ -356,7 +356,7 @@ extension ModelManager {
       // Verify download is still active (user may have cancelled)
       guard let model = self.activeDownloads[modelId]?.model
       else {
-        self.retryAttempts.removeValue(forKey: url)
+        self.clearRetryState(for: url)
         return
       }
 
