@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 import os.log
 
-/// Consumes `llamabarn://` URLs and turns them into `ModelManager` downloads.
+/// Consumes `llama://` URLs and turns them into `ModelManager` downloads.
 ///
 /// Design notes:
 ///   - Silent start: the download just begins in the background. User clicks

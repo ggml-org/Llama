@@ -1,27 +1,27 @@
 import Foundation
 
-/// Parsed representation of a `llamabarn://` URL.
+/// Parsed representation of a `llama://` URL.
 ///
 /// Only one verb today — `install` — but the URL shape (flat, verb-first) leaves
 /// room for future actions (`load`, `open-settings`, ...) without restructuring.
 enum LlamaBarnURL: Equatable {
-  /// `llamabarn://install?repo={org}/{repo}[&quant={label}]`
+  /// `llama://install?repo={org}/{repo}[&quant={label}]`
   case install(repo: String, quant: String?)
 
   /// The URL schemes this build registers, read from `CFBundleURLTypes` in
-  /// `Info.plist`. Production builds register `llamabarn` and `llama`; dev
-  /// builds register `llamabarn-dev` and `llama-dev`, so a developer with both
+  /// `Info.plist`. Production builds register `llama` and `llamabarn`; dev
+  /// builds register `llama-dev` and `llamabarn-dev`, so a developer with both
   /// installed can route deeplinks deterministically (Launch Services would
-  /// otherwise pick whichever build it ranked higher). The `llama` schemes
-  /// exist for the rename to Llama; `llamabarn` stays as an alias so old links
-  /// keep working.
+  /// otherwise pick whichever build it ranked higher). The `llama` schemes are
+  /// canonical post-rename to Llama; `llamabarn` is a deprecated alias kept only
+  /// so old links keep working — don't advertise it in new links.
   private static let registeredSchemes: Set<String> = {
     guard
       let types = Bundle.main.object(forInfoDictionaryKey: "CFBundleURLTypes")
         as? [[String: Any]],
       let schemes = types.first?["CFBundleURLSchemes"] as? [String],
       !schemes.isEmpty
-    else { return ["llamabarn"] }
+    else { return ["llama"] }
     return Set(schemes.map { $0.lowercased() })
   }()
 
