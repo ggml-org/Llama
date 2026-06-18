@@ -13,14 +13,14 @@ Llama is a macOS menu bar app for running local LLMs.
 ## Install
 
 ```sh
-brew install --cask llamabarn
+brew install --cask llama-app
 ```
 
 Or download from [Releases](https://github.com/ggml-org/Llama-macOS/releases).
 
 ## How it works
 
-Llama runs a local server at `http://localhost:2276/v1`.
+Llama runs a local server at `http://localhost:8080/v1`.
 
 - **Install models** — from the built-in catalog
 - **Connect any app** — chat UIs, editors, CLI tools, scripts
