@@ -388,6 +388,14 @@ class ModelManager: NSObject, URLSessionDataDelegate {
         content += "mmproj = \(mmprojPath)\n"
       }
 
+      // Models that embed an MTP head get speculative decoding via that head --
+      // a free speedup the MoE builds that ship one (Qwen3.6 etc.) otherwise
+      // leave on the table. `draft-mtp` reuses the main weights' MTP context,
+      // so there's no separate draft model to load.
+      if paths.usesMTP {
+        content += "spec-type = draft-mtp\n"
+      }
+
       if useLargeBatch {
         content += "ubatch-size = 2048\n"
       }

@@ -592,10 +592,23 @@ enum HFCache {
       modelFile: mainFilePath,
       additionalParts: additionalParts,
       mmprojFile: nil,
+      usesMTP: fileHasMTPHead(fileBaseName),
       hfRepoDirName: repoDir
     )
 
     return (entry: entry, paths: paths)
+  }
+
+  /// Detects whether a GGUF carries an embedded MTP head from its filename.
+  /// Builds that ship one tag themselves with an `mtp` token delimited by the
+  /// usual filename separators -- e.g. `Qwen3.6-27B-Q4_K_M-mtp.gguf` or
+  /// `Qwen3.6-27B-MTP-Q8_0.gguf`. We match the delimited token (not a bare
+  /// substring) so an unrelated name can't trip it. There's no separate sidecar
+  /// to download: the head rides inside the main file.
+  private static func fileHasMTPHead(_ fileBaseName: String) -> Bool {
+    fileBaseName.range(
+      of: #"(^|[-_.])mtp([-_.]|$)"#,
+      options: [.regularExpression, .caseInsensitive]) != nil
   }
 }
 
