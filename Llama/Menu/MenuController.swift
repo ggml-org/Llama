@@ -103,7 +103,7 @@ final class MenuController: NSObject, NSMenuDelegate {
         ?? NSImage(systemSymbolName: "brain", accessibilityDescription: nil)
       button.image?.isTemplate = true
       // Dim the icon when no model is loaded
-      button.alphaValue = server.isAnyModelLoaded ? 1.0 : 0.35
+      button.alphaValue = server.isAnyModelLoaded ? 1.0 : 0.4
     }
 
     let menu = NSMenu()
@@ -299,9 +299,9 @@ final class MenuController: NSObject, NSMenuDelegate {
       if server.isAnyModelLoaded {
         button.alphaValue = 1.0
       } else if server.isAnyModelLoading {
-        button.alphaValue = 0.65
+        button.alphaValue = 0.7
       } else {
-        button.alphaValue = 0.35
+        button.alphaValue = 0.4
       }
     }
 
