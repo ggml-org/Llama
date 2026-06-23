@@ -169,7 +169,7 @@ final class ExpandedModelDetailsView: ItemView {
     // `serve` loads the model on demand from the `?model=` selection when the
     // user sends their first message.
     guard let url = chatUrl else { return }
-    NSWorkspace.shared.open(url)
+    openInBrowser(url)
   }
 
   // MARK: - Tier Picker

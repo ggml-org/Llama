@@ -35,6 +35,6 @@ final class BrowseMoreRow: ItemView {
   required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
   @objc private func openBrowse() {
-    NSWorkspace.shared.open(url)
+    openInBrowser(url)
   }
 }

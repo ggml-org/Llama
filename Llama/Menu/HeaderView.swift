@@ -150,7 +150,7 @@ final class HeaderView: ItemView {
 
   @objc private func openWebUi() {
     if let url = webUiUrl {
-      NSWorkspace.shared.open(url)
+      openInBrowser(url)
     }
   }
 

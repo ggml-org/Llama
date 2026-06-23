@@ -47,6 +47,6 @@ final class EmptyStateView: ItemView {
   }
 
   @objc private func openBrowse() {
-    NSWorkspace.shared.open(Self.browseUrl)
+    openInBrowser(Self.browseUrl)
   }
 }

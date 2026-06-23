@@ -58,7 +58,7 @@ final class SectionHeaderView: ItemView {
 
   @objc private func openLink() {
     if let linkUrl {
-      NSWorkspace.shared.open(linkUrl)
+      openInBrowser(linkUrl)
     }
   }
 }
