@@ -145,7 +145,12 @@ struct Model: Identifiable {
   /// full-precision rankings are no longer available without a curated
   /// catalog, so id is the tie-breaker.
   static func displayOrder(_ lhs: Model, _ rhs: Model) -> Bool {
-    if lhs.family != rhs.family { return lhs.family < rhs.family }
+    // Family is compared case-insensitively so differently-cased families
+    // (e.g. "gemma-4", "embeddinggemma") sort alongside their capitalized
+    // siblings rather than clustering at the end of the list. Ties (same
+    // family ignoring case) fall back to the id for a stable order.
+    let familyOrder = lhs.family.caseInsensitiveCompare(rhs.family)
+    if familyOrder != .orderedSame { return familyOrder == .orderedAscending }
     return lhs.id < rhs.id
   }
 }
