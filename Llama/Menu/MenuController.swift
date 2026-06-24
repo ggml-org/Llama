@@ -13,6 +13,10 @@ final class MenuController: NSObject, NSMenuDelegate {
   // Section State
   private var expandedModelIds: Set<String> = []
 
+  /// Whether the Installed list is showing all rows vs. the collapsed first few.
+  /// Reset on menu close so each open starts collapsed.
+  private var isInstalledListExpanded = false
+
   /// Web catalog the Discover "Browse more" link points at — more models live
   /// here. Matches the empty-state browse link.
   private static let browseCatalogUrl = URL(string: "https://llama.app/")!
@@ -131,6 +135,7 @@ final class MenuController: NSObject, NSMenuDelegate {
 
     // Reset section collapse state
     expandedModelIds.removeAll()
+    isInstalledListExpanded = false
   }
 
   // MARK: - Menu Construction
@@ -358,11 +363,59 @@ final class MenuController: NSObject, NSMenuDelegate {
     let header = SectionHeaderView(title: "Installed", linkText: "models", linkUrl: modelsUrl)
     menu.addItem(NSMenuItem.viewItem(with: header))
 
-    // Always show models
-    buildInstalledItems(models).forEach { menu.addItem($0) }
+    // Progressive disclosure: a long list pushes the footer (Settings/Quit) past
+    // the bottom of the screen, so when collapsed we show only the first
+    // `installedCollapsedCount` rows and tuck the rest behind a "Show N more" row.
+    // Only worth collapsing when it hides more than a row or two, hence the `+ 2`
+    // slack -- otherwise the toggle costs a row without buying any space.
+    let isCollapsible = models.count > Self.installedCollapsedCount + 2
+    let collapsed = isCollapsible && !isInstalledListExpanded
+
+    var visibleModels = models
+    if collapsed {
+      // Always keep "live" rows on screen even past the fold -- a running model
+      // or an in-flight download below row N would otherwise vanish when
+      // collapsed, hiding exactly the rows the user most wants to watch. Only
+      // idle models get hidden.
+      visibleModels = Array(models.prefix(Self.installedCollapsedCount))
+      visibleModels += models.dropFirst(Self.installedCollapsedCount).filter(isLiveRow)
+    }
+
+    buildInstalledRows(visibleModels).forEach { menu.addItem($0) }
+
+    let hiddenCount = models.count - visibleModels.count
+    if collapsed && hiddenCount > 0 {
+      addDisclosureRow(to: menu, title: "Show \(hiddenCount) more", expanded: false)
+    } else if isCollapsible && isInstalledListExpanded {
+      addDisclosureRow(to: menu, title: "Show less", expanded: true)
+    }
   }
 
-  private func buildInstalledItems(_ models: [Model]) -> [NSMenuItem] {
+  /// How many installed rows show before the list collapses behind "Show N more".
+  private static let installedCollapsedCount = 8
+
+  /// Adds the collapse/expand toggle and wires it to flip `isInstalledListExpanded`
+  /// and rebuild the menu in place (no reopen needed).
+  private func addDisclosureRow(to menu: NSMenu, title: String, expanded: Bool) {
+    let row = DisclosureRow(title: title, expanded: expanded) { [weak self] in
+      guard let self else { return }
+      self.isInstalledListExpanded.toggle()
+      self.rebuildMenuIfPossible()
+    }
+    menu.addItem(NSMenuItem.viewItem(with: row))
+  }
+
+  /// Whether a row is "live" -- running, loading, or mid-download/paused -- and
+  /// so should stay visible even when the list is collapsed.
+  private func isLiveRow(_ model: Model) -> Bool {
+    if server.isActive(model: model) || server.isLoading(model: model) { return true }
+    switch modelManager.status(for: model) {
+    case .downloading, .paused: return true
+    case .available, .installed: return false
+    }
+  }
+
+  private func buildInstalledRows(_ models: [Model]) -> [NSMenuItem] {
     var items = [NSMenuItem]()
 
     for model in models {
