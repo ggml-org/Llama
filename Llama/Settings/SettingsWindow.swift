@@ -89,6 +89,23 @@ private struct SettingRow<Control: View>: View {
   }
 }
 
+/// A borderless circular-arrow button that resets a setting to its default.
+/// Centralizes the reset affordance's glyph, styling, and tooltip so they
+/// stay consistent across rows; call sites supply only the reset action and
+/// decide when to show it (typically only when a custom value is set).
+private struct RestoreDefaultButton: View {
+  let action: () -> Void
+
+  var body: some View {
+    Button(action: action) {
+      Image(systemName: "arrow.counterclockwise")
+    }
+    .buttonStyle(.borderless)
+    .foregroundStyle(.secondary)
+    .help("Restore the default")
+  }
+}
+
 /// SwiftUI view for settings content.
 struct SettingsView: View {
   @State private var launchAtLogin = LaunchAtLogin.isEnabled
@@ -138,13 +155,24 @@ struct SettingsView: View {
           title: "Server port",
           description: "The port the server listens on. Default \(String(LlamaServer.defaultPort))."
         ) {
-          Button {
-            showingServerPortSheet = true
-          } label: {
-            Text(String(serverPort))
+          HStack(spacing: 6) {
+            // Only offer a reset when a custom port is set.
+            if UserSettings.serverPort != nil {
+              RestoreDefaultButton {
+                // nil resets to the default; the setter restarts the server once.
+                UserSettings.serverPort = nil
+                serverPort = LlamaServer.port
+              }
+            }
+
+            Button {
+              showingServerPortSheet = true
+            } label: {
+              Text(String(serverPort))
+            }
+            .controlSize(.small)
           }
           .font(.callout)
-          .controlSize(.small)
         }
       }
       .sheet(isPresented: $showingServerPortSheet) {
@@ -186,20 +214,27 @@ struct SettingsView: View {
           title: "Cache directory",
           description: "Where downloaded models are stored."
         ) {
-          // The current path sits to the left of the button as dimmed,
-          // non-interactive text; it truncates in the middle to stay compact.
-          // The folder button opens the picker.
           HStack(spacing: 6) {
-            Text(abbreviatedPath(hfCacheDir))
-              .lineLimit(1)
-              .truncationMode(.middle)
-              .foregroundStyle(.secondary)
-              .frame(maxWidth: 240, alignment: .trailing)
+            // Only offer a reset when a custom directory is set.
+            if UserSettings.hasCustomHFCacheDirectory {
+              RestoreDefaultButton {
+                UserSettings.hfCacheDirectory = UserSettings.defaultHFCacheDirectory
+                hfCacheDir = UserSettings.hfCacheDirectory
+                ModelManager.shared.refreshDownloadedModels()
+              }
+            }
 
+            // One button opens the picker; it shows the current path (already
+            // middle-truncated by `abbreviatedPath`) next to a folder icon.
             Button {
               chooseCacheFolder()
             } label: {
-              Image(systemName: "folder")
+              HStack(spacing: 6) {
+                Text(abbreviatedPath(hfCacheDir))
+                  .lineLimit(1)
+
+                Image(systemName: "folder")
+              }
             }
             .controlSize(.small)
           }
@@ -209,7 +244,10 @@ struct SettingsView: View {
     }
     .formStyle(.grouped)
     .frame(width: 600)
-    .fixedSize()
+    // Width is pinned above; only the height hugs the content. (A plain
+    // `.fixedSize()` would also fix the width to ideal, which forces
+    // `maxWidth`-capped controls to their full cap instead of hugging.)
+    .fixedSize(horizontal: false, vertical: true)
   }
 
   /// Opens a folder picker and updates the HF cache directory
@@ -240,14 +278,22 @@ struct SettingsView: View {
     return "\(token.prefix(3))...\(token.suffix(4))"
   }
 
-  /// Abbreviates path by replacing home directory with ~
-  private func abbreviatedPath(_ url: URL) -> String {
+  /// Abbreviates a path for display: replaces the home directory with `~`,
+  /// then middle-truncates to `maxLen` characters so a long path can't stretch
+  /// the layout. Capping the string (rather than the view's width) lets the
+  /// label hug short paths instead of always reserving the full cap width.
+  private func abbreviatedPath(_ url: URL, maxLen: Int = 38) -> String {
     let path = url.path
     let home = FileManager.default.homeDirectoryForCurrentUser.path
-    if path.hasPrefix(home) {
-      return "~" + path.dropFirst(home.count)
-    }
-    return path
+    let abbreviated = path.hasPrefix(home) ? "~" + path.dropFirst(home.count) : path
+
+    guard abbreviated.count > maxLen else { return abbreviated }
+    // Keep the head and tail, eliding the middle -- the ends carry the most
+    // meaning (the `~`/root and the leaf directory).
+    let keep = maxLen - 1  // reserve one char for the ellipsis
+    let head = abbreviated.prefix(keep - keep / 2)
+    let tail = abbreviated.suffix(keep / 2)
+    return "\(head)…\(tail)"
   }
 }
 
