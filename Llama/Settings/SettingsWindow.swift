@@ -182,58 +182,28 @@ struct SettingsView: View {
       }
       // HF cache directory section
       Section {
-        VStack(alignment: .leading, spacing: 2) {
-          Text("Cache directory")
-
-          Text("Where downloaded models are stored.")
-            .font(.system(size: 11))
-            .foregroundStyle(.secondary)
-
+        SettingRow(
+          title: "Cache directory",
+          description: "Where downloaded models are stored."
+        ) {
+          // The current path sits to the left of the button as dimmed,
+          // non-interactive text; it truncates in the middle to stay compact.
+          // The folder button opens the picker.
           HStack(spacing: 6) {
-            // Current path in a "well" -- a quiet fill, not a bordered
-            // field, so it reads as a displayed value, not an editable input
-            // (extra top padding separates the control row from the caption)
-            HStack(spacing: 6) {
-              Text(abbreviatedPath(hfCacheDir))
-                .font(.callout)
-                .textSelection(.enabled)
-                .lineLimit(1)
-                .truncationMode(.middle)
-
-              Spacer(minLength: 0)
-
-              Button {
-                NSWorkspace.shared.activateFileViewerSelecting([hfCacheDir])
-              } label: {
-                Image(systemName: "folder")
-              }
-              .buttonStyle(.plain)
+            Text(abbreviatedPath(hfCacheDir))
+              .lineLimit(1)
+              .truncationMode(.middle)
               .foregroundStyle(.secondary)
-              .help("Show in Finder")
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 6))
+              .frame(maxWidth: 240, alignment: .trailing)
 
-            // Show a reset button only when a custom directory is set
-            if UserSettings.hasCustomHFCacheDirectory {
-              Button("Reset") {
-                UserSettings.hfCacheDirectory = UserSettings.defaultHFCacheDirectory
-                hfCacheDir = UserSettings.hfCacheDirectory
-                ModelManager.shared.refreshDownloadedModels()
-              }
-              .font(.callout)
-              .controlSize(.small)
-              .help("Restore the default directory")
-            }
-
-            Button("Select...") {
+            Button {
               chooseCacheFolder()
+            } label: {
+              Image(systemName: "folder")
             }
-            .font(.callout)
             .controlSize(.small)
           }
-          .padding(.top, 4)
+          .font(.callout)
         }
       }
     }
