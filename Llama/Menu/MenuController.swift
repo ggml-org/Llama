@@ -517,7 +517,7 @@ final class MenuController: NSObject, NSMenuDelegate {
   /// Adds a warning when the custom models folder is unavailable (e.g., external drive unplugged)
   private func addFolderWarning(to menu: NSMenu) {
     let warningView = TextItemView(
-      text: "Cache directory not available. Check Settings.",
+      text: "Model directory not available. Check Settings.",
       style: .description,
       onAction: { [weak self] in
         self?.openSettings()

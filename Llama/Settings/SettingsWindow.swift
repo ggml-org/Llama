@@ -211,7 +211,7 @@ struct SettingsView: View {
       // HF cache directory section
       Section {
         SettingRow(
-          title: "Cache directory",
+          title: "Model directory",
           description: "Where downloaded models are stored."
         ) {
           HStack(spacing: 6) {
@@ -257,7 +257,7 @@ struct SettingsView: View {
     panel.canChooseDirectories = true
     panel.canCreateDirectories = true
     panel.allowsMultipleSelection = false
-    panel.message = "Choose a cache directory for AI models"
+    panel.message = "Choose a directory for downloaded models"
     panel.prompt = "Select"
 
     // Start in the current cache directory
