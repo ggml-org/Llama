@@ -73,7 +73,7 @@ private struct SettingRow<Control: View>: View {
   @ViewBuilder let control: () -> Control
 
   var body: some View {
-    HStack {
+    HStack(alignment: .top) {
       VStack(alignment: .leading, spacing: 2) {
         Text(title)
 
