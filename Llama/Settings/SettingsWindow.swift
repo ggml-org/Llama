@@ -34,9 +34,11 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
     // Create the SwiftUI content view
     let contentView = SettingsView()
 
-    // Create the window
+    // Create the window. The contentRect size is just a placeholder: the
+    // hosting view resizes the window to fit the SwiftUI content, whose width
+    // is pinned by `.frame(width:)` and whose height is intrinsic (`.fixedSize()`).
     let window = NSWindow(
-      contentRect: NSRect(x: 0, y: 0, width: 440, height: 200),
+      contentRect: NSRect(x: 0, y: 0, width: 0, height: 0),
       styleMask: [.titled, .closable],
       backing: .buffered,
       defer: false
@@ -222,7 +224,7 @@ struct SettingsView: View {
       }
     }
     .formStyle(.grouped)
-    .frame(width: 440)
+    .frame(width: 600)
     .fixedSize()
   }
 
