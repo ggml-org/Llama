@@ -15,9 +15,22 @@
 		1568919C2E2685F700F71BD4 /* Llama.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Llama.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		154EE9802EA64E200083FDEE /* Exceptions for "Llama" folder in "Llama" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 1568919B2E2685F700F71BD4 /* Llama */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1568919E2E2685F700F71BD4 /* Llama */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				154EE9802EA64E200083FDEE /* Exceptions for "Llama" folder in "Llama" target */,
+			);
 			path = Llama;
 			sourceTree = "<group>";
 		};
