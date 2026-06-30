@@ -112,6 +112,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // Configure app as menu bar only (removes from Dock)
     NSApp.setActivationPolicy(.accessory)
 
+    // Opt into launch-at-login by default on first launch (one-time; respects a
+    // later opt-out in Settings).
+    LaunchAtLogin.enableOnFirstLaunch()
+
     // Set up automatic updates using Sparkle framework
     // Skip starting the updater for debug builds to avoid false update prompts
     #if DEBUG

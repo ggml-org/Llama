@@ -29,6 +29,7 @@ enum UserSettings {
 
   private enum Keys {
     static let hasSeenWelcome = "hasSeenWelcome"
+    static let hasSetDefaultLaunchAtLogin = "hasSetDefaultLaunchAtLogin"
     static let exposeToNetwork = "exposeToNetwork"
     static let serverPort = "serverPort"
     static let sleepIdleTime = "sleepIdleTime"
@@ -46,6 +47,18 @@ enum UserSettings {
     }
     set {
       defaults.set(newValue, forKey: Keys.hasSeenWelcome)
+    }
+  }
+
+  /// Whether we've applied the one-time launch-at-login default (enabled on
+  /// first launch). Guards against re-enabling it on later launches after the
+  /// user has deliberately turned it off in Settings.
+  static var hasSetDefaultLaunchAtLogin: Bool {
+    get {
+      defaults.bool(forKey: Keys.hasSetDefaultLaunchAtLogin)
+    }
+    set {
+      defaults.set(newValue, forKey: Keys.hasSetDefaultLaunchAtLogin)
     }
   }
 
