@@ -30,7 +30,7 @@ final class CatalogItemView: ItemView {
     iconView.inactiveTintColor = Theme.Colors.modelIconTint
 
     Theme.configure(
-      installImageView, symbol: "arrow.down.circle", tooltip: "Install model",
+      installImageView, symbol: "arrow.down", tooltip: "Install model",
       color: .tertiaryLabelColor)
 
     titleLabel.stringValue = suggestion.sizeName
