@@ -14,10 +14,35 @@ final class CatalogItemView: ItemView {
   private let subtitleLabel = Theme.tertiaryLabel()
   private let installImageView = NSImageView()
 
-  /// Subtitle: just the download size, e.g. "2.5 GB". The quant (e.g. "Q4") is
-  /// deliberately omitted — Discover already picks one build per size, so the
-  /// quant isn't a user choice here, just jargon; full detail lives on the web.
+  /// Subtitle: just the download size, e.g. "2.5 GB". Line two is for the
+  /// model's properties (size); the quant — which says *which* build this is —
+  /// belongs on line one next to the name (see `titleText`).
   private var subtitleText: String { suggestion.sizeLabel ?? "" }
+
+  /// Title: the size name with a muted quant suffix, e.g. "Gemma 4 E4B Q4_K_M".
+  /// Discover picks one build per size, so the quant isn't a choice here — but
+  /// experienced users scrutinizing the recommendation want to know which quant
+  /// they're getting. The muted color keeps it quiet enough that novices' eyes
+  /// slide past it. Quant is dropped when the catalog omits it.
+  private var titleText: NSAttributedString {
+    let result = NSMutableAttributedString(
+      string: suggestion.sizeName,
+      attributes: Theme.primaryAttributes(color: Theme.Colors.textPrimary))
+    if let quant = suggestion.quant {
+      let quantColor = Theme.Colors.textSecondary
+      // Widen the gap before the quant: a plain space reads as tighter than the
+      // inter-word spaces in the name, making the quant look glued on. `.kern`
+      // adds tracking *after* the character, so apply it to the leading space
+      // only — applying it to the whole run would also splay the quant's letters.
+      var spaceAttributes = Theme.primaryAttributes(color: quantColor)
+      spaceAttributes[.kern] = 3
+      result.append(NSAttributedString(string: " ", attributes: spaceAttributes))
+      result.append(
+        NSAttributedString(
+          string: quant, attributes: Theme.primaryAttributes(color: quantColor)))
+    }
+    return result
+  }
 
   init(suggestion: Catalog.Suggestion, onInstall: @escaping (Catalog.Suggestion) -> Void) {
     self.suggestion = suggestion
@@ -33,7 +58,7 @@ final class CatalogItemView: ItemView {
       installImageView, symbol: "arrow.down", tooltip: "Install model",
       color: .tertiaryLabelColor)
 
-    titleLabel.stringValue = suggestion.sizeName
+    titleLabel.attributedStringValue = titleText
     titleLabel.maximumNumberOfLines = 1
     titleLabel.lineBreakMode = .byTruncatingTail
 
