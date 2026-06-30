@@ -52,8 +52,9 @@ class ModelManager: NSObject, URLSessionDataDelegate {
   /// session) and the internal failure paths (transient failures that
   /// exhausted retries). Carrying the entry here means paused deeplinks
   /// survive teardown without a separate placeholder registry.
-  /// Not persisted across restarts — re-clicking the deeplink rebuilds the
-  /// placeholder and resumes from the on-disk `.partial` bytes.
+  /// Rehydrated across restarts from the on-disk `.model.json` placeholder each
+  /// download writes (see `persistPlaceholder` / `HFCache.scanPlaceholders`), so
+  /// an interrupted download reappears as a paused row rather than vanishing.
   var pausedDownloads: [String: PausedDownload] = [:]
 
   /// Per-task streaming state for in-flight downloads, keyed by
@@ -115,6 +116,12 @@ class ModelManager: NSObject, URLSessionDataDelegate {
 
     logger.info("Starting download for model: \(model.displayName)")
 
+    // Persist a placeholder so an interrupted download (app quit/crash/update
+    // mid-transfer) reappears as a paused row on next launch instead of
+    // silently vanishing. The `.partial` bytes already survive; this just keeps
+    // the `Model` needed to render and resume the row without a network resolve.
+    persistPlaceholder(for: model)
+
     // Add placeholder entry immediately so the model appears as "downloading"
     // in the UI before the async HF metadata fetch completes. Seed completedUnitCount
     // from the resumed bytes so the first refresh shows the correct percentage; the
@@ -153,6 +160,23 @@ class ModelManager: NSObject, URLSessionDataDelegate {
         self.logger.info("HF download plan ready for \(model.displayName): \(plan.repoDir)")
         self.startDownloadTasks(model: model, files: filesToDownload)
       }
+    }
+  }
+
+  /// Writes the model's placeholder JSON into its partial dir so the paused row
+  /// can be rebuilt at launch. Best-effort: a failure only means the download
+  /// won't reappear after a restart (re-clicking still resumes), so it's logged,
+  /// not surfaced. The placeholder dies with the partial dir on completion/cancel.
+  private func persistPlaceholder(for model: Model) {
+    let url = HFCache.placeholderURL(cacheDir: UserSettings.hfCacheDirectory, modelId: model.id)
+    do {
+      try FileManager.default.createDirectory(
+        at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+      try JSONEncoder().encode(model).write(to: url, options: .atomic)
+    } catch {
+      logger.error(
+        "Failed to write download placeholder for \(model.displayName): \(error.localizedDescription)"
+      )
     }
   }
 
@@ -453,6 +477,18 @@ class ModelManager: NSObject, URLSessionDataDelegate {
       let installedIds = Set(models.map(\.id))
       HFCache.cleanInstalledPartials(cacheDir: hfCacheDir, installedIds: installedIds)
 
+      // Rehydrate paused rows for downloads interrupted in a previous session:
+      // decode each on-disk placeholder back into a `Model` and pair it with its
+      // current bytes-on-disk. No network resolve needed — the placeholder
+      // carries the full `Model`.
+      let pausedEntries = HFCache.scanPlaceholders(cacheDir: hfCacheDir).compactMap {
+        url -> (model: Model, bytesOnDisk: Int64)? in
+        guard let data = try? Data(contentsOf: url),
+          let model = try? JSONDecoder().decode(Model.self, from: data)
+        else { return nil }
+        return (model, HFCache.partialBytes(cacheDir: hfCacheDir, modelId: model.id))
+      }
+
       let allDownloaded = models
       let finalResolved = resolvedPaths
       let pendingProfile = needsProfile
@@ -460,7 +496,7 @@ class ModelManager: NSObject, URLSessionDataDelegate {
       guard let self else { return }
       await MainActor.run {
         self.updateDownloadedModels(
-          allDownloaded, resolved: finalResolved, pending: pendingProfile)
+          allDownloaded, resolved: finalResolved, pending: pendingProfile, paused: pausedEntries)
       }
     }
   }
@@ -468,16 +504,22 @@ class ModelManager: NSObject, URLSessionDataDelegate {
   private func updateDownloadedModels(
     _ models: [Model],
     resolved: [String: ResolvedPaths],
-    pending: [(id: String, path: String)] = []
+    pending: [(id: String, path: String)] = [],
+    paused: [(model: Model, bytesOnDisk: Int64)] = []
   ) {
     downloadedModels = models.sorted(by: Model.displayOrder(_:_:))
     resolvedPaths = resolved
-    // Paused-download entries are entirely in-memory (placeholders the
-    // deeplink/manual-pause paths stash). A refresh shouldn't touch them
-    // unless the row is now installed or actively downloading.
+    // Drop paused entries that are now installed or actively downloading, then
+    // fold in the rehydrated on-disk placeholders. The merge is idempotent: a
+    // download paused this session has both an in-memory entry and a placeholder
+    // carrying the same `Model`, and an active download's id is excluded below.
     let excluded = Set(downloadedModels.map(\.id))
       .union(activeDownloads.keys)
     pausedDownloads = pausedDownloads.filter { !excluded.contains($0.key) }
+    for entry in paused where !excluded.contains(entry.model.id) {
+      pausedDownloads[entry.model.id] = PausedDownload(
+        model: entry.model, bytesOnDisk: entry.bytesOnDisk)
+    }
 
     // Only reload server if models.ini actually changed
     if updateModelsFile() {

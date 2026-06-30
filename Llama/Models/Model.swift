@@ -4,7 +4,7 @@ import Foundation
 /// Built from a deeplink resolve (placeholder pre-download) or from the HF
 /// cache scan (post-install). Metadata is parsed from the HF repo dir name and
 /// the GGUF filename — there is no curated catalog backing this struct.
-struct Model: Identifiable {
+struct Model: Identifiable, Codable {
   /// `{org}/{repo}:{QUANT}` — matches llama-server's `-hf` shorthand. Stable
   /// across the deeplink and post-install scan paths because both derive the
   /// quant label through the same `GGUFQuantLabel` grammar.

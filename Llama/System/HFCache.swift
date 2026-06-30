@@ -133,12 +133,40 @@ enum HFCache {
     return total
   }
 
+  /// File name of the per-download placeholder dropped next to a model's
+  /// `.partial` files. Hidden (leading dot) and not a `.partial`, so
+  /// `partialBytes` ignores it; it rides inside the partial dir so the existing
+  /// `removePartials` cleanup disposes of it on completion/cancel.
+  static let placeholderFileName = ".model.json"
+
+  /// Path to a download's placeholder file (the serialized `Model`). Written
+  /// when a download starts so the app can rebuild the paused row at launch
+  /// without a network resolve; see `scanPlaceholders`.
+  static func placeholderURL(cacheDir: URL, modelId: String) -> URL {
+    partialDir(cacheDir: cacheDir, modelId: modelId)
+      .appendingPathComponent(placeholderFileName)
+  }
+
+  /// Finds every download placeholder under the partial root — one per
+  /// interrupted/paused download from a previous session. Used at launch to
+  /// rehydrate paused rows. Returns the placeholder file URLs; the caller
+  /// decodes the `Model` (HFCache stays model-agnostic).
+  static func scanPlaceholders(cacheDir: URL) -> [URL] {
+    let root = cacheDir.appendingPathComponent(partialRootDirName)
+    guard
+      let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)
+    else { return [] }
+    var result: [URL] = []
+    for case let url as URL in enumerator where url.lastPathComponent == placeholderFileName {
+      result.append(url)
+    }
+    return result
+  }
+
   /// Cleans up `<partialRootDirName>/<id>` subdirs for ids that are already
   /// installed (e.g. a deeplink download that landed but left its partial dir
-  /// behind). We don't surface remaining partials as paused-download rows on
-  /// startup — there's no in-memory `Model` for them without a deeplink to
-  /// rebuild from. Re-clicking the deeplink rebuilds the entry with the same
-  /// id and `openPartialWriter` resumes from the on-disk bytes.
+  /// behind). Interrupted (not-yet-installed) downloads are kept and surfaced
+  /// as paused rows at launch via `scanPlaceholders`.
   static func cleanInstalledPartials(cacheDir: URL, installedIds: Set<String>) {
     let root = cacheDir.appendingPathComponent(partialRootDirName)
     guard let subdirs = try? FileManager.default.contentsOfDirectory(atPath: root.path) else {
