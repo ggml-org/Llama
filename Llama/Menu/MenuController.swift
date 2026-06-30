@@ -168,25 +168,18 @@ final class MenuController: NSObject, NSMenuDelegate {
     let managed = modelManager.managedModels
     let suggestions = visibleDiscoverSuggestions(managed: managed)
 
-    if managed.isEmpty && suggestions.isEmpty {
-      // Nothing installed and nothing to suggest (e.g. offline / catalog fetch
-      // failed) — show the full empty state with browse guidance, since it's the
-      // only direction we can offer here.
-      menu.addItem(NSMenuItem.viewItem(with: EmptyStateView()))
+    // Always render the Installed section — with rows, or the empty placeholder
+    // slot when nothing's installed — so it anchors the menu instead of vanishing
+    // and leaving Recommended as a floating first section.
+    addInstalledSection(to: menu, models: managed)
+    if suggestions.isEmpty {
+      // No picks to show — all recommended models already installed, or the
+      // catalog is unavailable (offline) or hasn't finished loading yet. Keep a
+      // standalone Browse more link so the web catalog stays one click away.
+      menu.addItem(NSMenuItem.viewItem(with: SeparatorView()))
+      menu.addItem(NSMenuItem.viewItem(with: BrowseMoreRow(url: Self.browseCatalogUrl)))
     } else {
-      // Otherwise always render the Installed section — with rows, or a terse
-      // placeholder when empty — so it anchors the menu instead of vanishing and
-      // leaving Recommended as a floating first section.
-      addInstalledSection(to: menu, models: managed)
-      if suggestions.isEmpty {
-        // No picks to show (all recommended models already installed, or the
-        // catalog is unavailable) but the user has models — keep a standalone
-        // Browse more link so the web catalog stays one click away.
-        menu.addItem(NSMenuItem.viewItem(with: SeparatorView()))
-        menu.addItem(NSMenuItem.viewItem(with: BrowseMoreRow(url: Self.browseCatalogUrl)))
-      } else {
-        addDiscoverSection(to: menu, suggestions: suggestions)
-      }
+      addDiscoverSection(to: menu, suggestions: suggestions)
     }
 
     addFooter(to: menu)
