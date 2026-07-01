@@ -107,6 +107,20 @@ final class HeaderView: ItemView {
     // Connect to server info
     appNameLabel.stringValue = "Llama"
 
+    // A hard server error (e.g. the port is held by another app) means there's
+    // no working URL to show -- surface the reason in place of the Base URL /
+    // WebUI row, which would otherwise misleadingly imply the server is up.
+    if case .error(let err) = server.state {
+      statusLabel.stringValue = err.errorDescription ?? "Server error"
+      statusLabel.textColor = Theme.Colors.textSecondary
+      statusLabel.isHidden = false
+      linkLabel.isHidden = true
+      copyButton.isHidden = true
+      webUiLabel.isHidden = true
+      needsDisplay = true
+      return
+    }
+
     // Build server URLs using the resolved host (handles 0.0.0.0 -> local IP)
     let host = LlamaServer.resolvedHost
     let linkText = "\(host):\(LlamaServer.port)"

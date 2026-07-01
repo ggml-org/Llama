@@ -6,6 +6,7 @@ enum LlamaServerError: Error, LocalizedError, Equatable {
   case launchFailed(String)
   case healthCheckFailed
   case invalidPath(String)
+  case portInUse(port: Int, by: String)
 
   var errorDescription: String? {
     switch self {
@@ -15,6 +16,8 @@ enum LlamaServerError: Error, LocalizedError, Equatable {
       return "Server failed to respond"
     case .invalidPath(let path):
       return "Invalid file: \(path)"
+    case .portInUse(let port, let by):
+      return "Port \(port) is in use by \(by)"
     }
   }
 }
@@ -317,8 +320,10 @@ class LlamaServer {
   /// webui shows no models. Killing the listener here breaks that cycle.
   ///
   /// Scoped to `llama` processes: if some unrelated app holds the port we leave
-  /// it alone (the launch will surface the conflict as an error instead).
-  nonisolated static func reclaimPort() {
+  /// it alone. In that case we return the name of the offending process so the
+  /// caller can surface the conflict as a clear error instead of letting the
+  /// bind fail opaquely; `nil` means the port is now ours to bind.
+  nonisolated static func reclaimPort() -> String? {
     // `lsof -ti` prints just the PIDs listening on the TCP port.
     let lsof = Process()
     lsof.executableURL = URL(fileURLWithPath: "/usr/sbin/lsof")
@@ -326,13 +331,17 @@ class LlamaServer {
     let pipe = Pipe()
     lsof.standardOutput = pipe
     lsof.standardError = FileHandle.nullDevice
-    guard (try? lsof.run()) != nil else { return }
+    guard (try? lsof.run()) != nil else { return nil }
     lsof.waitUntilExit()
 
     let out = pipe.fileHandleForReading.readDataToEndOfFile()
     let pids = String(decoding: out, as: UTF8.self)
       .split(whereSeparator: \.isNewline)
       .compactMap { pid_t($0) }
+
+    // The first non-`llama` process found holding the port, if any -- reported
+    // back so the caller can name it in the conflict error.
+    var blocker: String? = nil
 
     for pid in pids {
       // Only kill it if it's actually a `llama` process -- never a stranger
@@ -347,10 +356,18 @@ class LlamaServer {
       ps.waitUntilExit()
 
       let comm = String(decoding: psPipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-      guard comm.hasSuffix("llama\n") || comm.hasSuffix("llama") else { continue }
+        .trimmingCharacters(in: .whitespacesAndNewlines)
 
-      kill(pid, SIGKILL)
+      if comm.hasSuffix("llama") {
+        kill(pid, SIGKILL)
+      } else if !comm.isEmpty, blocker == nil {
+        // A process we won't touch -- keep just its name (not the full path) for
+        // a user-facing message.
+        blocker = URL(fileURLWithPath: comm).lastPathComponent
+      }
     }
+
+    return blocker
   }
 
   /// Launches llama-server in Router Mode
@@ -358,8 +375,16 @@ class LlamaServer {
     stop()
 
     // Reclaim the port from any orphaned `llama serve` a prior crashed session
-    // left holding it -- otherwise this launch can't bind and would exit.
-    Self.reclaimPort()
+    // left holding it -- otherwise this launch can't bind and would exit. If some
+    // *other* process holds the port (one we won't kill), don't launch into a
+    // silent bind failure -- surface a clear conflict instead. The extra
+    // `isPortAvailable` re-check guards against the process having exited between
+    // the scan and now (a stale blocker), so we only error on a real conflict.
+    if let blocker = Self.reclaimPort(), !Self.isPortAvailable(Self.port) {
+      logger.error("port \(Self.port) is held by \(blocker, privacy: .public); not launching server")
+      state = .error(.portInUse(port: Self.port, by: blocker))
+      return
+    }
 
     // Resolve the launch spec up front; a missing install surfaces as an error.
     guard let spec = Self.buildLaunchSpec() else {
