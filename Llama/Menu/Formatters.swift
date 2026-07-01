@@ -13,14 +13,17 @@ enum Format {
     return formatDecimal(gb, unit: " GB")
   }
 
-  /// Human-readable transfer rate, e.g. "4.2 MB/s". Uses the same decimal-unit
-  /// convention as `gigabytes` (1 MB = 1,000,000 bytes) so the rate and the
-  /// total size in the same subtitle agree.
-  static func transferRate(_ bytesPerSec: Int) -> String {
-    let formatter = ByteCountFormatter()
-    formatter.countStyle = .decimal
-    formatter.allowsNonnumericFormatting = false
-    return "\(formatter.string(fromByteCount: Int64(bytesPerSec)))/s"
+  /// Formats bytes picking the unit by magnitude: whole megabytes under 1 GB
+  /// (e.g. "512 MB"), gigabytes with one decimal at/above (e.g. "1.2 GB"). Used
+  /// for the live download readout so a small-but-growing figure ticks in MB and
+  /// visibly moves, instead of sitting near "0.0 GB". Same decimal-unit
+  /// convention as `gigabytes` (1 GB = 1e9 bytes).
+  static func bytesAdaptive(_ bytes: Int64) -> String {
+    if bytes < 1_000_000_000 {
+      let mb = Double(bytes) / 1_000_000.0
+      return String(format: "%.0f MB", mb)
+    }
+    return gigabytes(bytes)
   }
 
   // MARK: - Token Formatting (binary: 1k = 1024)
@@ -65,14 +68,6 @@ enum Format {
     return upper
   }
 
-  // MARK: - Progress Formatting
-
-  /// Formats a 0.0–1.0 fraction as a percentage string (e.g., "42%" or "42.5%").
-  static func percentText(_ fraction: Double) -> String {
-    let pct = max(0, min(100, fraction * 100))
-    return formatDecimal(pct, unit: "%")
-  }
-
   // MARK: - Private Helpers
 
   /// Formats a value with one decimal place, omitting ".0" for whole numbers.
@@ -113,31 +108,20 @@ extension Format {
 
   // MARK: - Model Metadata (composite)
 
-  /// Attributed subtitle for a downloading or paused row — e.g. "42% of 3.1 GB"
-  /// or "42% of 3.1 GB · Paused". Uses the same secondary font as `modelMetadata`
-  /// and the same no-tightening paragraph style so truncation behaves consistently.
-  /// Replaces the usual "<size> ∣ <ctx>" metadata while a transfer is in flight;
-  /// ctx tier is only meaningful for fully-downloaded models. When `fraction` is
-  /// nil (paused with unknown total), falls back to just the size.
+  /// Transfer readout shown to the right of the progress bar while a download is
+  /// in flight: "1.2 GB of 3.1 GB", or just "Paused" when interrupted. Progress is
+  /// conveyed by the bar, so no percentage here. Uses tabular digits (so the
+  /// counting-up "downloaded" figure doesn't jitter its width) and the same
+  /// secondary font / no-tightening paragraph style as `modelMetadata`.
   static func downloadSubtitle(
-    fraction: Double?, totalBytes: Int64, paused: Bool, bytesPerSec: Int?, color: NSColor
+    downloadedBytes: Int64, totalBytes: Int64, paused: Bool, color: NSColor
   ) -> NSAttributedString {
-    let head =
-      fraction.map { "\(percentText($0)) of \(gigabytes(totalBytes))" }
-      ?? gigabytes(totalBytes)
-    let text: String
-    if paused {
-      text = "\(head) · Paused"
-    } else if let rate = bytesPerSec, rate > 0 {
-      // Speed only appears once the first sample window closes (rate > 0).
-      text = "\(head) · \(transferRate(rate))"
-    } else {
-      text = head
-    }
+    let text =
+      paused ? "Paused" : "\(bytesAdaptive(downloadedBytes)) of \(bytesAdaptive(totalBytes))"
     return NSAttributedString(
       string: text,
       attributes: [
-        .font: Theme.Fonts.secondary,
+        .font: Theme.Fonts.secondaryTabular,
         .foregroundColor: color,
         .paragraphStyle: Theme.noTighteningParagraphStyle,
       ])
@@ -158,14 +142,16 @@ extension Format {
     // Prevents letter spacing compression before truncation
     let paragraphStyle = Theme.noTighteningParagraphStyle
 
+    // Tabular digits so the numeric readouts (size, ctx, mem) line up and match
+    // the download subtitle the row flips from.
     let attributes: [NSAttributedString.Key: Any] = [
-      .font: Theme.Fonts.secondary,
+      .font: Theme.Fonts.secondaryTabular,
       .foregroundColor: color,
       .paragraphStyle: paragraphStyle,
     ]
 
     let secondaryAttributes: [NSAttributedString.Key: Any] = [
-      .font: Theme.Fonts.secondary,
+      .font: Theme.Fonts.secondaryTabular,
       .foregroundColor: Theme.Colors.textSecondary,
       .paragraphStyle: paragraphStyle,
     ]

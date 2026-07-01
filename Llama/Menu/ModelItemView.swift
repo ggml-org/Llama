@@ -46,6 +46,10 @@ final class ModelItemView: ItemView, NSGestureRecognizerDelegate {
   /// `play.circle` when the row is in the paused state (partials on disk, no transfer).
   /// Clicking it toggles between the two; the same toggle also fires on row-body clicks.
   private let pausePlayImageView = NSImageView()
+  /// Slim progress bar shown while a download is in flight, on the right of the
+  /// row. Replaces the old inline "42%" text so the size-on-disk readout can stay
+  /// fixed on the left instead of shifting to make room for a percentage.
+  private let progressBar = ProgressBarView()
   private let unloadButton = NSButton()
 
   // Hover action buttons (shown on hover for installed models)
@@ -97,6 +101,7 @@ final class ModelItemView: ItemView, NSGestureRecognizerDelegate {
     // Start hidden
     cancelImageView.isHidden = true
     pausePlayImageView.isHidden = true
+    progressBar.isHidden = true
     unloadButton.isHidden = true
     hoverButtonsStack.isHidden = true
 
@@ -108,8 +113,18 @@ final class ModelItemView: ItemView, NSGestureRecognizerDelegate {
   required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
   private func setupLayout() {
+    // Subtitle line: the metadata/size label with the download progress bar
+    // trailing it. The bar sits right next to the size-on-disk readout (line two)
+    // rather than off on the row's right edge, and is hidden when not downloading.
+    let subtitleRow = NSStackView(views: [progressBar, subtitleLabel])
+    subtitleRow.orientation = .horizontal
+    subtitleRow.alignment = .centerY
+    subtitleRow.spacing = 6
+    // Hidden views collapse in the stack, so on installed rows (bar hidden) the
+    // subtitle sits flush at the leading edge as before.
+
     // Text column
-    let textColumn = NSStackView(views: [titleLabel, subtitleLabel])
+    let textColumn = NSStackView(views: [titleLabel, subtitleRow])
     textColumn.orientation = .vertical
     textColumn.alignment = .leading
     textColumn.spacing = Layout.textLineSpacing
@@ -126,8 +141,8 @@ final class ModelItemView: ItemView, NSGestureRecognizerDelegate {
     spacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
     // Accessory stack — pause/play sits next to the cancel X, mirroring iOS's
-    // "tap-to-pause + X-to-discard" progress affordance. Percent/bytes readout
-    // lives in the subtitle (see `Format.downloadSubtitle`), not here.
+    // "tap-to-pause + X-to-discard" progress affordance. The progress bar lives
+    // on the subtitle line (see `subtitleRow`), next to the size-on-disk readout.
     let accessoryStack = NSStackView(views: [
       pausePlayImageView, cancelImageView, hoverButtonsStack, unloadButton,
     ])
@@ -253,27 +268,28 @@ final class ModelItemView: ItemView, NSGestureRecognizerDelegate {
     let isLoading = server.isLoading(model: model)
     let status = modelManager.status(for: model)
 
-    // Derive row state from a single status switch. `fraction` drives the subtitle's
-    // percentage; nil means "unknown" (downloading before first response, or paused
-    // with a zero total). Paused and downloading share the same in-flight styling;
-    // only the label suffix and the pause/play icon differ.
+    // Derive row state from a single status switch. `fraction` drives the progress
+    // bar fill; nil means "unknown" (downloading before first response, or paused
+    // with a zero total) and reads as the minimum dot. `downloadedBytes` feeds the
+    // "N of total" subtitle. Paused and downloading share the same in-flight
+    // styling; only the label text and the pause/play icon differ.
     var isDownloading = false
     var isPaused = false
     var isInstalled = false
     var fraction: Double?
-    var bytesPerSec: Int?
+    var downloadedBytes: Int64 = 0
     switch status {
     case .available:
       break
     case .downloading(let progress):
       isDownloading = true
+      downloadedBytes = progress.completedUnitCount
       if progress.totalUnitCount > 0 {
         fraction = Double(progress.completedUnitCount) / Double(progress.totalUnitCount)
       }
-      // `throughput` is republished by ActiveDownload.refreshProgress each sample window.
-      bytesPerSec = progress.throughput
     case .paused(let bytes, let total):
       isPaused = true
+      downloadedBytes = bytes
       if total > 0 { fraction = Double(bytes) / Double(total) }
     case .installed:
       isInstalled = true
@@ -304,15 +320,14 @@ final class ModelItemView: ItemView, NSGestureRecognizerDelegate {
 
     let incompatibility = !isCompatible ? model.incompatibilitySummary() : nil
     // Subtitle swaps between size+ctx (for installed/available rows) and a
-    // transfer-centric "42% of 3.1 GB [· Paused]" readout while a download is
-    // in flight. Ctx tier is only meaningful once the model is fully downloaded,
-    // so we don't show it for downloading/paused rows.
+    // transfer readout while a download is in flight: "1.2 GB of 3.1 GB", or
+    // "Paused" when interrupted. The progress bar leads it (see `subtitleRow`).
+    // Ctx tier is only meaningful once fully downloaded, so it's omitted here.
     if showAsDownloading {
       subtitleLabel.attributedStringValue = Format.downloadSubtitle(
-        fraction: fraction,
+        downloadedBytes: downloadedBytes,
         totalBytes: model.fileSize,
         paused: isPaused,
-        bytesPerSec: bytesPerSec,
         color: textColor
       )
     } else {
@@ -324,6 +339,13 @@ final class ModelItemView: ItemView, NSGestureRecognizerDelegate {
     }
 
     cancelImageView.isHidden = !showAsDownloading
+
+    // Progress bar mirrors the cancel affordance's visibility. A nil fraction
+    // (download not yet reporting, or a paused zero-total) reads as empty.
+    progressBar.isHidden = !showAsDownloading
+    if showAsDownloading {
+      progressBar.fraction = fraction ?? 0
+    }
 
     // Pause/play icon swaps based on live vs. paused state. Hidden during the post-cancel
     // flicker window (isCancelled) so the about-to-disappear row doesn't show a resume arrow.

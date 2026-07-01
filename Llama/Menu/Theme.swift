@@ -56,6 +56,10 @@ enum Theme {
     static let primary = NSFont.systemFont(ofSize: 13)
     // Secondary font -- used for metadata and supplementary text
     static let secondary = NSFont.systemFont(ofSize: 11)
+    // Secondary font with tabular (monospaced) digits -- used for live-updating
+    // numeric readouts (download percent + speed) so changing digits don't shift
+    // the text's width and jitter the layout.
+    static let secondaryTabular = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular)
   }
 }
 
