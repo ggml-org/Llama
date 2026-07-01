@@ -1,4 +1,5 @@
 import Foundation
+import Network
 import Sentry
 import os.log
 
@@ -67,6 +68,22 @@ class ModelManager: NSObject, URLSessionDataDelegate {
   let maxRetryAttempts = 3
   let baseRetryDelay: TimeInterval = 2.0  // Doubles each attempt: 2s, 4s, 8s
 
+  // Connectivity gating. The backoff timer alone can't recover from a wake-from-sleep:
+  // wifi reassociation after wake takes longer than the 2s/4s/8s budget, so a blind
+  // timer burns all three attempts during the window where no path exists and fails
+  // the download outright. Instead we watch the network path — when a transient error
+  // lands while offline we don't consume an attempt; we park the download as a paused
+  // row and auto-resume it once the path is restored.
+  private let pathMonitor = NWPathMonitor()
+  /// Latest network-path status from `pathMonitor`. Optimistically `true` until the
+  /// monitor delivers its first update, so a download started before then isn't
+  /// wrongly treated as offline.
+  var isNetworkAvailable = true
+  /// Model ids we paused because the network path went away mid-download. These
+  /// auto-resume on the next offline→online path edge; user-initiated pauses are
+  /// deliberately absent so they stay paused.
+  var downloadsPausedForConnectivity: Set<String> = []
+
   private var urlSession: URLSession!
   let logger = Logger(subsystem: Logging.subsystem, category: "ModelManager")
 
@@ -91,7 +108,46 @@ class ModelManager: NSObject, URLSessionDataDelegate {
 
     urlSession = URLSession(configuration: config, delegate: self, delegateQueue: queue)
 
+    // Watch the network path so connectivity-paused downloads can auto-resume when
+    // the path is restored (e.g. after wake-from-sleep, once wifi reassociates).
+    pathMonitor.pathUpdateHandler = { [weak self] path in
+      let satisfied = path.status == .satisfied
+      DispatchQueue.main.async {
+        self?.handlePathUpdate(satisfied: satisfied)
+      }
+    }
+    pathMonitor.start(queue: DispatchQueue.global(qos: .utility))
+
     refreshDownloadedModels()
+  }
+
+  /// Reacts to a network-path change. On the offline→online edge, resumes any
+  /// downloads we parked for connectivity. Ignores every other transition (staying
+  /// online, going offline, interface swaps) so we only ever kick resumes off a
+  /// genuine restoration.
+  private func handlePathUpdate(satisfied: Bool) {
+    let wasAvailable = isNetworkAvailable
+    isNetworkAvailable = satisfied
+    guard satisfied, !wasAvailable, !downloadsPausedForConnectivity.isEmpty else { return }
+
+    logger.info(
+      "Network path restored; resuming \(self.downloadsPausedForConnectivity.count) connectivity-paused download(s)"
+    )
+    // downloadModel (and the guard below) mutate the set, so iterate a snapshot;
+    // drop any id that's no longer paused (user discarded/resumed in the meantime).
+    for modelId in Array(downloadsPausedForConnectivity) {
+      guard let model = pausedDownloads[modelId]?.model else {
+        downloadsPausedForConnectivity.remove(modelId)
+        continue
+      }
+      do {
+        try downloadModel(model)
+      } catch {
+        logger.error(
+          "Auto-resume failed for \(model.displayName): \(error.localizedDescription)")
+        downloadsPausedForConnectivity.remove(modelId)
+      }
+    }
   }
 
   /// Downloads all required files for a model.
@@ -110,6 +166,9 @@ class ModelManager: NSObject, URLSessionDataDelegate {
     // without it, the row flashes 0% while HF metadata is being fetched (before
     // writers open and `refreshProgress` can re-derive the real figure).
     let resumedBytes = pausedDownloads.removeValue(forKey: model.id)?.bytesOnDisk ?? 0
+    // Starting (or resuming) supersedes any connectivity-park state for this model;
+    // if it fails again offline the transient path re-registers it.
+    downloadsPausedForConnectivity.remove(model.id)
 
     let filesToDownload = try prepareDownload(for: model)
     guard !filesToDownload.isEmpty else { return }
@@ -688,6 +747,10 @@ class ModelManager: NSObject, URLSessionDataDelegate {
   /// identically except for what happens to the `.partial` files.
   func tearDownActiveDownload(modelId: String, outcome: TeardownOutcome) {
     let model = activeDownloads[modelId]?.model
+
+    // Any teardown clears connectivity-park state; the transient path re-inserts
+    // afterward for the offline case, so user pause/discard here stays paused.
+    downloadsPausedForConnectivity.remove(modelId)
 
     if activeDownloads[modelId] != nil {
       cancelTasks(for: modelId)

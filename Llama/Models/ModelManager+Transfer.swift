@@ -163,28 +163,23 @@ extension ModelManager {
         guard let self = self else { return }
         self.logger.error("Model download failed: \(error.localizedDescription)")
 
-        // Retry transient network errors (partial file is the resume state).
-        if let originalURL, self.shouldRetry(error: nsError, url: originalURL) {
-          self.scheduleRetry(url: originalURL, modelId: modelId)
+        // A sibling task's failure may have already torn the whole download down
+        // (transient failures pause every file, then cancel the others — those
+        // arrive here as NSURLErrorCancelled and returned early above, but guard
+        // anyway so a late straggler doesn't resurrect state).
+        guard self.activeDownloads[modelId] != nil else { return }
+
+        // Transient network errors (timeout, connection lost, offline) are
+        // resumable — the partial file is our resume state. Handle them inline
+        // (retry or park as a paused row) rather than popping a modal.
+        if let originalURL, self.isTransientNetworkError(nsError) {
+          self.handleTransientFailure(model: model, url: originalURL, modelId: modelId)
           return
         }
 
-        if self.activeDownloads[modelId] != nil {
-          _ = self.updateActiveDownload(modelId: modelId) { agg in
-            agg.removeTask(with: taskId)
-          }
-          self.refreshProgress(modelId: modelId)
-          self.postDownloadsDidChange()
-          NotificationCenter.default.post(
-            name: .LBModelDownloadDidFail, object: self,
-            userInfo: ["model": model, "error": error.localizedDescription]
-          )
-        }
-
-        // Clear retry state on final failure.
-        if let originalURL {
-          self.clearRetryState(for: originalURL)
-        }
+        // Anything else (bad cert, unsupported URL, ...) is genuinely actionable:
+        // drop to a paused row and surface the failure alert.
+        self.failDownload(model: model, reason: error.localizedDescription)
       }
       return
     }
@@ -319,21 +314,47 @@ extension ModelManager {
 
   // MARK: - Retry Logic
 
-  /// Determines if a failed download should be retried based on error type and attempt count.
-  private func shouldRetry(error: NSError, url: URL) -> Bool {
+  /// URLSession error codes we treat as transient/resumable network failures, as
+  /// opposed to actionable errors (bad certs, malformed URLs) that warrant an alert.
+  private static let transientNetworkErrorCodes: Set<Int> = [
+    NSURLErrorTimedOut,
+    NSURLErrorNetworkConnectionLost,
+    NSURLErrorNotConnectedToInternet,
+    NSURLErrorCannotConnectToHost,
+    NSURLErrorDNSLookupFailed,
+  ]
+
+  /// Whether an error is a transient, resumable network failure.
+  func isTransientNetworkError(_ error: NSError) -> Bool {
+    Self.transientNetworkErrorCodes.contains(error.code)
+  }
+
+  /// Handles a transient network failure for one file within an active download.
+  /// The decision hinges on connectivity so a wake-from-sleep recovers cleanly:
+  /// - path up + attempts left: genuine blip, so back off and retry (keeps the
+  ///   download live), consuming an attempt.
+  /// - path down: don't consume an attempt (wifi may just be reassociating) — park
+  ///   the whole model as a paused row and auto-resume when the path is restored.
+  /// - attempts exhausted while online: the connection is genuinely troubled; park
+  ///   as a paused row (no modal) the user can resume by hand, with a fresh budget.
+  func handleTransientFailure(model: Model, url: URL, modelId: String) {
     let attempts = retryAttempts[url] ?? 0
-    guard attempts < maxRetryAttempts else { return false }
+    if isNetworkAvailable && attempts < maxRetryAttempts {
+      scheduleRetry(url: url, modelId: modelId)
+      return
+    }
 
-    // Only retry transient network errors
-    let retryableCodes = [
-      NSURLErrorTimedOut,
-      NSURLErrorNetworkConnectionLost,
-      NSURLErrorNotConnectedToInternet,
-      NSURLErrorCannotConnectToHost,
-      NSURLErrorDNSLookupFailed,
-    ]
-
-    return retryableCodes.contains(error.code)
+    // Park as a paused row. tearDownActiveDownload cancels the model's other tasks,
+    // clears retry counters, and (given partial bytes on disk) surfaces the paused
+    // row with its existing resume affordance — no failure alert.
+    logger.info(
+      "Parking \(model.displayName) as paused after transient failure (network \(self.isNetworkAvailable ? "up, attempts exhausted" : "down"))"
+    )
+    tearDownActiveDownload(modelId: modelId, outcome: .pause)
+    if !isNetworkAvailable {
+      // Re-register (teardown just cleared it) so the path-restored edge resumes it.
+      downloadsPausedForConnectivity.insert(modelId)
+    }
   }
 
   /// Schedules a retry with exponential backoff. The partial file on disk is our resume state,
