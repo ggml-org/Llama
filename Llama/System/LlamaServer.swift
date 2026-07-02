@@ -183,10 +183,10 @@ class LlamaServer {
     /// `export` statements up top (each flush-left on its own line), a blank
     /// line, then the invocation -- the binary and subcommand on one line, with
     /// each `--flag` (grouped with its value) hanging-indented below. Paths are
-    /// abbreviated to `$HOME` and quoted with *double* quotes, so the block
-    /// stays paste-and-run correct (unlike `~` or single quotes, which wouldn't
-    /// expand `$HOME` inside the spaced preset path). Meant for the eye; the
-    /// clipboard still gets the compact single-line `shellCommand`.
+    /// shown literally and shell-quoted where needed (same quoting as
+    /// `shellCommand`), so the block stays paste-and-run correct and shows
+    /// exactly what runs. Meant for the eye; the clipboard still gets the
+    /// compact single-line `shellCommand`.
     var displayCommand: String {
       // Group arguments so a `--flag` carries its following value(s) on one
       // line; bare positional args (like `serve`) stand alone.
@@ -198,10 +198,10 @@ class LlamaServer {
         if arg.hasPrefix("-"), next < arguments.endIndex,
           !arguments[next].hasPrefix("-")
         {
-          lines.append("\(arg) \(Self.displayValue(arguments[next]))")
+          lines.append("\(arg) \(Self.quote(arguments[next]))")
           idx = arguments.index(after: next)
         } else {
-          lines.append(Self.displayValue(arg))
+          lines.append(Self.quote(arg))
           idx = next
         }
       }
@@ -209,7 +209,7 @@ class LlamaServer {
       // The binary leads the command line. Any leading positional args (the
       // subcommand, e.g. `serve`) ride on that same line -- `llama serve` reads
       // as one unit -- and the flags follow, one per line.
-      var firstLine = Self.displayValue(executablePath)
+      var firstLine = Self.quote(executablePath)
       while let head = lines.first, !head.hasPrefix("-") {
         firstLine += " " + head
         lines.removeFirst()
@@ -218,7 +218,7 @@ class LlamaServer {
       // Env vars as standalone `export` statements -- each flush-left on its
       // own line, no continuation backslash, so the setup reads as a calm list
       // separate from the invocation below.
-      let exportLines = env.map { "export \($0.key)=\(Self.displayValue($0.value))" }
+      let exportLines = env.map { "export \($0.key)=\(Self.quote($0.value))" }
 
       // The invocation: binary + subcommand on the first line, each flag
       // hanging-indented below, joined by " \<newline>" so it stays runnable.
@@ -235,25 +235,9 @@ class LlamaServer {
         .joined(separator: "\n")
     }
 
-    /// Renders a value for the human-readable `displayCommand`: abbreviates the
-    /// home dir to `$HOME`, then quotes with *double* quotes if the value
-    /// contains anything the shell would treat specially. Double quotes (vs the
-    /// single quotes `shellCommand` uses) are deliberate -- they preserve
-    /// spaces yet still let `$HOME` expand, keeping the displayed block runnable.
-    private static func displayValue(_ s: String) -> String {
-      let home = NSHomeDirectory()
-      let abbreviated = s.hasPrefix(home) ? "$HOME" + s.dropFirst(home.count) : s
-
-      // `$` is in the allow-list: it's only ever our own `$HOME`, which we want
-      // left unquoted-or-double-quoted so it expands.
-      let needsQuote = abbreviated.contains {
-        !$0.isLetter && !$0.isNumber && !"-_./=:$".contains($0)
-      }
-      return needsQuote ? "\"\(abbreviated)\"" : abbreviated
-    }
-
     /// Minimal shell quoting: wraps a token in single quotes only if it
     /// contains characters that the shell would otherwise treat specially.
+    /// Shared by `shellCommand` and the reading-friendly `displayCommand`.
     private static func quote(_ s: String) -> String {
       guard s.contains(where: { !$0.isLetter && !$0.isNumber && !"-_./=:".contains($0) })
       else { return s }
