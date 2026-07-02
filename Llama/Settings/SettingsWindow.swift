@@ -45,6 +45,13 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
     )
     window.title = "Settings"
     window.contentView = NSHostingView(rootView: contentView)
+    // Size the window to its content *before* centering. macOS 15 (Sequoia)
+    // lays out NSHostingView-backed windows more lazily, so without this
+    // `center()` runs while the window is still the zero-size placeholder: it
+    // centers a 0-height rect and the later content growth expands the window
+    // upward from its bottom-left origin -- jamming it against the menu bar.
+    // Resolving constraints first gives `center()` the final size to work with.
+    window.updateConstraintsIfNeeded()
     window.center()
     window.isReleasedWhenClosed = false
     window.delegate = self
