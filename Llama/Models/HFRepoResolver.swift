@@ -18,7 +18,8 @@ enum HFRepoResolver {
 
   /// Everything needed to start a download for a resolved deeplink.
   struct Resolved {
-    /// Stable sideloaded id — `"{org}/{repo}:{QUANT}"`. Matches the id shape
+    /// Stable id from `Model.makeId` — `"{org}/{repo}:{QUANT}"`, or the short
+    /// slashless form for native (ggml-org) models. Matches the id shape
     /// `HFCache.buildSideloadedEntry` produces, so post-install the row keeps
     /// the same identity without any handoff.
     let modelId: String
@@ -127,9 +128,15 @@ enum HFRepoResolver {
       uniqueKeysWithValues: siblings.map { ($0.rfilename, $0.size ?? 0) })
     let approxBytes = allPicked.reduce(Int64(0)) { $0 + (sizeByPath[$1] ?? 0) }
 
-    // `repo` is already validated as `{org}/{name}` upstream, so the sideloaded
-    // id is just `{repo}:{QUANT}`.
-    let modelId = "\(repo):\(pick.quant)"
+    // `repo` is already validated as `{org}/{name}` upstream; split it and run
+    // both halves through the shared id grammar so native (ggml-org) models
+    // get the same short id here as in the post-install scan.
+    let slashIdx = repo.firstIndex(of: "/")!
+    let modelId = Model.makeId(
+      org: String(repo[..<slashIdx]),
+      repo: String(repo[repo.index(after: slashIdx)...]),
+      quant: pick.quant
+    )
 
     let mainUrl = resolveUrl(repo: repo, path: pick.rfilename)
     let extraUrls = shards.dropFirst().map { resolveUrl(repo: repo, path: $0) }

@@ -5,9 +5,11 @@ import Foundation
 /// cache scan (post-install). Metadata is parsed from the HF repo dir name and
 /// the GGUF filename — there is no curated catalog backing this struct.
 struct Model: Identifiable, Codable {
-  /// `{org}/{repo}:{QUANT}` — matches llama-server's `-hf` shorthand. Stable
-  /// across the deeplink and post-install scan paths because both derive the
-  /// quant label through the same `GGUFQuantLabel` grammar.
+  /// Stable model id built by `makeId` — `{org}/{repo}:{QUANT}` (matching
+  /// llama-server's `-hf` shorthand), or a short slashless form for native
+  /// (ggml-org) models. Stable across the deeplink and post-install scan paths
+  /// because both derive the quant label through the same `GGUFQuantLabel`
+  /// grammar and build the id through `makeId`.
   let id: String
   /// Display family name parsed from the repo (e.g. "Qwen3-30B-A3B-Instruct").
   let family: String
@@ -87,6 +89,21 @@ struct Model: Identifiable, Codable {
     self.org = org
     self.tags = tags
     self.quantization = quantization
+  }
+
+  /// Builds the stable model id shared by the deeplink and post-install scan
+  /// paths. `ggml-org` models are native — ours, conceptually — so they drop
+  /// the org prefix and get a short, slashless id: lowercased repo name with
+  /// the `-GGUF` suffix stripped (e.g. "qwen3-0.6b:Q8_0"). Models from any
+  /// other org keep the `{org}/{repo}:{QUANT}` shape, which matches
+  /// llama-server's `-hf` shorthand.
+  static func makeId(org: String, repo: String, quant: String) -> String {
+    guard org == "ggml-org" else { return "\(org)/\(repo):\(quant)" }
+    var base = repo
+    if base.lowercased().hasSuffix("-gguf") {
+      base = String(base.dropLast("-gguf".count))
+    }
+    return "\(base.lowercased()):\(quant)"
   }
 
   /// Display name combining family and size — used in hints, alerts, logs.

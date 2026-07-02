@@ -597,11 +597,11 @@ enum HFCache {
       return sum + fm.fileSize(atPath: resolved)
     }
 
-    // Generate stable ID matching llama-server's `-hf` shorthand format:
-    // "{org}/{repo}:{QUANT}" -- e.g. "ggml-org/gemma-3-1b-it-qat-GGUF:Q4_0".
-    // This lets power users switch b/w llama-server and Llama w/o changing
-    // model IDs in their code.
-    let modelId = "\(parsed.org)/\(parsed.repo):\(quant)"
+    // Generate the stable ID via the shared grammar: native (ggml-org) models
+    // get a short slashless id; other orgs keep "{org}/{repo}:{QUANT}", which
+    // matches llama-server's `-hf` shorthand so power users can switch b/w
+    // llama-server and Llama w/o changing model IDs in their code.
+    let modelId = Model.makeId(org: parsed.org, repo: parsed.repo, quant: quant)
 
     // Build the display size label — use params if available, otherwise show quant only
     let sizeLabel = parsed.params ?? quant
